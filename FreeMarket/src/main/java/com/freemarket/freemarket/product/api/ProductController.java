@@ -164,4 +164,49 @@ public class ProductController {
 
         return ResponseEntity.ok(ResponseDTO.success(null, "상품이 성공적으로 삭제되었습니다."));
     }
+
+    @Operation(summary = "상품 판매완료 처리", description = "상품을 판매완료 상태로 변경하고 구매자를 지정합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "판매완료 처리 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "권한 없음"),
+            @ApiResponse(responseCode = "404", description = "상품을 찾을 수 없음")
+    })
+    @PostMapping("/{productId}/sold")
+    public ResponseEntity<ResponseDTO<ProductDto.ProductResponse>> markProductAsSold(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Parameter(description = "상품 ID", required = true) @PathVariable Long productId,
+            @Parameter(description = "구매자 ID", required = true) @RequestParam Long buyerId) {
+
+        log.info("상품 판매완료 처리 요청: 상품 ID {}, 판매자 ID {}, 구매자 ID {}",
+                productId, userDetails.getUserId(), buyerId);
+
+        ProductDto.ProductResponse response = productService.markProductAsSold(
+                userDetails.getUserId(), productId, buyerId);
+
+        return ResponseEntity.ok(ResponseDTO.success(response, "상품이 판매완료 처리되었습니다."));
+    }
+
+    @Operation(summary = "판매완료 취소", description = "판매완료 상태의 상품을 다시 판매중 상태로 변경합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "판매완료 취소 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "권한 없음"),
+            @ApiResponse(responseCode = "404", description = "상품을 찾을 수 없음")
+    })
+    @PostMapping("/{productId}/cancel-sold")
+    public ResponseEntity<ResponseDTO<ProductDto.ProductResponse>> cancelProductSold(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Parameter(description = "상품 ID", required = true) @PathVariable Long productId) {
+
+        log.info("판매완료 취소 요청: 상품 ID {}, 판매자 ID {}", productId, userDetails.getUserId());
+
+        ProductDto.ProductResponse response = productService.cancelProductSold(
+                userDetails.getUserId(), productId);
+
+        return ResponseEntity.ok(ResponseDTO.success(response, "판매완료가 취소되었습니다."));
+    }
+
 }

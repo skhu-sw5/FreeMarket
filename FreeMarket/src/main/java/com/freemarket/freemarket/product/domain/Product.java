@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,6 +47,13 @@ public class Product extends BaseEntity {
     @JoinColumn(name = "seller_id")
     private User seller;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "buyer_id")
+    private User buyer;
+
+    @Column
+    private LocalDateTime soldDate; // 판매완료 날짜
+
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<ProductImage> images = new ArrayList<>();
 
@@ -60,27 +68,6 @@ public class Product extends BaseEntity {
         this.seller = seller;
     }
 
-    // 재고 관리 메서드
-    public void decreaseStock(int quantity) {
-        if (this.stock < quantity) {
-            throw new IllegalArgumentException("재고가 부족합니다.");
-        }
-        this.stock -= quantity;
-
-        // 재고가 0이 되면 품절로 상태 변경
-        if (this.stock == 0) {
-            this.status = ProductStatus.SOLD_OUT;
-        }
-    }
-
-    public void increaseStock(int quantity) {
-        this.stock += quantity;
-
-        // 재고가 0이 아니면 판매중으로 상태 변경
-        if (this.stock > 0 && this.status == ProductStatus.SOLD_OUT) {
-            this.status = ProductStatus.ACTIVE;
-        }
-    }
 
     // 상품 정보 업데이트
     public void update(String name, String description, long price, int stock, ProductCategory category) {
@@ -114,6 +101,21 @@ public class Product extends BaseEntity {
         image.setProduct(null);
     }
 
+    // 상품 판매완료 처리 메서드
+    public void markAsSold(User buyer) {
+        this.status = ProductStatus.SOLD_OUT;
+        this.buyer = buyer;
+        this.soldDate = LocalDateTime.now();
+        this.stock = 0;
+    }
+
+    // 판매 취소 메서드 추가
+    public void cancelSold() {
+        this.status = ProductStatus.ACTIVE;
+        this.buyer = null;
+        this.soldDate = null;
+        this.stock = 1; // 중고 상품은 보통 1개
+    }
     // 대표 썸네일 URL 조회
     public String getRepresentativeThumbnailUrl() {
         return this.images.stream()
