@@ -159,6 +159,39 @@ public class ProductService {
         log.info("상품 삭제 완료: 상품 ID {}, 판매자 ID {}", productId, userId);
     }
 
+    // 판매 완료 처리
+    @Transactional
+    public ProductDto.ProductResponse markProductAsSold(Long sellerId, Long productId, Long buyerId) {
+        Product product = getProductWithSellerCheck(productId, sellerId);
+
+        if (product.getStatus() == ProductStatus.SOLD_OUT) {
+            throw new IllegalStateException("이미 판매 완료된 상품입니다.");
+        }
+
+        User buyer = userRepository.findById(buyerId)
+                .orElseThrow(() -> new UserException.UserNotFoundException(buyerId));
+
+        product.markAsSold(buyer);
+
+        log.info("상품 판매완료 처리: 상품 ID {}, 판매자 ID {}, 구매자 ID {}", productId, sellerId, buyerId);
+
+        return ProductDto.ProductResponse.from(product);
+    }
+
+    // 판매완료 취소 처리 메서드
+    @Transactional
+    public ProductDto.ProductResponse cancelProductSold(Long sellerId, Long productId) {
+        Product product = getProductWithSellerCheck(productId, sellerId);
+
+        if (product.getStatus() != ProductStatus.SOLD_OUT) {
+            throw new IllegalStateException("판매 완료 상태가 아닌 상품은 취소할 수 없습니다.");
+        }
+
+        product.cancelSold();
+        log.info("판매완료 취소 처리: 상품 ID {}, 판매자 ID {}", productId, sellerId);
+        return ProductDto.ProductResponse.from(product);
+    }
+
     // 판매자 권한 확인 후 상품 조회
     private Product getProductWithSellerCheck(Long productId, Long userId) {
         Product product = findProduct(productId);
