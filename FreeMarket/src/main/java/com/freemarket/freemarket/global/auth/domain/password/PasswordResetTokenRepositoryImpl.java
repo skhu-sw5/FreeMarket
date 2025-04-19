@@ -1,11 +1,12 @@
-package com.freemarket.freemarket.global.auth.domain;
+package com.freemarket.freemarket.global.auth.domain.password;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDateTime;
 
-import static com.freemarket.freemarket.global.auth.domain.QPasswordResetToken.passwordResetToken;
+import static com.freemarket.freemarket.global.auth.domain.password.QPasswordResetToken.passwordResetToken;
+
 
 @RequiredArgsConstructor
 public class PasswordResetTokenRepositoryImpl implements PasswordResetTokenRepositoryCustom {

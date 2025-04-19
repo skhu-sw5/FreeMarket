@@ -1,4 +1,4 @@
-package com.freemarket.freemarket.global.auth.domain;
+package com.freemarket.freemarket.global.auth.domain.refresh;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -7,36 +7,39 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Entity
-@Table(name = "password_reset_tokens")
+@Table(name = "refresh_tokens")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class PasswordResetToken {
+public class RefreshToken {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 1000)
     private String token;
 
     @Column(nullable = false)
-    private String email;
+    private Long userId;
 
     @Column(nullable = false)
     private LocalDateTime expiryDate;
 
     @Builder
-    public PasswordResetToken(String token, String email, LocalDateTime expiryDate) {
-        this.token = UUID.randomUUID().toString();
-        this.email = email;
-        // 토큰 만료시간 30분
-        this.expiryDate = LocalDateTime.now().plusMinutes(30);
+    public RefreshToken(String token, Long userId, LocalDateTime expiryDate) {
+        this.token = token;
+        this.userId = userId;
+        this.expiryDate = expiryDate;
     }
 
     public boolean isExpired() {
         return LocalDateTime.now().isAfter(expiryDate);
+    }
+
+    public void updateToken(String token, LocalDateTime expiryDate) {
+        this.token = token;
+        this.expiryDate = expiryDate;
     }
 }

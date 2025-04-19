@@ -1,8 +1,8 @@
 package com.freemarket.freemarket.global.auth.application;
 
 import com.freemarket.freemarket.global.auth.api.dto.PasswordDto;
-import com.freemarket.freemarket.global.auth.domain.PasswordResetToken;
-import com.freemarket.freemarket.global.auth.domain.PasswordResetTokenRepository;
+import com.freemarket.freemarket.global.auth.domain.password.PasswordResetToken;
+import com.freemarket.freemarket.global.auth.domain.password.PasswordResetTokenRepository;
 import com.freemarket.freemarket.global.email.EmailService;
 import com.freemarket.freemarket.global.exception.AuthException;
 import com.freemarket.freemarket.user.exception.UserException;

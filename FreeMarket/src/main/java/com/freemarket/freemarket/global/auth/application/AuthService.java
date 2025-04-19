@@ -1,7 +1,7 @@
 package com.freemarket.freemarket.global.auth.application;
 
 import com.freemarket.freemarket.global.auth.api.dto.AuthDto;
-import com.freemarket.freemarket.global.auth.domain.RefreshToken;
+import com.freemarket.freemarket.global.auth.domain.refresh.RefreshToken;
 import com.freemarket.freemarket.global.jwt.JwtProvider;
 import com.freemarket.freemarket.global.security.CustomUserDetails;
 import com.freemarket.freemarket.user.domain.User;

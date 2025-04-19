@@ -1,11 +1,11 @@
-package com.freemarket.freemarket.global.auth.domain;
+package com.freemarket.freemarket.global.auth.domain.refresh;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDateTime;
 
-import static com.freemarket.freemarket.global.auth.domain.QRefreshToken.refreshToken;
+import static com.freemarket.freemarket.global.auth.domain.refresh.QRefreshToken.refreshToken;
 
 
 @RequiredArgsConstructor

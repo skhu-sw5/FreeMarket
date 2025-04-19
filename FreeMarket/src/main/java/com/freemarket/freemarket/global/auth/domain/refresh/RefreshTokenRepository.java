@@ -1,4 +1,4 @@
-package com.freemarket.freemarket.global.auth.domain;
+package com.freemarket.freemarket.global.auth.domain.refresh;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
