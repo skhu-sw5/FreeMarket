@@ -1,7 +1,7 @@
 package com.freemarket.freemarket.global.auth.application;
 
-import com.freemarket.freemarket.global.auth.domain.RefreshToken;
-import com.freemarket.freemarket.global.auth.domain.RefreshTokenRepository;
+import com.freemarket.freemarket.global.auth.domain.refresh.RefreshToken;
+import com.freemarket.freemarket.global.auth.domain.refresh.RefreshTokenRepository;
 import com.freemarket.freemarket.global.jwt.JwtProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
