@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.coyote.BadRequestException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -52,7 +53,7 @@ public class ProductController {
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
             @Parameter(description = "상품 등록 정보", required = true, content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE))
             @Valid @RequestPart("request") ProductDto.CreateRequest request,
-            @Parameter(description = "이미지 파일") @RequestPart(value = "images", required = false)List<MultipartFile> images) {
+            @Parameter(description = "이미지 파일") @RequestPart(value = "images", required = false)List<MultipartFile> images) throws BadRequestException {
 
 
         log.info("상품 등록 요청: 사용자 ID {}", userDetails.getUserId());

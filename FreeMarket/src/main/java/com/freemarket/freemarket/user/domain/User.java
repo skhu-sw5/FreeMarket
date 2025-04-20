@@ -40,6 +40,9 @@ public class User extends BaseTimeEntity {
     private String provider;     // 예: "naver", "google", "kakao"
     private String providerId;   // 소셜 플랫폼에서 제공하는 고유 사용자 ID
 
+    @Column(nullable = false)
+    private boolean emailVerified = false;
+
     @Builder
     public User(String email, String password, String name, String phone, boolean enabled, UserRole role, String provider, String providerId) {
         this.email = email;
@@ -87,5 +90,10 @@ public class User extends BaseTimeEntity {
     public void updateProvider(String provider, String providerId) {
         this.provider = provider;
         this.providerId = providerId;
+    }
+
+    // 이메일 인증 상태 설정
+    public void changeEmailVerified(boolean emailVerified) {
+        this.emailVerified = emailVerified;
     }
 }

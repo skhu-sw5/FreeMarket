@@ -8,6 +8,7 @@ import com.freemarket.freemarket.user.domain.UserRepository;
 import com.freemarket.freemarket.user.exception.UserException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.coyote.BadRequestException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -29,9 +30,12 @@ public class ProductService {
 
     // 상품 등록
     @Transactional
-    public ProductDto.ProductResponse createProduct(Long userId, ProductDto.CreateRequest request, List<MultipartFile> images) {
+    public ProductDto.ProductResponse createProduct(Long userId, ProductDto.CreateRequest request, List<MultipartFile> images) throws BadRequestException {
         User seller = userRepository.findById(userId)
                 .orElseThrow(() -> new UserException.UserNotFoundException(userId));
+
+        // 학교 이메일 인증 여부 확인
+        emailVerification(seller);
 
         Product product = Product.builder()
                 .name(request.name())
@@ -202,11 +206,17 @@ public class ProductService {
 
         return product;
     }
-
+    
     private Product findProduct(Long productId) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다: " + productId));
         return product;
+    }
+
+    private static void emailVerification(User seller) throws BadRequestException {
+        if (!seller.isEmailVerified()) {
+            throw new BadRequestException("학교 이메일 인증이 필요합니다.");
+        }
     }
 
 }
