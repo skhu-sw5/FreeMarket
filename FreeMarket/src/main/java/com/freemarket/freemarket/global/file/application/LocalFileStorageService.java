@@ -1,5 +1,6 @@
 package com.freemarket.freemarket.global.file.application;
 
+import com.freemarket.freemarket.global.file.exception.FileException;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,7 +33,7 @@ public class LocalFileStorageService implements FileStorageService {
     @Override
     public FileUploadResult storeFile(MultipartFile file) throws IOException {
         if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("업로드할 파일이 없습니다.");
+            throw new FileException.EmptyFileException();
         }
 
         String originalFileName = file.getOriginalFilename();
@@ -63,7 +64,7 @@ public class LocalFileStorageService implements FileStorageService {
             log.error("파일 저장 또는 썸네일 생성 실패: {}", originalFileName, e);
             if (originalFile != null && originalFile.exists()) deleteFileIfExists(originalFilePath);
             if (thumbnailFile != null && thumbnailFile.exists()) deleteFileIfExists(thumbnailFilePath);
-            throw new IOException("파일 저장 또는 썸네일 생성에 실패했습니다. 파일명: " + originalFileName, e);
+            throw new FileException.FileUploadException(originalFileName, e);
         }
     }
 
@@ -86,7 +87,7 @@ public class LocalFileStorageService implements FileStorageService {
             if (!Files.exists(path)) Files.createDirectories(path);
         } catch (IOException e) {
             log.error("디렉토리 생성 실패: {}", path, e);
-            throw new RuntimeException("필수 디렉토리 생성에 실패했습니다: " + path, e);
+            throw new FileException.DirectoryCreationException(path.toString(), e);
         }
     }
 
@@ -103,8 +104,14 @@ public class LocalFileStorageService implements FileStorageService {
     }
 
     private void createThumbnail(File inputFile, File outputFile, int width) throws IOException {
-        if (!inputFile.exists()) throw new IOException("썸네일을 생성할 원본 파일이 존재하지 않습니다: " + inputFile.getPath());
-        Thumbnails.of(inputFile).width(width).keepAspectRatio(true).toFile(outputFile);
+        if (!inputFile.exists()) {
+            throw new FileException.FileNotFoundException(inputFile.getPath());
+        }
+        try {
+            Thumbnails.of(inputFile).width(width).keepAspectRatio(true).toFile(outputFile);
+        } catch (IOException e) {
+            throw new FileException.ThumbnailCreationException(inputFile.getName(), e);
+        }
     }
 
     private void deleteFileIfExists(Path filePath) {
@@ -112,6 +119,7 @@ public class LocalFileStorageService implements FileStorageService {
             if (Files.exists(filePath)) Files.delete(filePath);
         } catch (IOException e) {
             log.error("파일 삭제 실패: {}", filePath, e);
+            throw new FileException.FileDeletionException(filePath.toString(), e);
         }
     }
 }

@@ -2,6 +2,7 @@ package com.freemarket.freemarket.global.auth.application;
 
 import com.freemarket.freemarket.global.auth.domain.refresh.RefreshToken;
 import com.freemarket.freemarket.global.auth.domain.refresh.RefreshTokenRepository;
+import com.freemarket.freemarket.global.auth.exception.AuthException;
 import com.freemarket.freemarket.global.jwt.JwtProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,12 +46,12 @@ public class RefreshTokenService {
         RefreshToken refreshToken = refreshTokenRepository.findByToken(token)
                 .orElseThrow(() -> {
                     log.warn("존재하지 않는 RefreshToken");
-                    return new RuntimeException("유효하지 않은 토큰입니다.");
+                    return new AuthException.InvalidRefreshTokenException();
                 });
 
         if (refreshToken.isExpired()) {
             log.warn("만료된 리프레시 토큰: 사용자 ID {}", refreshToken.getUserId());
-            throw new RuntimeException("토큰이 만료되었습니다.");
+            throw new AuthException.ExpiredRefreshTokenException();
         }
 
         return refreshToken;

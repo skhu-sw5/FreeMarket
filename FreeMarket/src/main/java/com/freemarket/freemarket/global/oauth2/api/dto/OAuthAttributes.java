@@ -1,5 +1,6 @@
 package com.freemarket.freemarket.global.oauth2.api.dto;
 
+import com.freemarket.freemarket.global.oauth2.exception.OAuth2Exception;
 import com.freemarket.freemarket.user.domain.User;
 import com.freemarket.freemarket.user.domain.UserRole;
 import lombok.Builder;
@@ -119,7 +120,7 @@ public record OAuthAttributes(
         // 필수 필드 확인
         if (responseData == null || !responseData.containsKey("id")) {
             log.error("네이버 응답에서 사용자 정보를 찾을 수 없습니다. attributes: {}", attributes);
-            throw new OAuth2AuthenticationException("네이버 응답에서 사용자 정보를 찾을 수 없습니다.");
+            throw new OAuth2Exception.MissingAttributeException("naver", "id");
         }
 
         String id = String.valueOf(responseData.get("id"));

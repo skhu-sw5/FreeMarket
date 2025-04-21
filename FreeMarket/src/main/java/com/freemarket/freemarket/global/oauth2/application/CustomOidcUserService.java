@@ -1,6 +1,7 @@
 package com.freemarket.freemarket.global.oauth2.application;
 
 import com.freemarket.freemarket.global.oauth2.api.dto.OAuthAttributes;
+import com.freemarket.freemarket.global.oauth2.exception.OAuth2Exception;
 import com.freemarket.freemarket.user.domain.User;
 import com.freemarket.freemarket.user.domain.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -66,7 +67,7 @@ public class CustomOidcUserService extends OidcUserService { // OidcUserService 
             Optional<User> existingEmailUser = userRepository.findByEmail(attributes.email());
             if (existingEmailUser.isPresent()) {
                 log.warn("Email already exists: {}", attributes.email());
-                throw new OAuth2AuthenticationException("이미 가입된 이메일입니다: " + attributes.email());
+                throw new OAuth2Exception.EmailAlreadyExistsException(attributes.email());
             }
             user = attributes.toEntity();
             userRepository.save(user);

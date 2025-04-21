@@ -4,7 +4,7 @@ import com.freemarket.freemarket.global.auth.api.dto.PasswordDto;
 import com.freemarket.freemarket.global.auth.domain.password.PasswordResetToken;
 import com.freemarket.freemarket.global.auth.domain.password.PasswordResetTokenRepository;
 import com.freemarket.freemarket.global.email.EmailService;
-import com.freemarket.freemarket.global.exception.AuthException;
+import com.freemarket.freemarket.global.auth.exception.AuthException;
 import com.freemarket.freemarket.user.exception.UserException;
 import com.freemarket.freemarket.user.domain.User;
 import com.freemarket.freemarket.user.domain.UserRepository;
