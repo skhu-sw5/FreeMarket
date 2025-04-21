@@ -1,8 +1,10 @@
 package com.freemarket.freemarket.product.application;
 
+import com.freemarket.freemarket.global.email.exception.EmailVerificationException;
 import com.freemarket.freemarket.global.file.application.FileStorageService;
 import com.freemarket.freemarket.product.api.dto.ProductDto;
 import com.freemarket.freemarket.product.domain.*;
+import com.freemarket.freemarket.product.exception.ProductException;
 import com.freemarket.freemarket.user.domain.User;
 import com.freemarket.freemarket.user.domain.UserRepository;
 import com.freemarket.freemarket.user.exception.UserException;
@@ -73,7 +75,7 @@ public class ProductService {
                 fileStorageService.deleteFile(uploadedFile.originalFilePath());
                 fileStorageService.deleteFile(uploadedFile.thumbnailFilePath());
             });
-            throw new RuntimeException("상품 등록 중 오류가 발생했습니다.", e);
+            throw new ProductException.ProductCreationException(e.getMessage());
         }
     }
 
@@ -132,7 +134,7 @@ public class ProductService {
                 fileStorageService.deleteFile(uploadedFile.originalFilePath());
                 fileStorageService.deleteFile(uploadedFile.thumbnailFilePath());
             });
-            throw new RuntimeException("상품 수정 중 오류가 발생했습니다.", e);
+            throw new ProductException.ProductUpdateException(e.getMessage());
         }
     }
 
@@ -169,7 +171,7 @@ public class ProductService {
         Product product = getProductWithSellerCheck(productId, sellerId);
 
         if (product.getStatus() == ProductStatus.SOLD_OUT) {
-            throw new IllegalStateException("이미 판매 완료된 상품입니다.");
+            throw new ProductException.AlreadySoldProductException();
         }
 
         User buyer = userRepository.findById(buyerId)
@@ -188,7 +190,7 @@ public class ProductService {
         Product product = getProductWithSellerCheck(productId, sellerId);
 
         if (product.getStatus() != ProductStatus.SOLD_OUT) {
-            throw new IllegalStateException("판매 완료 상태가 아닌 상품은 취소할 수 없습니다.");
+            throw new ProductException.NotSoldProductException();
         }
 
         product.cancelSold();
@@ -201,7 +203,7 @@ public class ProductService {
         Product product = findProduct(productId);
 
         if (!product.getSeller().getId().equals(userId)) {
-            throw new RuntimeException("해당 상품의 판매자가 아닙니다.");
+            throw new ProductException.ProductAccessDeniedException();
         }
 
         return product;
@@ -209,13 +211,13 @@ public class ProductService {
     
     private Product findProduct(Long productId) {
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다: " + productId));
+                .orElseThrow(() -> new ProductException.ProductNotFoundException(productId));
         return product;
     }
 
-    private static void emailVerification(User seller) throws BadRequestException {
+    private static void emailVerification(User seller) {
         if (!seller.isEmailVerified()) {
-            throw new BadRequestException("학교 이메일 인증이 필요합니다.");
+            throw new EmailVerificationException.EmailNotVerifiedException();
         }
     }
 

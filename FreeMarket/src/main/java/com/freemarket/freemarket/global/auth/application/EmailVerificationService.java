@@ -3,6 +3,7 @@ package com.freemarket.freemarket.global.auth.application;
 import com.freemarket.freemarket.global.auth.api.dto.EmailVerificationDto;
 import com.freemarket.freemarket.global.auth.domain.email.EmailVerification;
 import com.freemarket.freemarket.global.auth.domain.email.EmailVerificationRepository;
+import com.freemarket.freemarket.global.email.exception.EmailVerificationException;
 import com.freemarket.freemarket.user.domain.User;
 import com.freemarket.freemarket.user.domain.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +37,7 @@ public class EmailVerificationService {
 
         // 학교 이메일 도메인 확인
         if (!isSchoolEmail(email)) {
-            throw new BadRequestException("학교 이메일만 사용할 수 있습니다.");
+            throw new EmailVerificationException.InvalidEmailDomainException(email);
         }
 
         // 인증 코드 생성
@@ -67,14 +68,14 @@ public class EmailVerificationService {
         String code = request.verificationCode();
 
         EmailVerification verification = emailVerificationRepository.findByEmail(email)
-                .orElseThrow(() -> new BadRequestException("인증 정보를 찾을 수 업습니다."));
+                .orElseThrow(() -> new EmailVerificationException.VerificationNotFoundException(email));
 
         if (verification.isExpired()) {
-            throw new BadRequestException("인증 코드가 만료되었습니다.");
+            throw new EmailVerificationException.VerificationCodeExpiredException();
         }
 
         if (!verification.getVerificationCode().equals(code)) {
-            throw new BadRequestException("인증 코드가 일치하지 않습니다.");
+            throw new EmailVerificationException.InvalidVerificationCodeException();
         }
 
         verification.verify();

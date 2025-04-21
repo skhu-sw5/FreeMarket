@@ -1,5 +1,6 @@
-package com.freemarket.freemarket.global.exception;
+package com.freemarket.freemarket.global.auth.exception;
 
+import com.freemarket.freemarket.global.exception.BaseException;
 import org.springframework.http.HttpStatus;
 
 public class AuthException extends BaseException {
@@ -41,6 +42,18 @@ public class AuthException extends BaseException {
     public static class PasswordResetTokenExpiredException extends AuthException {
         public PasswordResetTokenExpiredException() {
             super("비밀번호 재설정 토큰이 만료되었습니다.", HttpStatus.BAD_REQUEST, "PASSWORD_RESET_TOKEN_EXPIRED");
+        }
+    }
+
+    public static class InvalidRefreshTokenException extends AuthException {
+        public InvalidRefreshTokenException() {
+            super("유효하지 않은 토큰입니다.", HttpStatus.UNAUTHORIZED, "INVALID_REFRESH_TOKEN");
+        }
+    }
+
+    public static class ExpiredRefreshTokenException extends AuthException {
+        public ExpiredRefreshTokenException() {
+            super("토큰이 만료되었습니다.", HttpStatus.UNAUTHORIZED, "EXPIRED_REFRESH_TOKEN");
         }
     }
 
