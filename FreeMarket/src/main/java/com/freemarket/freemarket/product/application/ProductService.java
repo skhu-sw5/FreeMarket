@@ -3,6 +3,7 @@ package com.freemarket.freemarket.product.application;
 import com.freemarket.freemarket.global.email.exception.EmailVerificationException;
 import com.freemarket.freemarket.global.file.application.FileStorageService;
 import com.freemarket.freemarket.product.api.dto.ProductDto;
+import com.freemarket.freemarket.product.api.dto.ProductWithStatsDto;
 import com.freemarket.freemarket.product.domain.*;
 import com.freemarket.freemarket.product.exception.ProductException;
 import com.freemarket.freemarket.user.domain.User;
@@ -29,10 +30,12 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
     private final FileStorageService fileStorageService;
+    private final ProductViewService viewService;
+    private final ProductWishlistService wishlistService;
 
     // 상품 등록
     @Transactional
-    public ProductDto.ProductResponse createProduct(Long userId, ProductDto.CreateRequest request, List<MultipartFile> images) throws BadRequestException {
+    public ProductDto.ProductBaseResponse createProduct(Long userId, ProductDto.CreateRequest request, List<MultipartFile> images) throws BadRequestException {
         User seller = userRepository.findById(userId)
                 .orElseThrow(() -> new UserException.UserNotFoundException(userId));
 
@@ -68,7 +71,7 @@ public class ProductService {
             }
             Product savedProduct = productRepository.save(product);
             log.info("상품 등록 완료: 상품명 {}, 판매자 ID {}", request.name(), userId);
-            return ProductDto.ProductResponse.from(savedProduct);
+            return ProductDto.ProductBaseResponse.from(savedProduct);
         } catch (Exception e) {
             log.error("상품 등록 중 오류 발생: 사용자 ID {}", userId, e);
             uploadedFiles.forEach(uploadedFile -> {
@@ -81,7 +84,7 @@ public class ProductService {
 
     // 상품 수정
     @Transactional
-    public ProductDto.ProductResponse updateProduct(Long userId, Long productId, ProductDto.UpdateRequest request,
+    public ProductDto.ProductBaseResponse updateProduct(Long userId, Long productId, ProductDto.UpdateRequest request,
                                                     List<MultipartFile> newImages, List<Long> deleteImageIds) {
         Product product = getProductWithSellerCheck(productId, userId);
         product.update(request.name(), request.description(), request.price(), request.stock(), request.category());
@@ -127,7 +130,7 @@ public class ProductService {
             }
 
             log.info("상품 수정 완료: 상품 ID {}, 판매자 ID {}", productId, userId);
-            return ProductDto.ProductResponse.from(product); // 변경 감지로 업데이트됨
+            return ProductDto.ProductBaseResponse.from(product); // 변경 감지로 업데이트됨
         } catch (Exception e) { // 롤백 로직
             log.error("상품 수정 중 오류 발생: 상품 ID {}", productId, e);
             newlyUploadedFiles.forEach(uploadedFile -> {
@@ -139,22 +142,30 @@ public class ProductService {
     }
 
     // 상품 단건 조회
-    public ProductDto.ProductResponse getProduct(Long productId) {
+    public ProductDto.ProductDetailResponse getProduct(Long productId, Long userId) {
         Product product = findProduct(productId);
-        return ProductDto.ProductResponse.from(product);
+
+        // 조회수
+        Long viewCount = viewService.getViewCount(productId);
+        // 관심 등록 수
+        Long wishlistCount = wishlistService.getWishlistCount(productId);
+
+        // 현재 사용자의 관심 등록 여부
+        boolean isWishlisted = userId != null ? wishlistService.isWishlisted(userId, productId) : false;
+        return ProductDto.ProductDetailResponse.from(product, viewCount, wishlistCount, isWishlisted);
     }
 
     // 상품 목록 조회
-    public Page<ProductDto.ProductResponse> getProducts(String keyword, ProductStatus status, Pageable pageable) {
-        return productRepository.findAllWithFilters(keyword, status, pageable)
-                .map(ProductDto.ProductResponse::from);
+    public Page<ProductDto.ProductDetailResponse> getProducts(String keyword, ProductStatus status, Pageable pageable, Long userId) {
+        return productRepository.findAllWithStatsAndWishlist(keyword, status, pageable, userId)
+                .map(ProductWithStatsDto::toProductDetailResponse);
     }
 
     // 카테고리별 상품 조회
-    public Page<ProductDto.ProductResponse> getProductsByCategory(ProductCategory category, String keyword, ProductStatus status,
-                                                                  Pageable pageable) {
-        return productRepository.findByCategoryWithFilters(category, keyword, status, pageable)
-                .map(ProductDto.ProductResponse::from);
+    public Page<ProductDto.ProductDetailResponse> getProductsByCategory(ProductCategory category, String keyword, ProductStatus status,
+                                                                  Pageable pageable, Long userId) {
+        return productRepository.findByCategoryWithStatsAndWishlist(category, keyword, status, pageable, userId)
+                .map(ProductWithStatsDto::toProductDetailResponse);
     }
 
     // 상품 삭제
@@ -167,7 +178,7 @@ public class ProductService {
 
     // 판매 완료 처리
     @Transactional
-    public ProductDto.ProductResponse markProductAsSold(Long sellerId, Long productId, Long buyerId) {
+    public ProductDto.ProductBaseResponse markProductAsSold(Long sellerId, Long productId, Long buyerId) {
         Product product = getProductWithSellerCheck(productId, sellerId);
 
         if (product.getStatus() == ProductStatus.SOLD_OUT) {
@@ -181,12 +192,12 @@ public class ProductService {
 
         log.info("상품 판매완료 처리: 상품 ID {}, 판매자 ID {}, 구매자 ID {}", productId, sellerId, buyerId);
 
-        return ProductDto.ProductResponse.from(product);
+        return ProductDto.ProductBaseResponse.from(product);
     }
 
     // 판매완료 취소 처리 메서드
     @Transactional
-    public ProductDto.ProductResponse cancelProductSold(Long sellerId, Long productId) {
+    public ProductDto.ProductBaseResponse cancelProductSold(Long sellerId, Long productId) {
         Product product = getProductWithSellerCheck(productId, sellerId);
 
         if (product.getStatus() != ProductStatus.SOLD_OUT) {
@@ -195,7 +206,7 @@ public class ProductService {
 
         product.cancelSold();
         log.info("판매완료 취소 처리: 상품 ID {}, 판매자 ID {}", productId, sellerId);
-        return ProductDto.ProductResponse.from(product);
+        return ProductDto.ProductBaseResponse.from(product);
     }
 
     // 판매자 권한 확인 후 상품 조회

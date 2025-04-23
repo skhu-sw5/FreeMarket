@@ -37,7 +37,8 @@ public class ProductDto {
             @Schema(description = "상품 카테고리", example = "ELECTRONICS")
             @NotNull(message = "카테고리는 필수 입력값입니다.")
             ProductCategory category
-    ) {}
+    ) {
+    }
 
     @Schema(description = "상품 수정 요청")
     public record UpdateRequest(
@@ -64,46 +65,48 @@ public class ProductDto {
 
             @Schema(description = "상품 상태", example = "ACTIVE")
             ProductStatus status
-    ){}
+    ) {
+    }
 
+    // 기본 상품 정보 (등록, 수정 결과용)
     @Builder
-    @Schema(description = "상품 응답")
-    public record ProductResponse(
+    @Schema(description = "기본 상품 정보 응답")
+    public record ProductBaseResponse(
             @Schema(description = "상품 ID", example = "1")
             Long id,
-            
+
             @Schema(description = "상품명", example = "새 노트북")
             String name,
-            
+
             @Schema(description = "상품 설명", example = "거의 사용하지 않은 노트북입니다.")
             String description,
-            
+
             @Schema(description = "가격", example = "1000000")
             Long price,
-            
+
             @Schema(description = "재고 수량", example = "1")
             Integer stock,
-            
+
             @Schema(description = "카테고리 표시명", example = "전자기기")
             String category,
-            
+
             @Schema(description = "상품 상태", example = "판매중")
             String status,
-            
+
             @Schema(description = "썸네일 이미지 URL", example = "https://example.com/thumbnail.jpg")
             String thumbnailUrl,
-            
+
             @Schema(description = "이미지 URL 목록")
             List<String> imageUrls,
-            
+
             @Schema(description = "판매자 ID", example = "123")
             Long sellerId,
-            
+
             @Schema(description = "판매자 이름", example = "홍길동")
             String sellerName
     ) {
-        public static ProductResponse from(Product product) {
-            return ProductResponse.builder()
+        public static ProductBaseResponse from(Product product) {
+            return ProductBaseResponse.builder()
                     .id(product.getId())
                     .name(product.getName())
                     .description(product.getDescription())
@@ -120,4 +123,41 @@ public class ProductDto {
                     .build();
         }
     }
+
+    // 상품 조회 응답 (통계 정보 포함)
+    @Builder
+    @Schema(description = "상품 상세 조회 응답")
+    public record ProductDetailResponse(
+            @Schema(description = "상품 기본 정보")
+            ProductBaseResponse product,
+
+            @Schema(description = "상품 통계 정보")
+            ProductStatsResponse stats
+    ) {
+        public static ProductDetailResponse from(
+                Product product,
+                Long viewCount,
+                Long wishlistCount,
+                boolean isWishlisted) {
+
+            return ProductDetailResponse.builder()
+                    .product(ProductBaseResponse.from(product))
+                    .stats(new ProductStatsResponse(viewCount, wishlistCount, isWishlisted))
+                    .build();
+        }
+    }
+
+    // 상품 통계 정보
+    @Builder
+    @Schema(description = "상품 통계 정보")
+    public record ProductStatsResponse(
+            @Schema(description = "조회수", example = "42")
+            Long viewCount,
+
+            @Schema(description = "관심 등록 수", example = "7")
+            Long wishlistCount,
+
+            @Schema(description = "현재 사용자의 관심 등록 여부", example = "true")
+            boolean isWishlisted
+    ) {}
 }
