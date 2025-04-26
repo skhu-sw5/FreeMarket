@@ -3,7 +3,9 @@ package com.freemarket.freemarket.product.api;
 import com.freemarket.freemarket.global.common.ResponseDTO;
 import com.freemarket.freemarket.global.security.CustomUserDetails;
 import com.freemarket.freemarket.product.api.dto.ProductDto;
-import com.freemarket.freemarket.product.application.ProductService;
+import com.freemarket.freemarket.product.application.ProductManagementService;
+import com.freemarket.freemarket.product.application.ProductQueryService;
+import com.freemarket.freemarket.product.application.ProductStatusService;
 import com.freemarket.freemarket.product.application.ProductViewService;
 import com.freemarket.freemarket.product.domain.ProductCategory;
 import com.freemarket.freemarket.product.domain.ProductStatus;
@@ -37,7 +39,9 @@ import java.util.List;
 @Tag(name = "상품", description = "상품 관련 API")
 public class ProductController {
 
-    private final ProductService productService;
+    private final ProductManagementService productManagementService;
+    private final ProductStatusService productStatusService;
+    private final ProductQueryService productQueryService;
     private final ProductViewService viewService;
 
     @Operation(summary = "상품 등록", description = "새로운 상품을 등록합니다. 상품명, 가격, 수량, 카테고리는 필수 입력 항목입니다.")
@@ -57,13 +61,11 @@ public class ProductController {
             @Valid @RequestPart("request") ProductDto.CreateRequest request,
             @Parameter(description = "이미지 파일") @RequestPart(value = "images", required = false)List<MultipartFile> images) throws BadRequestException {
 
-
         log.info("상품 등록 요청: 사용자 ID {}", userDetails.getUserId());
-        ProductDto.ProductBaseResponse response = productService.createProduct(userDetails.getUserId(), request, images);
+        ProductDto.ProductBaseResponse response = productManagementService.createProduct(userDetails.getUserId(), request, images);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDTO.success(response, "상품이 성공적으로 등록되었습니다."));
     }
-
 
     @Operation(summary = "상품 수정", description = "상품 ID로 기존 상품 정보를 수정합니다. 본인이 등록한 상품만 수정 가능합니다.")
     @ApiResponses(value = {
@@ -81,10 +83,10 @@ public class ProductController {
             @Valid @RequestPart("request") ProductDto.UpdateRequest request,
             @Parameter(description = "추가/교체할 이미지") @RequestPart(value = "newImages", required = false) List<MultipartFile> newImages,
             @Parameter(description = "삭제할 이미지 ID") @RequestParam(value = "deleteImageIds", required = false) List<Long> deleteImageIds
-            ) {
+    ) {
 
         log.info("상품 수정 요청: 상품 ID {}, 사용자 ID {}", productId, userDetails.getUserId());
-        ProductDto.ProductBaseResponse response = productService.updateProduct(userDetails.getUserId(), productId, request, newImages, deleteImageIds);
+        ProductDto.ProductBaseResponse response = productManagementService.updateProduct(userDetails.getUserId(), productId, request, newImages, deleteImageIds);
 
         return ResponseEntity.ok(ResponseDTO.success(response, "상품이 성공적으로 수정되었습니다."));
     }
@@ -96,13 +98,13 @@ public class ProductController {
     })
     @GetMapping("/{productId}")
     public ResponseEntity<ResponseDTO<ProductDto.ProductDetailResponse>> getProduct(
-        @Parameter(description = "상품 ID", required = true) @PathVariable Long productId,
-        @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails) {
+            @Parameter(description = "상품 ID", required = true) @PathVariable Long productId,
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails) {
 
         // 조회수 증가
         viewService.incrementViewCount(productId);
         log.info("상품 조회 요청: 상품 ID {}", productId);
-        ProductDto.ProductDetailResponse response = productService.getProduct(productId, userDetails.getUserId());
+        ProductDto.ProductDetailResponse response = productQueryService.getProduct(productId, userDetails.getUserId());
 
         return ResponseEntity.ok(ResponseDTO.success(response));
     }
@@ -125,7 +127,7 @@ public class ProductController {
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails) {
 
         log.info("상품 목록 조회 요청: 키워드 {}, 상태 {}", keyword, status);
-        Page<ProductDto.ProductDetailResponse> response = productService.getProducts(keyword, status, pageable, userDetails.getUserId());
+        Page<ProductDto.ProductDetailResponse> response = productQueryService.getProducts(keyword, status, pageable, userDetails.getUserId());
 
         return ResponseEntity.ok(ResponseDTO.success(response));
     }
@@ -152,7 +154,7 @@ public class ProductController {
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails) {
 
         log.info("카테고리별 상품 조회 요청: 카테고리 {}, 키워드 {}, 상태 {}", category, keyword, status);
-        Page<ProductDto.ProductDetailResponse> response = productService.getProductsByCategory(category, keyword, status, pageable, userDetails.getUserId());
+        Page<ProductDto.ProductDetailResponse> response = productQueryService.getProductsByCategory(category, keyword, status, pageable, userDetails.getUserId());
 
         return ResponseEntity.ok(ResponseDTO.success(response));
     }
@@ -170,7 +172,7 @@ public class ProductController {
             @Parameter(description = "삭제할 상품 ID", required = true) @PathVariable Long productId) {
 
         log.info("상품 삭제 요청: 상품 ID {}, 사용자 ID {}", productId, userDetails.getUserId());
-        productService.deleteProduct(userDetails.getUserId(), productId);
+        productManagementService.deleteProduct(userDetails.getUserId(), productId);
 
         return ResponseEntity.ok(ResponseDTO.success(null, "상품이 성공적으로 삭제되었습니다."));
     }
@@ -192,7 +194,7 @@ public class ProductController {
         log.info("상품 판매완료 처리 요청: 상품 ID {}, 판매자 ID {}, 구매자 ID {}",
                 productId, userDetails.getUserId(), buyerId);
 
-        ProductDto.ProductBaseResponse response = productService.markProductAsSold(
+        ProductDto.ProductBaseResponse response = productStatusService.markProductAsSold(
                 userDetails.getUserId(), productId, buyerId);
 
         return ResponseEntity.ok(ResponseDTO.success(response, "상품이 판매완료 처리되었습니다."));
@@ -213,10 +215,9 @@ public class ProductController {
 
         log.info("판매완료 취소 요청: 상품 ID {}, 판매자 ID {}", productId, userDetails.getUserId());
 
-        ProductDto.ProductBaseResponse response = productService.cancelProductSold(
+        ProductDto.ProductBaseResponse response = productStatusService.cancelProductSold(
                 userDetails.getUserId(), productId);
 
         return ResponseEntity.ok(ResponseDTO.success(response, "판매완료가 취소되었습니다."));
     }
-
 }
