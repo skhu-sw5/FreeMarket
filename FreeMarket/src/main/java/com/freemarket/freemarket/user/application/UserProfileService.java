@@ -3,6 +3,7 @@ package com.freemarket.freemarket.user.application;
 import com.freemarket.freemarket.product.domain.Product;
 import com.freemarket.freemarket.product.domain.ProductRepository;
 import com.freemarket.freemarket.product.domain.ProductStatus;
+import com.freemarket.freemarket.review.application.ReviewService;
 import com.freemarket.freemarket.user.api.dto.UserProfileDto;
 import com.freemarket.freemarket.user.domain.User;
 import com.freemarket.freemarket.user.domain.UserRepository;
@@ -25,6 +26,7 @@ public class UserProfileService {
 
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
+    private final ReviewService reviewService;
 
     // 사용자의 프로필 요약 정보를 조회
     public UserProfileDto.ProfileSummaryResponse getProfileSummary(Long userId) {
@@ -39,8 +41,8 @@ public class UserProfileService {
         // 구매한 상품 수
         long purchaseCount = productRepository.countByBuyerId(userId);
 
-        // TODO: 평균 평점 계산 로직
-        double averageRating = 0.0;
+        // 평균 평점 조회
+        double averageRating = reviewService.getUserAverageRating(userId);
 
         return UserProfileDto.ProfileSummaryResponse.builder()
                 .userId(user.getId())
