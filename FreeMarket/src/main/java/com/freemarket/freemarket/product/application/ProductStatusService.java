@@ -4,6 +4,7 @@ import com.freemarket.freemarket.product.api.dto.ProductDto;
 import com.freemarket.freemarket.product.domain.Product;
 import com.freemarket.freemarket.product.domain.ProductStatus;
 import com.freemarket.freemarket.product.exception.ProductException;
+import com.freemarket.freemarket.review.domain.ReviewRepository;
 import com.freemarket.freemarket.user.domain.User;
 import com.freemarket.freemarket.user.domain.UserRepository;
 import com.freemarket.freemarket.user.exception.UserException;
@@ -20,6 +21,7 @@ public class ProductStatusService {
 
     private final ProductManagementService productManagementService;
     private final UserRepository userRepository;
+    private final ReviewRepository reviewRepository;
 
     // 판매 완료 처리
     @Transactional
@@ -47,6 +49,12 @@ public class ProductStatusService {
 
         if (product.getStatus() != ProductStatus.SOLD_OUT) {
             throw new ProductException.NotSoldProductException();
+        }
+
+        // 리뷰가 작성되었는지 확인
+        boolean reviewExists = reviewRepository.findByProduct(product).isPresent();
+        if (reviewExists) {
+            throw new ProductException.CannotCancelSoldProductException("이미 리뷰가 작성된 상품은 판매완료 취소가 불가능합니다.");
         }
 
         product.cancelSold();

@@ -58,6 +58,13 @@ public class ProductException extends BaseException {
         }
     }
 
+    public static class CannotCancelSoldProductException extends ProductException {
+        public CannotCancelSoldProductException(String message) {
+            super(message, HttpStatus.BAD_REQUEST, "CANNOT_CANCEL_SOLD_PRODUCT");
+        }
+    }
+
+
     public ProductException(String message, HttpStatus status, String errorCode) {
         super(message, status, errorCode);
     }
