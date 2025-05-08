@@ -2,7 +2,7 @@
   <div class="home" :class="{ 'dark-mode': isDarkMode }">
     <header class="header">
       <div class="logo-container">
-        <img src="@/assets/homepage-image.jpg" alt="로고" class="logo">
+        <img src="@/assets/homepage-image.png" alt="로고" class="logo">
         <h1 class="site-title">FreeMarket</h1>
       </div>
       <nav class="main-nav">
