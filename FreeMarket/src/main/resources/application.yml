@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: dev # 기본적으로 dev 환경 사용 (개발 시)
+    active: prod # 기본적으로 dev 환경 사용 (개발 시)
     include:
       - secret # secret 설정 포함
       - oauth2
