@@ -5,6 +5,7 @@ import com.freemarket.freemarket.global.file.application.FileStorageService;
 import com.freemarket.freemarket.product.api.dto.ProductDto;
 import com.freemarket.freemarket.product.domain.*;
 import com.freemarket.freemarket.product.exception.ProductException;
+import com.freemarket.freemarket.review.domain.ReviewRepository;
 import com.freemarket.freemarket.user.domain.User;
 import com.freemarket.freemarket.user.domain.UserRepository;
 import com.freemarket.freemarket.user.exception.UserException;
@@ -26,6 +27,9 @@ public class ProductManagementService {
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
     private final FileStorageService fileStorageService;
+    private final ProductViewCountRepository viewCountRepository;
+    private final ProductWishlistRepository wishlistRepository;
+    private final ReviewRepository reviewRepository;
 
     // 상품 등록
     @Transactional
@@ -139,8 +143,43 @@ public class ProductManagementService {
     @Transactional
     public void deleteProduct(Long userId, Long productId) {
         Product product = getProductWithSellerCheck(productId, userId);
-        productRepository.delete(product);
-        log.info("상품 삭제 완료: 상품 ID {}, 판매자 ID {}", productId, userId);
+        
+        // 1. 관련 조회수 데이터 삭제
+        viewCountRepository.deleteByProductId(productId);
+        
+        // 2. 관련 위시리스트 데이터 삭제
+        wishlistRepository.deleteByProductId(productId);
+        
+        // 3. 리뷰 데이터 삭제 (비즈니스 요구사항에 따라)
+        reviewRepository.findByProduct(product).ifPresent(reviewRepository::delete);
+        
+        // 4. 이미지 파일 삭제를 위한 URL 수집
+        List<String> imageUrls = new ArrayList<>();
+        List<String> thumbnailUrls = new ArrayList<>();
+        
+        // 이미지 URL 수집
+        for (ProductImage image : product.getImages()) {
+            imageUrls.add(image.getImageUrl());
+            thumbnailUrls.add(image.getThumbnailUrl());
+        }
+        
+        try {
+            // 5. 상품 삭제 (이미지 엔티티도 cascade로 함께 삭제됨)
+            productRepository.delete(product);
+            
+            // 6. 파일 시스템에서 이미지 파일 삭제
+            for (String url : imageUrls) {
+                fileStorageService.deleteFile(url);
+            }
+            for (String url : thumbnailUrls) {
+                fileStorageService.deleteFile(url);
+            }
+            
+            log.info("상품 삭제 완료: 상품 ID {}, 판매자 ID {}", productId, userId);
+        } catch (Exception e) {
+            log.error("상품 삭제 중 오류 발생: 상품 ID {}, 원인: {}", productId, e.getMessage(), e);
+            throw new ProductException.ProductDeletionException(e.getMessage());
+        }
     }
     // 판매자 권한 확인 후 상품 조회
 
