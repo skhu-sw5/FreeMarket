@@ -64,6 +64,12 @@ public class ProductException extends BaseException {
         }
     }
 
+    public static class ProductDeletionException extends ProductException {
+        public ProductDeletionException(String message) {
+            super("상품 삭제 중 오류가 발생했습니다: " + message, HttpStatus.INTERNAL_SERVER_ERROR, "PRODUCT_DELETION_FAILED");
+        }
+    }
+
 
     public ProductException(String message, HttpStatus status, String errorCode) {
         super(message, status, errorCode);

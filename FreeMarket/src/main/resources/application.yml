@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: dev # 기본적으로 dev 환경 사용 (개발 시)
+    active: prod # 기본적으로 dev 환경 사용 (개발 시)
     include:
       - secret # secret 설정 포함
       - oauth2
@@ -59,3 +59,11 @@ frontend:
     # 소셜 로그인 성공 후 토큰을 전달하며 리다이렉션될 Vue 페이지 경로
     callback-url: http://localhost:8081/oauth/callback # 예시: Vue 개발 서버 + 콜백 라우트
   reset-password-url: http://localhost:8081/reset-password # 실제 사용할 프론트엔드 URL로 변경
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true

@@ -16,7 +16,8 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate  # 운영 환경에서는 validate 사용
+      ddl-auto: create # 첫 시작은 create
+#      ddl-auto: validate  # 운영 환경에서는 validate 사용
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
@@ -35,3 +36,8 @@ logging:
   level:
     root: INFO
     com.example.shop: INFO
+
+# 인스턴스 파일 업로드 경로 설정
+file:
+  upload-dir: /home/ubuntu/images
+  thumbnail-dir: /home/ubuntu/thumbnails
