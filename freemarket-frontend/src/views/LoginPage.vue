@@ -9,14 +9,14 @@
       
       <form @submit.prevent="handleLogin" class="login-form">
         <div class="form-group">
-          <label for="username">아이디</label>
+          <label for="username">이메일</label>
           <div class="input-with-icon">
             <i class="fas fa-user"></i>
             <input 
-              type="text" 
+              type="email" 
               id="username" 
               v-model="username" 
-              placeholder="아이디를 입력하세요" 
+              placeholder="이메일을 입력하세요" 
               required 
             />
           </div>
@@ -87,18 +87,47 @@ export default {
       password: '',
       showPassword: false,
       rememberMe: false,
-      isDarkMode: false
+      isDarkMode: false,
+      loading: false
     };
   },
   methods: {
-    handleLogin() {
-      // 로그인 처리 로직 추가
-      console.log('아이디:', this.username);
-      console.log('비밀번호:', this.password);
-      console.log('아이디 저장:', this.rememberMe);
-      
-      // 실제 로그인 로직을 여기에 추가하세요
-      // 예: API 호출, 인증 처리 등
+    async handleLogin() {
+      try {
+        this.loading = true;
+        
+        // 로그인 API 호출 - 백엔드 API 형식에 맞게 수정
+        const response = await this.$axios.post('/api/auth/login', {
+          email: this.username,
+          password: this.password
+        });
+        
+        // 토큰 저장
+        const data = response.data.data; // 백엔드 응답 형식에 맞게 조정
+        if (data && data.accessToken) {
+          localStorage.setItem('token', data.accessToken);
+          
+          // 리프레시 토큰 저장
+          if (data.refreshToken) {
+            localStorage.setItem('refreshToken', data.refreshToken);
+          }
+          
+          // 아이디 저장 옵션 처리
+          if (this.rememberMe) {
+            localStorage.setItem('rememberedUsername', this.username);
+          } else {
+            localStorage.removeItem('rememberedUsername');
+          }
+          
+          // 로그인 성공 후 홈 페이지로 이동
+          this.$router.push('/');
+        }
+      } catch (error) {
+        console.error('로그인 처리 중 오류가 발생했습니다:', error);
+        alert('이메일 또는 비밀번호가 올바르지 않습니다.');
+      } finally {
+        this.loading = false;
+      }
     },
     toggleDarkMode() {
       this.isDarkMode = !this.isDarkMode;

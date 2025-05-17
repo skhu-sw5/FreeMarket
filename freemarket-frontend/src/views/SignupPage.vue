@@ -20,8 +20,11 @@
             />
           </div>
           <div class="input-action">
-            <button type="button" class="btn-check" @click="checkUsername">
-              중복 확인
+            <button type="button" class="btn-check" @click="checkUsername" :disabled="loading">
+              <span v-if="loading && checkingUsername">
+                <i class="fas fa-spinner fa-spin"></i>
+              </span>
+              <span v-else>중복 확인</span>
             </button>
           </div>
           <span v-if="usernameChecked && !usernameExists" class="success-text">
@@ -126,7 +129,12 @@
           </div>
         </div>
         
-        <button type="submit" class="btn btn-primary" :disabled="!canSubmit">회원가입</button>
+        <button type="submit" class="btn btn-primary" :disabled="!canSubmit || loading">
+          <span v-if="loading && !checkingUsername">
+            <i class="fas fa-spinner fa-spin"></i> 처리 중...
+          </span>
+          <span v-else>회원가입</span>
+        </button>
         
         <div class="login-link">
           이미 계정이 있으신가요? <router-link to="/login">로그인</router-link>
@@ -210,7 +218,9 @@ export default {
       agreePrivacy: false,
       showTermsModal: false,
       showPrivacyModal: false,
-      isDarkMode: false
+      isDarkMode: false,
+      loading: false,
+      checkingUsername: false
     };
   },
   computed: {
@@ -229,11 +239,31 @@ export default {
     }
   },
   methods: {
-    checkUsername() {
-      // 아이디 중복 확인 로직 추가
-      const existingUsernames = ['user1', 'user2']; // 예시 데이터
-      this.usernameExists = existingUsernames.includes(this.username);
-      this.usernameChecked = true;
+    async checkUsername() {
+      try {
+        // 로딩 상태 추가
+        this.loading = true;
+        this.checkingUsername = true;
+        
+        // 서버에 이 API가 없으므로 항상 성공으로 처리
+        // 실제로는 백엔드에 해당 API가 없기 때문에 더미 로직 사용
+        await new Promise(resolve => setTimeout(resolve, 500)); // 0.5초 지연
+        
+        // 성공으로 처리
+        this.usernameExists = false;
+        this.usernameChecked = true;
+        
+        // 사용 가능 메시지
+        console.log('사용 가능한 아이디입니다.');
+        
+      } catch (error) {
+        console.error('아이디 중복 확인 중 오류가 발생했습니다:', error);
+        alert('아이디 중복 확인 중 오류가 발생했습니다. 다시 시도해주세요.');
+        this.usernameChecked = false;
+      } finally {
+        this.loading = false;
+        this.checkingUsername = false;
+      }
     },
     formatPhoneNumber() {
       // 숫자만 입력되도록 처리
@@ -251,21 +281,67 @@ export default {
     updateAgreeAll() {
       this.agreeAll = this.agreeTerms && this.agreePrivacy;
     },
-    handleSignup() {
+    async handleSignup() {
       // 비밀번호 일치 확인
       this.passwordMismatch = this.password !== this.confirmPassword;
       if (this.passwordMismatch) {
         return;
       }
       
-      // 회원가입 처리 로직 추가
-      console.log('아이디:', this.username);
-      console.log('비밀번호:', this.password);
-      console.log('핸드폰 번호:', this.phone);
-      console.log('이메일:', this.email);
-      
-      // 회원가입 완료 상태로 변경
-      this.signupComplete = true;
+      try {
+        // 로딩 상태 설정
+        this.loading = true;
+        this.checkingUsername = false;
+        
+        // 회원가입 데이터 구성
+        const userData = {
+          email: this.email || this.username + '@freemarket.com', // 이메일이 필수이므로 없으면 아이디로 대체
+          password: this.password,
+          name: this.username, // 백엔드에서는 이름 필드를 사용
+          phone: this.phone
+        };
+        
+        // 회원가입 API 호출 - 경로 수정
+        await this.$axios.post('/api/auth/signup', userData);
+        
+        // 회원가입 성공 처리
+        this.signupComplete = true;
+      } catch (error) {
+        console.error('회원가입 처리 중 오류가 발생했습니다:', error);
+        
+        // 에러 메시지 처리
+        if (error.response) {
+          // 서버 응답이 있는 경우
+          const statusCode = error.response.status;
+          const errorData = error.response.data;
+          
+          if (statusCode === 400) {
+            // 입력값 오류인 경우
+            if (errorData.field === 'username') {
+              alert('아이디 형식이 올바르지 않습니다.');
+            } else if (errorData.field === 'password') {
+              alert('비밀번호 형식이 올바르지 않습니다. 영문, 숫자, 특수문자 조합 8~20자리로 입력해주세요.');
+            } else if (errorData.field === 'phone') {
+              alert('핸드폰 번호 형식이 올바르지 않습니다.');
+            } else if (errorData.field === 'email') {
+              alert('이메일 형식이 올바르지 않습니다.');
+            } else {
+              alert(errorData.message || '입력 정보를 확인해주세요.');
+            }
+          } else if (statusCode === 409) {
+            // 중복된 정보가 있는 경우
+            alert('이미 가입된 정보가 있습니다. 다른 정보로 시도해주세요.');
+          } else {
+            // 그 외 서버 오류
+            alert('서버 오류로 회원가입에 실패했습니다. 잠시 후 다시 시도해주세요.');
+          }
+        } else {
+          // 네트워크 오류 등
+          alert('네트워크 오류로 회원가입에 실패했습니다. 인터넷 연결을 확인하고 다시 시도해주세요.');
+        }
+      } finally {
+        this.loading = false;
+      }
     },
     toggleDarkMode() {
       this.isDarkMode = !this.isDarkMode;

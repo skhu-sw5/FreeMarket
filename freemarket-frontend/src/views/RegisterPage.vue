@@ -321,29 +321,34 @@ export default {
       this.isSubmitting = true;
       
       try {
-        // 실제 API 연동 코드
-        // 이미지 업로드 후 URL 받아오기
-        // const imageUrls = await this.uploadImages(this.imageFiles);
+        // 이미지 파일을 FormData로 준비
+        const formData = new FormData();
+        this.imageFiles.forEach(file => {
+          formData.append('images', file);
+        });
+        
+        // 이미지 업로드 API 호출
+        const imageUploadResponse = await this.$axios.post('/api/upload/images', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        
+        // 업로드된 이미지 URL 배열
+        const imageUrls = imageUploadResponse.data.imageUrls;
         
         // 상품 데이터 생성
         const productData = {
           ...this.product,
-          // images: imageUrls,
-          images: this.previewImages, // 실제로는 서버에 업로드된 이미지 URL을 사용해야 함
-          createdAt: new Date().toISOString(),
-          seller: {
-            id: 'user123', // 실제로는 로그인한 사용자 정보를 사용
-            name: '판매자'
+          images: imageUrls,
+          deliveryOptions: {
+            methods: this.product.deliveryMethods,
+            shipping: this.product.shipping
           }
         };
         
-        // API 호출하여 상품 등록
-        // await api.registerProduct(productData);
-        
-        // 임시로 로컬 스토리지에 저장 (실제로는 서버에 저장해야 함)
-        const savedProducts = JSON.parse(localStorage.getItem('products') || '[]');
-        savedProducts.push(productData);
-        localStorage.setItem('products', JSON.stringify(savedProducts));
+        // 상품 등록 API 호출
+        await this.$api.products.create(productData);
         
         alert('상품이 성공적으로 등록되었습니다!');
         this.$router.push('/products');
