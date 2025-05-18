@@ -48,7 +48,7 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addResourceHandler("/thumbnails/**")
                 .addResourceLocations("file:" + thumbnailPath + "/"); // 경로 끝 '/' 중요
         // favicon.ico 요청을 처리하는 리소스 핸들러 추가
-        registry.addResourceHandler("/**/favicon.ico")
+        registry.addResourceHandler("/favicon.ico")
                 .addResourceLocations("classpath:/static/");
         
         // 정적 리소스 처리 추가
