@@ -47,5 +47,12 @@ public class WebConfig implements WebMvcConfigurer {
                 .addResourceLocations("file:" + uploadPath + "/"); // 경로 끝 '/' 중요
         registry.addResourceHandler("/thumbnails/**")
                 .addResourceLocations("file:" + thumbnailPath + "/"); // 경로 끝 '/' 중요
+        // favicon.ico 요청을 처리하는 리소스 핸들러 추가
+        registry.addResourceHandler("/**/favicon.ico")
+                .addResourceLocations("classpath:/static/");
+        
+        // 정적 리소스 처리 추가
+        registry.addResourceHandler("/**")
+                .addResourceLocations("classpath:/static/");
     }
 }
