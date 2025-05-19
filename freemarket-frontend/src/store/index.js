@@ -1,6 +1,7 @@
 import { createStore } from 'vuex'
 import auth from './modules/auth'
 import products from './modules/products'
+import emailVerification from './modules/emailVerification'
 
 export default createStore({
   state: {
@@ -11,6 +12,7 @@ export default createStore({
   },
   modules: {
     auth,
-    products
+    products,
+    emailVerification
   }
 })
