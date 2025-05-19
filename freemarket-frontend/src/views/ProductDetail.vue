@@ -138,21 +138,9 @@ import ProductGallery from '@/components/products/ProductGallery.vue'
 import { mapState, mapActions } from 'vuex'
 
 export default {
-  name: 'ProductDetail',
-  
-  components: {
-    AppHeader,
-    AppFooter,
-    ProductGallery
-  },
-  
-  props: {
-    id: {
-      type: String,
-      required: true
-    }
-  },
-  
+  // 컴포넌트 정의 부분은 그대로 유지
+
+  // computed 부분은 그대로 유지
   computed: {
     ...mapState('products', ['product', 'loading']),
     
@@ -163,36 +151,76 @@ export default {
         url,
         thumbnail: url
       }))
+    },
+    
+    // 인증 상태와 토큰을 가져오는 computed 속성 추가
+    isAuthenticated() {
+      return this.$store.state.auth.isAuthenticated
+    },
+    
+    token() {
+      return this.$store.state.auth.token
     }
   },
   
-  async created() {
-    try {
-      await this.fetchProduct(this.id)
-    } catch (error) {
-      console.error('상품 상세 정보 로딩 오류:', error)
-    }
-  },
+  // created 훅은 그대로 유지
   
   methods: {
-    ...mapActions('products', ['fetchProduct', 'toggleWishlist']),
+    // toggleWishlist 액션 제거하고 fetchProduct만 유지
+    ...mapActions('products', ['fetchProduct']),
     
     formatPrice(price) {
       return new Intl.NumberFormat('ko-KR').format(price)
     },
     
+    // toggleWishlistItem 메서드를 직접 API 호출 방식으로 수정
     async toggleWishlistItem() {
       if (!this.isAuthenticated) {
         return this.$router.push({ name: 'Login', query: { redirect: this.$route.fullPath } })
       }
       
       try {
-        await this.toggleWishlist(this.product.product.id)
+        const productId = this.product.product.id
+        
+        const response = await fetch(`https://freemarket.duckdns.org/api/products/${productId}/wishlist`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.token}`
+          }
+        })
+        
+        if (!response.ok) {
+          throw new Error('관심 상품 처리 중 오류가 발생했습니다.')
+        }
+        
+        const result = await response.json()
+        
+        // 위시리스트 상태 업데이트
+        this.product.stats.isWishlisted = result.wishlisted
+        
+        // 위시리스트 카운트 업데이트
+        if (result.wishlisted) {
+          this.product.stats.wishlistCount = (this.product.stats.wishlistCount || 0) + 1
+        } else {
+          this.product.stats.wishlistCount = Math.max(0, (this.product.stats.wishlistCount || 0) - 1)
+        }
+        
+        // 토스트 메시지 표시
+        if (this.$toast) {
+          this.$toast.success(result.wishlisted ? '관심 상품에 추가되었습니다.' : '관심 상품에서 제거되었습니다.')
+        }
       } catch (error) {
         console.error('관심 상품 처리 오류:', error)
+        if (this.$toast) {
+          this.$toast.error('관심 상품 처리 중 오류가 발생했습니다.')
+        } else {
+          alert('관심 상품 처리 중 오류가 발생했습니다.')
+        }
       }
     },
     
+    // 나머지 메서드들은 그대로 유지
     contactSeller() {
       // 판매자 문의 기능 - 채팅 기능이 있다면 구현
       alert('판매자에게 문의하기 기능은 아직 구현되지 않았습니다.')
