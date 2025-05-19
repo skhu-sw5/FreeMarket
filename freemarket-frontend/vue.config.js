@@ -10,7 +10,7 @@ module.exports = {
     },
     proxy: {
       '/api': {
-        target: 'https://freemarket.duckdns.org', // API 서버 주소
+        target: 'http://localhost:8080', // API 서버 주소 변경 - 로컬 Spring Boot 서버 포트
         changeOrigin: true,
         secure: false,  // SSL 인증서 검증 비활성화 - 개발 환경에서만 false로 설정
         logLevel: 'debug',
@@ -37,7 +37,7 @@ module.exports = {
       },
       // OAuth2 인증 관련 프록시 설정
       '/oauth2': {
-        target: 'https://freemarket.duckdns.org',
+        target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,  // SSL 인증서 검증 비활성화
         logLevel: 'debug',
@@ -47,7 +47,7 @@ module.exports = {
       },
       // 로그인 관련 프록시 설정
       '/login': {
-        target: 'https://freemarket.duckdns.org',
+        target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,  // SSL 인증서 검증 비활성화
         logLevel: 'debug',
@@ -63,7 +63,7 @@ module.exports = {
       },
       // favicon.ico에 대한 프록시 추가
       '/favicon.ico': {
-        target: 'https://freemarket.duckdns.org',
+        target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,  // SSL 인증서 검증 비활성화
         pathRewrite: {

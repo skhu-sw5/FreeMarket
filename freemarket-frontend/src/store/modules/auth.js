@@ -186,8 +186,8 @@ export default {
           throw new Error('네트워크 연결이 없습니다.');
         }
         
-        // 전체 URL을 사용해 봅니다
-        const apiUrl = window.location.origin + '/api/users/me';
+        // API URL 설정
+        const apiUrl = '/api/users/me';
         console.log('API 요청 URL:', apiUrl);
         
         // 캐시를 확실히 무효화하기 위해 헤더와 타임스탬프 사용
@@ -230,13 +230,25 @@ export default {
           // 디버깅 정보 출력
           console.log('사용자 API 응답 원본 데이터:', data.data);
           
-          // emailVerified 필드가 있으면 강제로 boolean으로 변환
+          // emailVerified 필드가 있으면 정확하게 boolean으로 변환
           if ('emailVerified' in data.data) {
-            // 어떤 값이든 명시적으로 Boolean으로 변환
-            data.data.emailVerified = Boolean(data.data.emailVerified);
+            console.log('이메일 인증 상태 원본 값:', data.data.emailVerified, '타입:', typeof data.data.emailVerified);
+            
+            // 명시적으로 false 값으로 처리되어야 하는 경우 확인
+            if (data.data.emailVerified === false || 
+                data.data.emailVerified === "false" || 
+                data.data.emailVerified === 0 || 
+                data.data.emailVerified === "0") {
+              data.data.emailVerified = false;
+            } else {
+              data.data.emailVerified = true;
+            }
+            
             console.log('변환된 이메일 인증 상태:', data.data.emailVerified);
           } else {
             console.warn('사용자 데이터에 emailVerified 필드가 없습니다!');
+            // 필드가 없으면 기본값을 false로 설정
+            data.data.emailVerified = false;
           }
           
           // 기존 사용자 데이터를 보존하면서 새 데이터로 업데이트

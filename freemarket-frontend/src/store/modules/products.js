@@ -285,23 +285,49 @@ let targetUrl = '/api/products';  // 프록시를 통해 요청 처리
     
     async fetchWishlist({ commit, rootState }) {
       try {
+        // 토큰이 없으면 빈 배열 반환
+        if (!rootState.auth.token) {
+          console.warn('인증 토큰이 없어 관심 상품 목록을 불러올 수 없습니다. 로그인이 필요합니다.');
+          commit('SET_WISHLIST', []);
+          return [];
+        }
+        
+        // Authorization 헤더에 Bearer 토큰 추가
         const response = await fetch('/api/products/wishlist', {
+          method: 'GET',
           headers: {
-            'Authorization': `Bearer ${rootState.auth.token}`
+            'Authorization': `Bearer ${rootState.auth.token}`,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
           },
           credentials: 'include' // 쿠키와 인증 정보 포함
         })
         
         if (!response.ok) {
-          throw new Error('관심 상품 목록을 불러오는데 실패했습니다.')
+          // 401 오류인 경우 토큰이 만료되었을 수 있음
+          if (response.status === 401) {
+            console.warn('인증이 만료되었습니다. 다시 로그인해주세요.');
+            // 선택적: 자동 로그아웃 처리
+            // commit('auth/CLEAR_AUTH', null, { root: true });
+          }
+          
+          throw new Error('관심 상품 목록을 불러오는데 실패했습니다. 상태 코드: ' + response.status)
         }
         
         const data = await response.json()
-        commit('SET_WISHLIST', data.data)
         
-        return data.data
+        if (data && data.data) {
+          commit('SET_WISHLIST', data.data)
+          return data.data
+        } else {
+          console.warn('관심 상품 API 응답 형식이 올바르지 않습니다:', data);
+          commit('SET_WISHLIST', [])
+          return []
+        }
       } catch (error) {
         console.error('관심 상품 목록 조회 오류:', error)
+        // 오류가 발생해도 UI가 깨지지 않도록 빈 목록으로 설정
+        commit('SET_WISHLIST', [])
         throw error
       }
     }

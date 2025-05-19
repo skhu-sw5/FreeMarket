@@ -6,7 +6,8 @@
       {{ error }}
     </div>
 
-    <div v-if="message" class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4">
+    <!-- 인증 완료 상태가 아닐 때만 메시지 표시 -->
+    <div v-if="message && !verificationSuccess" class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4">
       {{ message }}
     </div>
     
@@ -55,6 +56,16 @@
             메일함을 확인하고 아래에 수신한 6자리 인증 코드를 입력해주세요.
           </p>
           
+          <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
+            <p class="font-medium">이메일이 도착하지 않나요?</p>
+            <ul class="text-sm list-disc ml-5 mt-2">
+              <li>스팸함 또는 프로모션 탭을 확인해보세요.</li>
+              <li>입력한 이메일 주소가 정확한지 확인하세요: <strong>{{ email }}</strong></li>
+              <li>이메일 서버 문제로 지연될 수 있습니다. 최대 5분 정도 기다려보세요.</li>
+              <li>계속 이메일이 오지 않는다면 '다시 시도' 버튼을 눌러 재요청하세요.</li>
+            </ul>
+          </div>
+          
           <label class="block text-sm font-medium text-gray-700" for="verificationCode">
             인증 코드 (6자리)
           </label>
@@ -94,9 +105,9 @@
     
     <!-- 이메일 인증 완료 상태 -->
     <div v-else class="space-y-4">
-      <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-        <p class="font-medium">이메일 인증이 완료되었습니다!</p>
-        <p class="text-sm">이제 상품을 등록하실 수 있습니다.</p>
+      <div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4">
+        <p class="font-medium text-lg">이메일 인증이 완료되었습니다!</p>
+        <p class="text-sm mt-1">이제 상품을 등록하실 수 있습니다.</p>
       </div>
       
       <div class="flex space-x-4">
@@ -109,7 +120,7 @@
         
         <button
           @click="goToProfile"
-          class="px-4 py-2 bg-green-600 text-white rounded font-medium hover:bg-green-700 transition-colors"
+          class="px-4 py-2 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 transition-colors"
         >
           프로필로 돌아가기
         </button>
