@@ -1,5 +1,6 @@
 package com.freemarket.freemarket.user.api.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.freemarket.freemarket.user.domain.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
@@ -50,7 +51,10 @@ public class UserDto {
             String phone,
 
             @Schema(description = "사용자 역할", example = "일반 사용자")
-            String role
+            String role,
+
+            @Schema(description = "이메일 인증 여부", example = "true")
+            boolean emailVerified
     ) {
         public static UserResponse from(User user) {
             return UserResponse.builder()
@@ -59,6 +63,7 @@ public class UserDto {
                     .name(user.getName())
                     .phone(user.getPhone())
                     .role(user.getRole().getDisplayName())
+                    .emailVerified(user.isEmailVerified())
                     .build();
         }
     }
