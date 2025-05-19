@@ -1,49 +1,107 @@
-import { createRouter, createWebHistory } from 'vue-router';
-import HomePage from '../views/HomePage.vue'; // HomePage로 수정
-import ReviewSystem from '../views/ReviewSystem.vue'; // ReviewSystem.vue 추가
-import WishlistPage from '../views/WishlistPage.vue'; // WishlistPage.vue 추가
+import { createRouter, createWebHistory } from 'vue-router'
+import Home from '../views/Home.vue'
+import ProductList from '../views/ProductList.vue'
+import ProductDetail from '../views/ProductDetail.vue'
+import LoginView from '../views/auth/Login.vue'
+import RegisterView from '../views/auth/Register.vue'
+import ProfileView from '../views/user/Profile.vue'
+import WishlistView from '../views/user/Wishlist.vue'
+import SellProduct from '../views/SellProduct.vue'
+
+// 정적 페이지
+import AboutPage from '../views/static/AboutPage.vue'
+import TermsPage from '../views/static/TermsPage.vue'
+import PrivacyPage from '../views/static/PrivacyPage.vue'
+import FaqPage from '../views/static/FaqPage.vue'
+import ContactPage from '../views/static/ContactPage.vue'
 
 const routes = [
   {
     path: '/',
-    name: 'HomePage',
-    component: HomePage
+    name: 'Home',
+    component: Home
   },
   {
     path: '/products',
-    name: 'ProductsPage',
-    component: () => import('../views/ProductsPage.vue')
+    name: 'ProductList',
+    component: ProductList
   },
   {
-    path: '/register',
-    name: 'RegisterPage',
-    component: () => import('../views/RegisterPage.vue')
+    path: '/products/:id',
+    name: 'ProductDetail',
+    component: ProductDetail,
+    props: true
   },
   {
     path: '/login',
-    name: 'LoginPage',
-    component: () => import('../views/LoginPage.vue')
+    name: 'Login',
+    component: LoginView
   },
   {
-    path: '/signup',
-    name: 'SignupPage',
-    component: () => import('../views/SignupPage.vue')
+    path: '/register',
+    name: 'Register',
+    component: RegisterView
   },
   {
-    path: '/review', // ReviewSystem 경로 추가
-    name: 'ReviewSystem', // ReviewSystem 이름 추가
-    component: ReviewSystem // ReviewSystem 컴포넌트 추가
+    path: '/profile',
+    name: 'Profile',
+    component: ProfileView,
+    meta: { requiresAuth: true }
   },
   {
     path: '/wishlist',
     name: 'Wishlist',
-    component: WishlistPage
+    component: WishlistView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/sell',
+    name: 'SellProduct',
+    component: SellProduct,
+    meta: { requiresAuth: true }
+  },
+  
+  // 정적 페이지
+  {
+    path: '/about',
+    name: 'About',
+    component: AboutPage
+  },
+  {
+    path: '/terms',
+    name: 'Terms',
+    component: TermsPage
+  },
+  {
+    path: '/privacy',
+    name: 'Privacy',
+    component: PrivacyPage
+  },
+  {
+    path: '/faq',
+    name: 'Faq',
+    component: FaqPage
+  },
+  {
+    path: '/contact',
+    name: 'Contact',
+    component: ContactPage
   }
-];
+]
 
 const router = createRouter({
-  history: createWebHistory(process.env.BASE_URL),
+  history: createWebHistory(),
   routes
-});
+})
 
-export default router;
+// 인증 관련 네비게이션 가드
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('accessToken')
+  if (to.matched.some(record => record.meta.requiresAuth) && !token) {
+    next({ name: 'Login', query: { redirect: to.fullPath } })
+  } else {
+    next()
+  }
+})
+
+export default router
