@@ -123,6 +123,11 @@
               </div>
             </div>
           </div>
+            <!-- 리뷰 섹션 추가 -->
+            <div class="mt-6 bg-white rounded-lg shadow-sm p-6">
+            <h2 class="text-xl font-bold mb-4">상품 리뷰</h2>
+            <ReviewList :productId="product.product.id" />
+          </div>
         </div>
       </div>
     </main>
@@ -135,10 +140,16 @@
 import AppHeader from '@/components/common/AppHeader.vue'
 import AppFooter from '@/components/common/AppFooter.vue'
 import ProductGallery from '@/components/products/ProductGallery.vue'
+import ReviewList from '@/components/reviews/ReviewList.vue'
 import { mapState, mapActions } from 'vuex'
 
 export default {
-  // 컴포넌트 정의 부분은 그대로 유지
+  components: {
+    AppHeader,
+    AppFooter,
+    ProductGallery,
+    ReviewList
+  },
 
   // computed 부분은 그대로 유지
   computed: {
