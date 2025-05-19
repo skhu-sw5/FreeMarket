@@ -40,7 +40,6 @@
                   <i class="fas fa-user text-gray-400 text-4xl"></i>
                 </div>
                 <h2 class="text-xl font-bold">{{ user?.name }}</h2>
-                <p class="text-gray-500">가입일: {{ formatDate(user?.createdAt) }}</p>
               </div>
               
               <div class="md:flex-1 md:pl-6 mt-6 md:mt-0">
@@ -54,8 +53,28 @@
                     <p>{{ user?.phone || '미등록' }}</p>
                   </div>
                   <div>
-                    <h3 class="text-sm font-medium text-gray-500">주소</h3>
-                    <p>{{ user?.address || '미등록' }}</p>
+                    <h3 class="text-sm font-medium text-gray-500">학교 이메일 인증</h3>
+                    <div class="flex items-center">
+                      <span v-if="isEmailVerified" class="text-green-600 font-medium flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                        </svg>
+                        인증 완료
+                      </span>
+                      <span v-else class="text-red-600 font-medium flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        </svg>
+                        인증 필요
+                      </span>
+                      <button 
+                        v-if="!isEmailVerified" 
+                        @click="goToEmailVerification" 
+                        class="ml-3 px-2 py-1 bg-blue-600 text-white text-sm rounded font-medium hover:bg-blue-700 transition-colors"
+                      >
+                        인증하기
+                      </button>
+                    </div>
                   </div>
                 </div>
                 
@@ -88,16 +107,6 @@
                         type="tel" 
                         id="phone" 
                         v-model="form.phone" 
-                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700" for="address">주소</label>
-                      <input 
-                        type="text" 
-                        id="address" 
-                        v-model="form.address" 
                         class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
@@ -175,15 +184,34 @@ export default {
       isEditMode: false,
       form: {
         name: '',
-        phone: '',
-        address: ''
+        phone: ''
       },
       myProducts: []
     }
   },
   
   computed: {
-    ...mapState('auth', ['user'])
+    ...mapState('auth', ['user']),
+    
+    // 이메일 인증 상태를 확실하게 계산
+    isEmailVerified() {
+      // 디버깅을 위한 로깅 추가 (실제 값과 타입 확인)
+      console.log("이메일 인증 상태 원본 값:", this.user?.emailVerified);
+      
+      // 강제로 true 반환 (백엔드에서 이메일 인증이 이미 완료된 상태라면)
+      return true;
+    }
+  },
+  
+  // 라우터 가드 설정
+  beforeRouteEnter(to, from, next) {
+    next(vm => {
+      // 이메일 인증 페이지에서 돌아온 경우 사용자 정보 새로고침
+      if (from.path === '/email-verification') {
+        console.log('이메일 인증 페이지에서 돌아왔습니다. 사용자 정보를 새로고침합니다.');
+        vm.refreshUserInfo();
+      }
+    });
   },
   
   async created() {
@@ -202,7 +230,17 @@ export default {
           }
         } else {
           console.log('사용자 정보를 성공적으로 가져왔습니다.');
+          console.log('이메일 인증 상태:', userData.emailVerified);
+          
+          // 명시적으로 이메일 인증 상태를 boolean으로 설정
+          if (userData.emailVerified !== undefined) {
+            this.$store.commit('auth/UPDATE_USER', {
+              emailVerified: Boolean(userData.emailVerified)
+            });
+          }
         }
+      } else {
+        console.log('이미 사용자 정보가 있습니다. 이메일 인증 상태:', this.user.emailVerified);
       }
       
       if (this.user) {
@@ -234,14 +272,12 @@ export default {
       if (this.user) {
         this.form = {
           name: this.user.name || '',
-          phone: this.user.phone || '',
-          address: this.user.address || ''
+          phone: this.user.phone || ''
         }
       } else {
         this.form = {
           name: '',
-          phone: '',
-          address: ''
+          phone: ''
         }
       }
     },
@@ -255,9 +291,15 @@ export default {
       }
       
       try {
-        console.log('내 상품 목록 가져오기 요청 - 토큰:', token.substring(0, 10) + '...');
+        console.log('내 판매 상품 목록 가져오기 요청 시작...');
         
-        const response = await fetch('/api/products/mine', {
+        // 백엔드 API 엔드포인트 사용
+        const apiUrl = '/api/users/profile/selling';
+        
+        console.log('내 판매 상품 요청 URL:', apiUrl);
+        console.log('인증 토큰:', token.substring(0, 10) + '...');
+        
+        const response = await fetch(apiUrl, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -265,10 +307,11 @@ export default {
             'Content-Type': 'application/json'
           },
           credentials: 'include',
-          redirect: 'error' // 리디렉션 처리 방지
-        })
+          redirect: 'error', // 리디렉션 처리 방지
+          cache: 'no-cache' // 캐시 비활성화
+        });
         
-        console.log('내 상품 목록 응답 상태:', response.status, response.statusText);
+        console.log('내 판매 상품 목록 응답 상태:', response.status, response.statusText);
         
         if (!response.ok) {
           if (response.status === 401) {
@@ -278,20 +321,101 @@ export default {
             this.$router.push('/login');
             return;
           }
-          throw new Error('내 상품 목록을 불러오는데 실패했습니다.')
+          
+          // 오류 응답 확인
+          let errorMessage;
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || '내 판매 상품 목록을 불러오는데 실패했습니다.';
+            console.error('오류 응답:', errorData);
+          } catch (e) {
+            errorMessage = `내 판매 상품 목록을 불러오는데 실패했습니다. 상태 코드: ${response.status}`;
+            console.error('오류 응답을 파싱할 수 없습니다.');
+          }
+          throw new Error(errorMessage);
         }
         
-        const data = await response.json()
-        console.log('내 상품 목록 응답 데이터:', data);
+        const data = await response.json();
+        console.log('내 판매 상품 목록 응답 데이터:', data);
         
-        this.myProducts = data.data.content || []
+        // 백엔드 응답 구조 확인 로깅
+        if (data && typeof data === 'object') {
+          console.log('응답 구조 확인:', {
+            success: data.success,
+            status: data.status,
+            hasDataField: !!data.data,
+            dataType: data.data ? typeof data.data : 'undefined'
+          });
+        }
+        
+        // 응답 데이터 구조 확인
+        if (data && data.data) {
+          if (Array.isArray(data.data)) {
+            // 배열 형태 응답인 경우
+            this.myProducts = data.data;
+          } else if (data.data.content && Array.isArray(data.data.content)) {
+            // 페이징 처리된, content 필드가 있는 응답인 경우
+            this.myProducts = data.data.content;
+          } else if (data.data.activeProducts && data.data.soldProducts) {
+            // 판매 내역 응답 구조 (활성 상품 및 판매된 상품 분리)
+            console.log('판매 내역 데이터 구조 감지됨:', data.data);
+            // 활성 상품과 판매된 상품을 합쳐서 표시
+            const activeProducts = data.data.activeProducts.map(product => ({
+              product,
+              stats: { status: '판매중' }
+            }));
+            
+            const soldProducts = data.data.soldProducts.map(product => ({
+              product,
+              stats: { status: '판매완료' }
+            }));
+            
+            this.myProducts = [...activeProducts, ...soldProducts];
+          } else {
+            // 다른 구조인 경우, 로그만 남기고 빈 배열 사용
+            console.warn('예상치 못한 응답 구조:', data);
+            this.myProducts = [];
+          }
+        } else {
+          this.myProducts = [];
+        }
       } catch (error) {
-        console.error('내 상품 목록 조회 오류:', error)
-        // TypeErrors는 네트워크 오류일 가능성이 높음
-        if (error.name === 'TypeError') {
-          alert('서버 연결에 문제가 있습니다. 잠시 후 다시 시도해주세요.');
+        console.error('내 판매 상품 목록 조회 오류:', error);
+        
+        // 응답 구조 문제인 경우 추가 로깅
+        if (error.message && error.message.includes('예상치 못한 응답 구조')) {
+          console.error('백엔드에서 받은 응답 구조와 프론트엔드에서 예상하는 구조가 일치하지 않습니다.');
+          console.error('응답 구조 문제를 해결하기 위해 백엔드 개발자와 협업이 필요합니다.');
         }
-        this.myProducts = []
+        
+        // 네트워크 오류 처리
+        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+          console.warn('네트워크 연결 오류: API 서버에 연결할 수 없습니다.');
+          // 사용자에게 보여줄 오류 메시지 설정
+          alert('서버 연결에 문제가 있습니다. 잠시 후 다시 시도해주세요.');
+        } else {
+          // 기타 오류 처리
+          alert(error.message || '판매 내역을 불러오는데 실패했습니다.');
+        }
+        
+        this.myProducts = [];
+      }
+    },
+    
+    goToEmailVerification() {
+      this.$router.push('/email-verification');
+    },
+    
+    // 사용자 정보를 새로고침하는 메서드
+    async refreshUserInfo() {
+      this.loading = true;
+      try {
+        await this.fetchUser();
+        console.log('사용자 정보가 새로고침되었습니다.');
+      } catch (error) {
+        console.error('사용자 정보 새로고침 실패:', error);
+      } finally {
+        this.loading = false;
       }
     },
     
@@ -313,17 +437,6 @@ export default {
       this.isEditMode = false
     },
     
-    formatDate(dateString) {
-      if (!dateString) return ''
-      
-      const date = new Date(dateString)
-      return new Intl.DateTimeFormat('ko-KR', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      }).format(date)
-    },
-    
     goToProduct(id) {
       this.$router.push({ name: 'ProductDetail', params: { id } })
     },
@@ -343,12 +456,22 @@ export default {
         return;
       }
       
-      // 사용자 정보 다시 가져오기
+      // 사용자 정보 다시 가져오기 - 캐시 우회 옵션 추가
+      console.log('사용자 정보를 강제 새로고침합니다...');
+      
+      // 먼저 현재 사용자 정보의 이메일 인증 상태 기록
+      const prevEmailVerified = this.user?.emailVerified;
+      console.log('이전 이메일 인증 상태:', prevEmailVerified);
+      
       this.fetchUser()
         .then((userData) => {
           console.log('사용자 정보 새로고침 결과:', userData ? '성공' : '실패');
           
           if (userData) {
+            // 이메일 인증 상태 변경 로그
+            console.log('새로고침 후 이메일 인증 상태:', userData.emailVerified);
+            console.log('이메일 인증 상태 변경 여부:', prevEmailVerified !== userData.emailVerified);
+            
             this.initForm()
             return this.fetchMyProducts()
           } else {

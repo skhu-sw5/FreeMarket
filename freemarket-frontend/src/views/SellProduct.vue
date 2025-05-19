@@ -6,7 +6,30 @@
       <div class="container mx-auto px-4 max-w-3xl">
         <h1 class="text-2xl font-bold mb-6">상품 등록</h1>
         
-        <form @submit.prevent="submitProduct" class="bg-white rounded-lg shadow-sm p-6">
+        <!-- 이메일 인증 오류 안내 -->
+        <div v-if="emailVerificationError" class="mb-6 bg-yellow-100 border-l-4 border-yellow-500 p-4 rounded">
+          <div class="flex items-start">
+            <div class="flex-shrink-0">
+              <i class="fas fa-exclamation-triangle text-yellow-500 mt-0.5"></i>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-yellow-800">학교 이메일 인증이 필요합니다</h3>
+              <div class="mt-2 text-sm text-yellow-700">
+                <p>상품을 등록하려면 학교 이메일 인증이 필요합니다. 아래 버튼을 클릭하여 이메일 인증을 진행해주세요.</p>
+                <div class="mt-3">
+                  <router-link 
+                    to="/email-verification" 
+                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm leading-5 font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-500 focus:outline-none focus:border-yellow-700 focus:shadow-outline-yellow active:bg-yellow-700 transition ease-in-out duration-150"
+                  >
+                    이메일 인증하기
+                  </router-link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <form v-if="!emailVerificationError" @submit.prevent="submitProduct" class="bg-white rounded-lg shadow-sm p-6">
           <!-- 상품명 -->
           <div class="mb-6">
             <label for="name" class="block text-sm font-medium text-gray-700 mb-1">상품명</label>
@@ -178,6 +201,7 @@ export default {
         description: ''
       },
       previewImages: [],
+      emailVerificationError: false,
       categories: [
         { id: 'BOOKS', name: '교재/서적' },
         { id: 'ELECTRONICS', name: '전자기기' },
@@ -193,12 +217,22 @@ export default {
   
   computed: {
     ...mapState('products', ['loading']),
-    ...mapState('auth', ['isAuthenticated'])
+    ...mapState('auth', ['isAuthenticated', 'user'])
   },
   
   created() {
     if (!this.isAuthenticated) {
       this.$router.push({ name: 'Login', query: { redirect: this.$route.fullPath } })
+      return;
+    }
+    
+    // 이메일 인증 완료 여부 확인
+    if (this.$route.query.emailVerified === 'true') {
+      this.emailVerificationError = false;
+    } 
+    // 이미 이메일 인증 오류가 있으면 표시
+    else if (this.$route.query.emailError === 'true') {
+      this.emailVerificationError = true;
     }
   },
   
@@ -260,7 +294,13 @@ export default {
         this.$router.push({ name: 'ProductDetail', params: { id: response.id } })
       } catch (error) {
         console.error('상품 등록 오류:', error)
-        alert('상품 등록 중 오류가 발생했습니다. 다시 시도해주세요.')
+        
+        // 학교 이메일 인증 오류인 경우
+        if (error.message && error.message.includes('학교 이메일 인증이 필요합니다')) {
+          this.emailVerificationError = true
+        } else {
+          alert('상품 등록 중 오류가 발생했습니다. 다시 시도해주세요.')
+        }
       }
     }
   }

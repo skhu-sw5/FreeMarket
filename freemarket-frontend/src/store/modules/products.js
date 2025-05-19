@@ -194,38 +194,68 @@ let targetUrl = '/api/products';  // 프록시를 통해 요청 처리
       commit('SET_LOADING', true)
       
       try {
-        const formData = new FormData()
-        formData.append('request', JSON.stringify(productData))
+        console.log('상품 등록 요청 데이터:', productData);
+        console.log('상품 이미지:', images);
         
+        const formData = new FormData();
+        
+        // JSON 데이터를 FormData에 추가
+        const requestBlob = new Blob([JSON.stringify(productData)], {
+          type: 'application/json'
+        });
+        formData.append('request', requestBlob);
+        
+        // 이미지 파일 추가
         if (images && images.length > 0) {
           for (const image of images) {
-            formData.append('images', image)
+            formData.append('images', image);
+            console.log('이미지 추가:', image.name, image.type, image.size);
           }
         }
+        
+        // 토큰 확인
+        if (!rootState.auth.token) {
+          throw new Error('인증 토큰이 없습니다. 로그인이 필요합니다.');
+        }
+        
+        console.log('인증 토큰:', rootState.auth.token.substring(0, 10) + '...');
         
         const response = await fetch('/api/products', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${rootState.auth.token}`,
-            // Content-Type은 FormData를 사용할 때는 자동으로 설정되므로 제거
+            'Authorization': `Bearer ${rootState.auth.token}`
+            // FormData 사용 시 Content-Type은 자동으로 설정됨
           },
           body: formData,
-          credentials: 'include' // 쿠키와 인증 정보 포함
-        })
+          credentials: 'include'
+        });
+        
+        console.log('상품 등록 응답 상태:', response.status, response.statusText);
         
         if (!response.ok) {
-          throw new Error('상품 등록에 실패했습니다.')
+          // 응답 본문 확인
+          let errorMessage;
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || '상품 등록에 실패했습니다.';
+            console.error('상품 등록 오류 응답:', errorData);
+          } catch (e) {
+            errorMessage = `상품 등록에 실패했습니다. 상태 코드: ${response.status}`;
+            console.error('상품 등록 오류: 응답 본문을 파싱할 수 없음');
+          }
+          throw new Error(errorMessage);
         }
         
-        const data = await response.json()
+        const data = await response.json();
+        console.log('상품 등록 성공 응답:', data);
         
-        commit('SET_LOADING', false)
-        return data.data
+        commit('SET_LOADING', false);
+        return data.data;
       } catch (error) {
-        console.error('상품 등록 오류:', error)
-        commit('SET_ERROR', error.message)
-        commit('SET_LOADING', false)
-        throw error
+        console.error('상품 등록 오류:', error);
+        commit('SET_ERROR', error.message);
+        commit('SET_LOADING', false);
+        throw error;
       }
     },
     

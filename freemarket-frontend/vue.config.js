@@ -2,6 +2,12 @@ module.exports = {
   devServer: {
     port: 8081,
     https: false,
+    host: 'localhost', // 고정 호스트 이름 사용 (IP 주소 대신)
+    allowedHosts: 'all', // 모든 호스트 허용
+    client: {
+      webSocketURL: 'auto://0.0.0.0:0/ws', // 자동 웹소켓 URL 구성
+      progress: true,
+    },
     proxy: {
       '/api': {
         target: 'https://freemarket.duckdns.org', // API 서버 주소

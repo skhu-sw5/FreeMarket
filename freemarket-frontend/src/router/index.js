@@ -7,6 +7,7 @@ import RegisterView from '../views/auth/Register.vue'
 import ProfileView from '../views/user/Profile.vue'
 import WishlistView from '../views/user/Wishlist.vue'
 import SellProduct from '../views/SellProduct.vue'
+import EmailVerificationPage from '../views/user/EmailVerificationPage.vue'
 
 // 정적 페이지
 import AboutPage from '../views/static/AboutPage.vue'
@@ -58,6 +59,12 @@ const routes = [
     path: '/sell',
     name: 'SellProduct',
     component: SellProduct,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/email-verification',
+    name: 'EmailVerification',
+    component: EmailVerificationPage,
     meta: { requiresAuth: true }
   },
   

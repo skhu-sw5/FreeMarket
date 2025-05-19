@@ -190,18 +190,20 @@ export default {
         const apiUrl = window.location.origin + '/api/users/me';
         console.log('API 요청 URL:', apiUrl);
         
+        // 캐시를 확실히 무효화하기 위해 헤더와 타임스탬프 사용
+        const timestamp = new Date().getTime();
+        const urlWithTimestamp = `${apiUrl}?_t=${timestamp}`;
+        
         // 사용자 정보 가져오기 요청
-        // 문제 해결 팁:
-        // 1. 올바른 인증 토큰 사용 확인
-        // 2. API 서버 접근 가능 여부 확인
-        // 3. CORS 이슈가 의심될 경우 vue.config.js의 프록시 설정 확인
-        // 4. 개발자 도구의 Network 탭에서 요청 확인
-        const response = await fetch(apiUrl, {
+        const response = await fetch(urlWithTimestamp, {
           method: 'GET', // 명시적으로 GET 메서드 지정
           headers: {
             'Authorization': `Bearer ${state.token}`,
             'Accept': 'application/json',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
           },
           credentials: 'include',
           // 리디렉션 처리 방지
@@ -225,8 +227,23 @@ export default {
         console.log('사용자 정보 응답 데이터:', data);
         
         if (data && data.data) {
-          commit('SET_AUTH_USER', data.data)
-          return data.data
+          // 디버깅 정보 출력
+          console.log('사용자 API 응답 원본 데이터:', data.data);
+          
+          // emailVerified 필드가 있으면 강제로 boolean으로 변환
+          if ('emailVerified' in data.data) {
+            // 어떤 값이든 명시적으로 Boolean으로 변환
+            data.data.emailVerified = Boolean(data.data.emailVerified);
+            console.log('변환된 이메일 인증 상태:', data.data.emailVerified);
+          } else {
+            console.warn('사용자 데이터에 emailVerified 필드가 없습니다!');
+          }
+          
+          // 기존 사용자 데이터를 보존하면서 새 데이터로 업데이트
+          const updatedUser = state.user ? { ...state.user, ...data.data } : data.data;
+          commit('SET_AUTH_USER', updatedUser);
+          console.log('최종 사용자 정보:', updatedUser);
+          return updatedUser;
         } else {
           console.error('사용자 정보 응답 형식 오류:', data)
           throw new Error('사용자 정보 응답 형식이 올바르지 않습니다.')
@@ -256,12 +273,13 @@ export default {
       }
     },
     
+    // 사용자 정보 업데이트
     async updateUser({ commit, state }, userData) {
       if (!state.token) throw new Error('로그인이 필요합니다.')
       
       try {
         const response = await fetch('/api/users/me', {
-          method: 'PUT',
+          method: 'PATCH', // PUT이 아닌 PATCH 메서드 사용 (부분 업데이트)
           headers: {
             'Authorization': `Bearer ${state.token}`,
             'Content-Type': 'application/json'
@@ -271,11 +289,15 @@ export default {
         })
         
         if (!response.ok) {
-          throw new Error('사용자 정보 업데이트에 실패했습니다.')
+          const errorData = await response.json();
+          throw new Error(errorData.message || '사용자 정보 업데이트에 실패했습니다.')
         }
         
         const data = await response.json()
-        commit('UPDATE_USER', userData)
+        
+        // 백엔드에서 받은 응답 데이터가 있으면 그것을 사용하고, 없으면 요청 데이터 사용
+        const updatedData = data.data || userData;
+        commit('UPDATE_USER', updatedData)
         
         return data.data
       } catch (error) {
