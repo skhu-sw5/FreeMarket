@@ -1,8 +1,8 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-gray-50 flex flex-col">
     <AppHeader />
     
-    <main class="py-6">
+    <main class="py-6 flex-grow">
       <div class="container mx-auto px-4">
         <h1 class="text-2xl font-bold mb-6">내 프로필</h1>
         
@@ -198,8 +198,8 @@ export default {
       // 디버깅을 위한 로깅 추가 (실제 값과 타입 확인)
       console.log("이메일 인증 상태 원본 값:", this.user?.emailVerified);
       
-      // 강제로 true 반환 (백엔드에서 이메일 인증이 이미 완료된 상태라면)
-      return true;
+      // API 응답의 emailVerified 값으로 반환
+      return this.user?.emailVerified === true;
     }
   },
   

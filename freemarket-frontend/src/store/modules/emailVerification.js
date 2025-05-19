@@ -47,34 +47,62 @@ export default {
           throw new Error('로그인이 필요합니다.');
         }
         
-        const response = await fetch('/api/auth/email-verification/send', {
+        console.log(`이메일 인증 요청을 보냅니다: ${email}`);
+        
+        // API 요청 URL 로깅
+        const apiUrl = '/api/auth/email-verification/send';
+        console.log('API 요청 URL:', apiUrl);
+        
+        // 요청 데이터 로깅
+        const requestBody = { email };
+        console.log('요청 데이터:', requestBody);
+        
+        const response = await fetch(apiUrl, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${rootState.auth.token}`,
             'Content-Type': 'application/json',
             'Accept': 'application/json'
           },
-          body: JSON.stringify({ email }),
+          body: JSON.stringify(requestBody),
           credentials: 'include'
         });
         
-        console.log('이메일 인증 요청 응답 상태:', response.status);
+        console.log('이메일 인증 요청 응답 상태:', response.status, response.statusText);
         
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || '이메일 인증 요청에 실패했습니다.');
+          let errorMessage;
+          try {
+            const errorData = await response.json();
+            console.error('오류 응답 데이터:', errorData);
+            errorMessage = errorData.message || `이메일 인증 요청에 실패했습니다. (상태 코드: ${response.status})`;
+          } catch (e) {
+            // JSON 파싱 실패 시
+            errorMessage = `이메일 인증 요청에 실패했습니다. (상태 코드: ${response.status})`;
+            console.error('오류 응답을 파싱할 수 없습니다:', e);
+          }
+          throw new Error(errorMessage);
         }
         
         const data = await response.json();
         console.log('이메일 인증 요청 응답:', data);
         
         commit('SET_VERIFICATION_SENT', true);
-        commit('SET_VERIFICATION_MESSAGE', data.data?.message || '인증 이메일이 발송되었습니다.');
+        commit('SET_VERIFICATION_MESSAGE', data.data?.message || '인증 이메일이 발송되었습니다. 이메일함을 확인해주세요.');
+        
+        // 사용자에게 도움이 될 만한 정보 추가
+        console.log('이메일이 전송되었습니다. 다음 사항을 확인해보세요:');
+        console.log('1. 스팸/프로모션 폴더를 확인하세요');
+        console.log('2. 이메일 주소가 정확한지 확인하세요');
+        console.log(`3. 입력한 이메일 주소: ${email}`);
         
         return data;
       } catch (error) {
         console.error('이메일 인증 요청 오류:', error);
-        commit('SET_ERROR', error.message);
+        // 오류 메시지를 더 자세히 제공
+        const errorMsg = error.message || '이메일 인증 요청에 실패했습니다.';
+        const extendedErrorMsg = errorMsg + ' 메일 서버 연결에 문제가 있을 수 있습니다. 잠시 후 다시 시도해주세요.';
+        commit('SET_ERROR', extendedErrorMsg);
         throw error;
       } finally {
         commit('SET_LOADING', false);

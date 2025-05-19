@@ -1,10 +1,10 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-gray-50 flex flex-col">
     <AppHeader />
     
-    <main class="py-6">
+    <main class="py-6 flex-grow">
       <div class="container mx-auto px-4">
-        <h1 class="text-2xl font-bold mb-6">학교 이메일 인증</h1>
+        <!-- 여기서 h1 태그를 제거하여 중복 제목을 제거합니다 -->
         
         <div class="max-w-2xl mx-auto">
           <EmailVerification />
