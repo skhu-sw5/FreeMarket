@@ -58,8 +58,8 @@ export default {
       commit('SET_LOADING', true)
       
       try {
-        // URL 구성 - 절대 URL 사용
-        const apiUrl = 'https://freemarket.duckdns.org/api/products';
+        // URL 구성 - 상대 URL 사용 (프록시 활용)
+        const apiUrl = '/api/products';
         const url = `${apiUrl}?page=${page}&size=${size}` + 
                   (category ? `&category=${category}` : '') +
                   (keyword ? `&keyword=${encodeURIComponent(keyword)}` : '') +
@@ -148,10 +148,10 @@ export default {
           headers['Authorization'] = `Bearer ${rootState.auth.token}`
         }
         
-        console.log('API 요청 URL:', `https://freemarket.duckdns.org/api/products/${productId}`);
+        console.log('API 요청 URL:', `${API_BASE_URL}/api/products/${productId}`);
         console.log('API 요청 헤더:', headers);
         
-        const response = await fetch(`https://freemarket.duckdns.org/api/products/${productId}`, {
+        const response = await fetch(`/api/products/${productId}`, {
           headers,
           credentials: 'include' // 쿠키와 인증 정보 포함
         });
@@ -215,7 +215,7 @@ export default {
         
         console.log('인증 토큰:', rootState.auth.token.substring(0, 10) + '...');
         
-        const response = await fetch(`https://freemarket.duckdns.org/api/products`, {
+        const response = await fetch(`/api/products`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${rootState.auth.token}`
@@ -256,7 +256,7 @@ export default {
     
     async toggleWishlist({ commit, rootState }, productId) {
       try {
-        const response = await fetch(`https://freemarket.duckdns.org/api/products/${productId}/wishlist`, {
+        const response = await fetch(`/api/products/${productId}/wishlist`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${rootState.auth.token}`
@@ -288,7 +288,7 @@ export default {
         }
         
         // Authorization 헤더에 Bearer 토큰 추가
-        const response = await fetch(`https://freemarket.duckdns.org/api/products/wishlist`, {
+        const response = await fetch(`/api/products/wishlist`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${rootState.auth.token}`,
@@ -359,7 +359,7 @@ export default {
           throw new Error('인증 토큰이 없습니다. 로그인이 필요합니다.');
         }
         
-        const response = await fetch(`https://freemarket.duckdns.org/api/products/${productId}`, {
+        const response = await fetch(`/api/products/${productId}`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${rootState.auth.token}`
@@ -407,7 +407,7 @@ export default {
           throw new Error('인증 토큰이 없습니다. 로그인이 필요합니다.');
         }
         
-        const response = await fetch(`https://freemarket.duckdns.org/api/products/${productId}`, {
+        const response = await fetch(`/api/products/${productId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${rootState.auth.token}`,

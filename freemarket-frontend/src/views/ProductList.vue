@@ -5,36 +5,10 @@
     <section class="max-w-7xl mx-auto px-4 py-6">
       <h1 class="text-2xl font-semibold mb-4">{{ getPageTitle() }}</h1>
 
-      <!-- 카테고리 필터 -->
-      <div class="flex flex-wrap gap-2 mb-6">
-        <button
-            v-for="category in categories"
-            :key="category.id"
-            @click="handleCategoryChange(category.id)"
-            :class="[
-            'px-3 py-1 border rounded-full text-sm',
-            category.id === activeCategory
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-700'
-          ]"
-        >
-          {{ category.name }}
-        </button>
-        <button
-            @click="handleCategoryChange(null)"
-            :class="[
-            'px-3 py-1 border rounded-full text-sm',
-            !activeCategory
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-700'
-          ]"
-        >
-          전체
-        </button>
-      </div>
+      <!-- 카테고리 필터는 ProductFilters 컴포넌트에서 처리하므로 여기서는 삭제 -->
 
-      <!-- 검색 및 정렬 -->
-      <div class="flex justify-between items-center mb-4">
+      <!-- 정렬은 ProductFilters 컴포넌트에서 처리하므로 여기서는 검색만 남김 -->
+      <div class="flex justify-end items-center mb-4">
         <div class="flex gap-2">
           <input
               type="text"
@@ -45,18 +19,16 @@
           />
           <button @click="handleSearch" class="bg-blue-500 text-white px-4 py-1 rounded">검색</button>
         </div>
-
-        <select v-model="sortOption" @change="applySortOption" class="border px-2 py-1 rounded">
-          <option value="createdAt,desc">최신순</option>
-          <option value="price,asc">낮은 가격순</option>
-          <option value="price,desc">높은 가격순</option>
-        </select>
       </div>
 
       <!-- 필터 -->
       <ProductFilters
           :filters="filters"
+          :activeCategory="activeCategory"
+          :categories="categories"
+          @category-change="handleCategoryChange"
           @update:filters="handleFilterChange"
+          @sort-change="handleSortChange"
           @reset="resetFilters"
       />
 
@@ -170,6 +142,14 @@ export default {
     ...mapActions('products', ['fetchProducts']),
     async fetchProductsWithFilters() {
       const { status, priceRange } = this.filters
+      console.log('상품 데이터 요청:', {
+        page: this.currentPage - 1,
+        category: this.activeCategory,
+        keyword: this.searchQuery,
+        status,
+        sort: this.sortOption
+      });
+      
       try {
         const response = await this.fetchProducts({
           page: this.currentPage - 1,
@@ -182,6 +162,11 @@ export default {
           sort: this.sortOption
         })
         this.totalItems = response.totalElements || 0
+        console.log('페이지 정보:', {
+          현재페이지: this.currentPage,
+          총페이지수: this.totalPages,
+          총항목수: this.totalItems
+        });
       } catch (error) {
         console.error('상품 목록 로딩 오류:', error)
       }
@@ -214,10 +199,21 @@ export default {
       this.currentPage = 1
       this.fetchProductsWithFilters()
     },
-    handlePageChange(page) {
-      this.currentPage = page
-      window.scrollTo(0, 0)
+    handleSortChange(sortValue) {
+      this.sortOption = sortValue
       this.fetchProductsWithFilters()
+    },
+    handlePageChange(page) {
+      console.log('페이지 변경:', page);
+      // 유효한 페이지 범위 확인
+      if (page < 1 || page > this.totalPages) {
+        console.warn('유효하지 않은 페이지 번호:', page);
+        return;
+      }
+      
+      this.currentPage = page;
+      window.scrollTo(0, 0);
+      this.fetchProductsWithFilters();
     },
     resetFilters() {
       this.activeCategory = null
@@ -248,9 +244,6 @@ export default {
         this.$router.replace({ query })
       }
       this.currentPage = 1
-      this.fetchProductsWithFilters()
-    },
-    applySortOption() {
       this.fetchProductsWithFilters()
     }
   }
