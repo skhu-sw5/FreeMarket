@@ -215,6 +215,8 @@
   </template>
   
   <script>
+  import { mapState, mapGetters, mapActions } from 'vuex'
+  
   export default {
     props: {
       productId: {
@@ -225,12 +227,9 @@
     
     data() {
       return {
-        reviews: [],
-        loading: true,
         loadingMore: false,
         page: 0,
         size: 5,
-        hasMoreReviews: false,
         showReviewForm: false,
         editingReview: null,
         reviewForm: {
@@ -246,12 +245,16 @@
     },
     
     computed: {
+      ...mapState({
+        loading: state => state.reviews.loading,
+        error: state => state.reviews.error,
+        reviews: state => state.reviews.productReviews
+      }),
+      
+      ...mapGetters('reviews', ['averageRating', 'hasMoreProductReviews']),
+      
       isAuthenticated() {
         return this.$store.state.auth.isAuthenticated
-      },
-      
-      token() {
-        return this.$store.state.auth.token
       },
       
       userId() {
@@ -263,10 +266,8 @@
         return !this.reviews.some(review => review.authorId === this.userId)
       },
       
-      averageRating() {
-        if (this.reviews.length === 0) return 0
-        const sum = this.reviews.reduce((acc, review) => acc + review.rating, 0)
-        return sum / this.reviews.length
+      hasMoreReviews() {
+        return this.hasMoreProductReviews
       },
       
       isReviewFormValid() {
@@ -279,26 +280,26 @@
     },
     
     methods: {
+      ...mapActions('reviews', [
+        'fetchProductReviews',
+        'createReview',
+        'updateReview',
+        'deleteReview'
+      ]),
+      
       async fetchReviews() {
         try {
-          this.loading = true
-          const response = await fetch(`https://freemarket.duckdns.org/api/products/${this.productId}/reviews?page=${this.page}&size=${this.size}`)
-          
-          if (!response.ok) {
-            throw new Error('리뷰를 불러오는데 실패했습니다.')
-          }
-          
-          const data = await response.json()
-          this.reviews = [...this.reviews, ...data.content]
-          this.hasMoreReviews = !data.last
-          
+          await this.fetchProductReviews({
+            productId: this.productId,
+            page: this.page,
+            size: this.size,
+            append: this.page > 0
+          })
         } catch (error) {
           console.error('리뷰 목록 조회 오류:', error)
           if (this.$toast) {
             this.$toast.error('리뷰를 불러오는데 실패했습니다.')
           }
-        } finally {
-          this.loading = false
         }
       },
       
@@ -344,23 +345,11 @@
         this.showReviewForm = true
       },
       
-      async deleteReview(reviewId) {
+      async confirmDeleteReview(reviewId) {
         if (!confirm('정말로 이 리뷰를 삭제하시겠습니까?')) return
         
         try {
-          const response = await fetch(`https://freemarket.duckdns.org/api/products/${this.productId}/reviews/${reviewId}`, {
-            method: 'DELETE',
-            headers: {
-              'Authorization': `Bearer ${this.token}`
-            }
-          })
-          
-          if (!response.ok) {
-            throw new Error('리뷰 삭제에 실패했습니다.')
-          }
-          
-          // 리뷰 목록에서 삭제된 리뷰 제거
-          this.reviews = this.reviews.filter(review => review.id !== reviewId)
+          await this.deleteReview(reviewId)
           
           if (this.$toast) {
             this.$toast.success('리뷰가 삭제되었습니다.')
@@ -382,6 +371,12 @@
         const selectedFiles = files.slice(0, remainingSlots)
         
         selectedFiles.forEach(file => {
+          // 파일 유효성 검사 (이미지 파일만)
+          if (!file.type.startsWith('image/')) {
+            alert('이미지 파일만 업로드 가능합니다.')
+            return
+          }
+          
           const reader = new FileReader()
           reader.onload = e => {
             this.reviewForm.images.push({
@@ -406,75 +401,33 @@
         this.submitting = true
         
         try {
-          // 이미지 업로드 처리 (실제로는 백엔드에 이미지를 업로드하고 URL을 받아야 함)
-          // 여기서는 예시로 이미지 URL을 생성한다고 가정
-          const imageUrls = this.reviewForm.images.map((image, index) => {
-            if (image.url) return image.url // 기존 이미지는 URL 유지
-            // 새 이미지는 임시 URL 생성 (실제로는 백엔드에 업로드해야 함)
-            return `https://example.com/review-image-${Date.now()}-${index}.jpg`
-          })
-          
           const reviewData = {
             rating: this.reviewForm.rating,
-            content: this.reviewForm.content,
-            imageUrls: imageUrls
+            content: this.reviewForm.content
           }
           
-          let response
+          // 이미지 파일 추출
+          const imageFiles = this.reviewForm.images
+            .filter(img => img.file)
+            .map(img => img.file)
           
           if (this.editingReview) {
             // 리뷰 수정
-            response = await fetch(`https://freemarket.duckdns.org/api/products/${this.productId}/reviews/${this.editingReview.id}`, {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.token}`
-              },
-              body: JSON.stringify(reviewData)
+            await this.updateReview({
+              reviewId: this.editingReview.id,
+              reviewData,
+              images: imageFiles
             })
-          } else {
-            // 새 리뷰 작성
-            response = await fetch(`https://freemarket.duckdns.org/api/products/${this.productId}/reviews`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.token}`
-              },
-              body: JSON.stringify(reviewData)
-            })
-          }
-          
-          if (!response.ok) {
-            throw new Error(this.editingReview ? '리뷰 수정에 실패했습니다.' : '리뷰 작성에 실패했습니다.')
-          }
-          
-          const result = await response.json()
-          
-          if (this.editingReview) {
-            // 기존 리뷰 업데이트
-            const index = this.reviews.findIndex(r => r.id === this.editingReview.id)
-            if (index !== -1) {
-              this.reviews.splice(index, 1, {
-                ...this.editingReview,
-                rating: reviewData.rating,
-                content: reviewData.content,
-                imageUrls: imageUrls
-              })
-            }
             
             if (this.$toast) {
               this.$toast.success('리뷰가 수정되었습니다.')
             }
           } else {
-            // 새 리뷰 추가
-            this.reviews.unshift({
-              id: result.id || Date.now().toString(),
-              authorId: this.userId,
-              authorName: this.$store.state.auth.user?.name || '사용자',
-              rating: reviewData.rating,
-              content: reviewData.content,
-              imageUrls: imageUrls,
-              createdAt: new Date().toISOString()
+            // 새 리뷰 작성
+            await this.createReview({
+              productId: this.productId,
+              reviewData,
+              images: imageFiles
             })
             
             if (this.$toast) {

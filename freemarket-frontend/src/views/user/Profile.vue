@@ -155,6 +155,30 @@
               />
             </div>
           </div>
+          
+          <div class="bg-white p-6 rounded-lg shadow-sm mt-6">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-xl font-bold">내가 작성한 리뷰</h2>
+              <router-link 
+                to="/user/reviews" 
+                class="text-blue-600 hover:text-blue-800"
+              >
+                모두 보기 <i class="fas fa-arrow-right ml-1"></i>
+              </router-link>
+            </div>
+            
+            <div class="text-center py-8">
+              <p class="text-gray-500 mb-4">
+                내가 작성한 리뷰를 관리하고 수정할 수 있습니다.
+              </p>
+              <router-link 
+                to="/user/reviews" 
+                class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors inline-block"
+              >
+                리뷰 관리하기
+              </router-link>
+            </div>
+          </div>
         </div>
       </div>
     </main>

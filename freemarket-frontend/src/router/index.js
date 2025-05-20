@@ -11,6 +11,7 @@ import EditProduct from '../views/EditProduct.vue'
 import EmailVerificationPage from '../views/user/EmailVerificationPage.vue'
 import OrdersView from '../views/user/Orders.vue'
 import OrderComplete from '../views/OrderComplete.vue'
+import MyReviewsView from '../views/user/MyReviews.vue'
 import store from '../store'
 
 // 정적 페이지
@@ -81,6 +82,12 @@ const routes = [
     path: '/user/orders',
     name: 'Orders',
     component: OrdersView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/user/reviews',
+    name: 'MyReviews',
+    component: MyReviewsView,
     meta: { requiresAuth: true }
   },
   {
