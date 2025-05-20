@@ -168,6 +168,7 @@ import AppHeader from '@/components/common/AppHeader.vue'
 import AppFooter from '@/components/common/AppFooter.vue'
 import ProductCard from '@/components/products/ProductCard.vue'
 import { mapState, mapActions } from 'vuex'
+import { apiGet } from '@/utils/api'
 
 export default {
   name: 'ProfileView',
@@ -293,111 +294,58 @@ export default {
       try {
         console.log('내 판매 상품 목록 가져오기 요청 시작...');
         
-        // 백엔드 API 엔드포인트 사용
-        const apiUrl = '/api/users/profile/selling';
-        
-        console.log('내 판매 상품 요청 URL:', apiUrl);
-        console.log('인증 토큰:', token.substring(0, 10) + '...');
-        
-        const response = await fetch(apiUrl, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          },
-          credentials: 'include',
-          redirect: 'error', // 리디렉션 처리 방지
-          cache: 'no-cache' // 캐시 비활성화
-        });
-        
-        console.log('내 판매 상품 목록 응답 상태:', response.status, response.statusText);
-        
-        if (!response.ok) {
-          if (response.status === 401) {
-            console.error('인증 오류: 토큰이 유효하지 않거나 만료되었습니다');
-            // 토큰이 만료되었으므로 로그아웃 처리
-            this.$store.commit('auth/CLEAR_AUTH');
-            this.$router.push('/login');
-            return;
-          }
-          
-          // 오류 응답 확인
-          let errorMessage;
-          try {
-            const errorData = await response.json();
-            errorMessage = errorData.message || '내 판매 상품 목록을 불러오는데 실패했습니다.';
-            console.error('오류 응답:', errorData);
-          } catch (e) {
-            errorMessage = `내 판매 상품 목록을 불러오는데 실패했습니다. 상태 코드: ${response.status}`;
-            console.error('오류 응답을 파싱할 수 없습니다.');
-          }
-          throw new Error(errorMessage);
-        }
-        
-        const data = await response.json();
-        console.log('내 판매 상품 목록 응답 데이터:', data);
-        
-        // 백엔드 응답 구조 확인 로깅
-        if (data && typeof data === 'object') {
-          console.log('응답 구조 확인:', {
-            success: data.success,
-            status: data.status,
-            hasDataField: !!data.data,
-            dataType: data.data ? typeof data.data : 'undefined'
+        try {
+          // api.js의 apiGet 함수 사용 (토큰 갱신 자동 처리)
+          const data = await apiGet('/api/users/profile/selling', {
+            // 500 에러를 무시하도록 설정
+            handleError: (status) => status === 500 ? false : true
           });
-        }
-        
-        // 응답 데이터 구조 확인
-        if (data && data.data) {
-          if (Array.isArray(data.data)) {
-            // 배열 형태 응답인 경우
-            this.myProducts = data.data;
-          } else if (data.data.content && Array.isArray(data.data.content)) {
-            // 페이징 처리된, content 필드가 있는 응답인 경우
-            this.myProducts = data.data.content;
-          } else if (data.data.activeProducts && data.data.soldProducts) {
-            // 판매 내역 응답 구조 (활성 상품 및 판매된 상품 분리)
-            console.log('판매 내역 데이터 구조 감지됨:', data.data);
-            // 활성 상품과 판매된 상품을 합쳐서 표시
-            const activeProducts = data.data.activeProducts.map(product => ({
-              product,
-              stats: { status: '판매중' }
-            }));
-            
-            const soldProducts = data.data.soldProducts.map(product => ({
-              product,
-              stats: { status: '판매완료' }
-            }));
-            
-            this.myProducts = [...activeProducts, ...soldProducts];
+          
+          console.log('내 판매 상품 목록 응답 데이터:', data);
+          
+          // 응답 데이터 구조 확인
+          if (data && data.data) {
+            if (Array.isArray(data.data)) {
+              // 배열 형태 응답인 경우
+              this.myProducts = data.data;
+            } else if (data.data.content && Array.isArray(data.data.content)) {
+              // 페이징 처리된, content 필드가 있는 응답인 경우
+              this.myProducts = data.data.content;
+            } else if (data.data.activeProducts || data.data.soldProducts) {
+              // 판매 내역 응답 구조 (활성 상품 및 판매된 상품 분리)
+              console.log('판매 내역 데이터 구조 감지됨:', data.data);
+              // 활성 상품과 판매된 상품을 합쳐서 표시
+              const activeProducts = (data.data.activeProducts || []).map(product => ({
+                product,
+                stats: { status: '판매중' }
+              }));
+              
+              const soldProducts = (data.data.soldProducts || []).map(product => ({
+                product,
+                stats: { status: '판매완료' }
+              }));
+              
+              this.myProducts = [...activeProducts, ...soldProducts];
+            } else {
+              // 다른 구조인 경우, 로그만 남기고 빈 배열 사용
+              console.warn('예상치 못한 응답 구조:', data);
+              this.myProducts = [];
+            }
           } else {
-            // 다른 구조인 경우, 로그만 남기고 빈 배열 사용
-            console.warn('예상치 못한 응답 구조:', data);
             this.myProducts = [];
           }
-        } else {
+        } catch (error) {
+          // API 호출 실패 처리
+          console.error('API 호출 오류:', error);
+          
+          // 오류 발생 시 빈 상품 목록으로 처리
+          console.log('판매 상품이 없거나 서버 오류가 발생했습니다. 빈 목록으로 처리합니다.');
           this.myProducts = [];
         }
       } catch (error) {
         console.error('내 판매 상품 목록 조회 오류:', error);
         
-        // 응답 구조 문제인 경우 추가 로깅
-        if (error.message && error.message.includes('예상치 못한 응답 구조')) {
-          console.error('백엔드에서 받은 응답 구조와 프론트엔드에서 예상하는 구조가 일치하지 않습니다.');
-          console.error('응답 구조 문제를 해결하기 위해 백엔드 개발자와 협업이 필요합니다.');
-        }
-        
-        // 네트워크 오류 처리
-        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-          console.warn('네트워크 연결 오류: API 서버에 연결할 수 없습니다.');
-          // 사용자에게 보여줄 오류 메시지 설정
-          alert('서버 연결에 문제가 있습니다. 잠시 후 다시 시도해주세요.');
-        } else {
-          // 기타 오류 처리
-          alert(error.message || '판매 내역을 불러오는데 실패했습니다.');
-        }
-        
+        // 데이터가 없는 것으로 처리
         this.myProducts = [];
       }
     },
@@ -493,13 +441,13 @@ export default {
       this.loading = true;
       this.$store.dispatch('auth/logout')
         .then(() => {
-          console.log('로그아웃 성공, 로그인 페이지로 이동합니다.');
-          this.$router.push('/login');
+          console.log('로그아웃 성공, 메인 페이지로 이동합니다.');
+          this.$router.push('/'); // 로그인 페이지 대신 메인 페이지로 이동
         })
         .catch(error => {
           console.error('로그아웃 처리 중 오류:', error);
-          // 오류가 발생해도 로그인 페이지로 이동
-          this.$router.push('/login');
+          // 오류가 발생해도 메인 페이지로 이동
+          this.$router.push('/');
         })
         .finally(() => {
           this.loading = false;

@@ -33,7 +33,7 @@
             <router-link to="/profile" class="text-gray-700 hover:text-blue-600">
               <i class="far fa-user"></i>
             </router-link>
-            <button @click="logout" class="text-gray-700 hover:text-blue-600">
+            <button @click="handleLogout" class="text-gray-700 hover:text-blue-600">
               <i class="fas fa-sign-out-alt"></i>
             </button>
           </template>
@@ -71,7 +71,7 @@
           <template v-if="isAuthenticated">
             <router-link to="/profile" class="py-2 hover:text-blue-600">내 프로필</router-link>
             <router-link to="/wishlist" class="py-2 hover:text-blue-600">관심 상품</router-link>
-            <button @click="logout" class="py-2 text-left hover:text-blue-600">로그아웃</button>
+            <button @click="handleLogout" class="py-2 text-left hover:text-blue-600">로그아웃</button>
           </template>
         </nav>
       </div>
@@ -98,6 +98,12 @@ export default {
   
   methods: {
     ...mapActions('auth', ['logout']),
+    
+    async handleLogout() {
+      await this.logout();
+      // 로그아웃 후 메인 페이지로 리다이렉트
+      this.$router.push('/');
+    },
     
     search() {
       if (!this.searchQuery.trim()) return

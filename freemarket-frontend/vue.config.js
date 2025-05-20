@@ -10,9 +10,10 @@ module.exports = {
     },
     proxy: {
       '/api': {
-        target: 'http://localhost:8080', // API 서버 주소 변경 - 로컬 Spring Boot 서버 포트
+        // 개발 환경에서는 로컬 서버, 그렇지 않으면 실제 서버 주소 사용
+        target: 'https://freemarket.duckdns.org', // 실제 백엔드 서버 주소로 변경
         changeOrigin: true,
-        secure: false,  // SSL 인증서 검증 비활성화 - 개발 환경에서만 false로 설정
+        secure: true,  // HTTPS 사용 시 true로 설정
         logLevel: 'debug',
         onProxyReq(proxyReq) {
           console.log('API 프록시 요청:', proxyReq.path);
@@ -29,17 +30,27 @@ module.exports = {
           // 프록시 오류 발생 시 처리
           console.error('프록시 오류:', err);
           
-          // 로컬 개발 환경에서 오류 발생 시:
-          // 1. 백엔드 서버가 실행 중인지 확인
-          // 2. 인증서 오류인 경우 secure: false 설정
-          // 3. API 서버 주소가 올바른지 확인
+          // 개발 환경에서 오류 발생 시 안내 메시지 출력 및 응답 보내기
+          res.writeHead(500, {
+            'Content-Type': 'application/json'
+          });
+          
+          const errorMessage = {
+            success: false,
+            status: 500,
+            message: '프록시 서버 오류: 백엔드 서버에 연결할 수 없습니다.',
+            data: null,
+            error: err.message || '알 수 없는 오류'
+          };
+          
+          res.end(JSON.stringify(errorMessage));
         }
       },
       // OAuth2 인증 관련 프록시 설정
       '/oauth2': {
-        target: 'http://localhost:8080',
+        target: 'https://freemarket.duckdns.org',
         changeOrigin: true,
-        secure: false,  // SSL 인증서 검증 비활성화
+        secure: true,  // HTTPS 사용 시 true로 설정
         logLevel: 'debug',
         onProxyReq(proxyReq) {
           console.log('OAuth2 프록시 요청:', proxyReq.path);
@@ -47,9 +58,9 @@ module.exports = {
       },
       // 로그인 관련 프록시 설정
       '/login': {
-        target: 'http://localhost:8080',
+        target: 'https://freemarket.duckdns.org',
         changeOrigin: true,
-        secure: false,  // SSL 인증서 검증 비활성화
+        secure: true,  // HTTPS 사용 시 true로 설정
         logLevel: 'debug',
         onProxyReq(proxyReq) {
           console.log('Login 프록시 요청:', proxyReq.path);
@@ -63,9 +74,9 @@ module.exports = {
       },
       // favicon.ico에 대한 프록시 추가
       '/favicon.ico': {
-        target: 'http://localhost:8080',
+        target: 'https://freemarket.duckdns.org',
         changeOrigin: true,
-        secure: false,  // SSL 인증서 검증 비활성화
+        secure: true,  // HTTPS 사용 시 true로 설정
         pathRewrite: {
           '^/favicon.ico': '/favicon.ico'
         },
@@ -74,5 +85,9 @@ module.exports = {
     },
     // 리디렉션에 대한 히스토리 설정
     historyApiFallback: true
-  }
+  },
+  // 배포 시 경로 설정
+  publicPath: process.env.NODE_ENV === 'production'
+    ? '/' // 루트 경로로 설정
+    : '/' // 개발 환경에서도 루트 경로 사용
 }

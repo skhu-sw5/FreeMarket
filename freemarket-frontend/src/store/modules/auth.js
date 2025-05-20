@@ -1,4 +1,5 @@
 import { API_BASE_URL } from '@/config'
+import { apiGet, apiPost, apiPatch } from '@/utils/api'
 
 export default {
   namespaced: true,
@@ -32,7 +33,9 @@ export default {
         console.error('인증 상태 확인 중 오류:', e);
         return false;
       }
-    })()
+    })(),
+    isRefreshing: false, // 토큰 리프레시 중인지 상태 추가
+    refreshPromise: null // 리프레시 중인 Promise 객체 저장
   },
   
   mutations: {
@@ -63,6 +66,15 @@ export default {
     },
     UPDATE_USER(state, userData) {
       state.user = { ...state.user, ...userData }
+    },
+    SET_REFRESHING(state, isRefreshing) {
+      state.isRefreshing = isRefreshing
+      if (!isRefreshing) {
+        state.refreshPromise = null // 리프레시가 끝나면 Promise 초기화
+      }
+    },
+    SET_REFRESH_PROMISE(state, promise) {
+      state.refreshPromise = promise
     }
   },
   
@@ -71,33 +83,8 @@ export default {
       try {
         console.log('로그인 요청...');
         
-        const response = await fetch('/api/auth/login', {
-          method: 'POST', // 명시적으로 POST 메서드 지정
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify(credentials),
-          credentials: 'include'
-        })
-        
-        console.log('로그인 응답 상태:', response.status, response.statusText);
-        
-        if (!response.ok) {
-          if (response.status === 500) {
-            throw new Error('서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-          }
-          
-          try {
-            const errorData = await response.json();
-            throw new Error(errorData.message || '로그인에 실패했습니다.');
-          } catch (jsonError) {
-            // JSON 파싱 실패 시 일반 오류 메시지 사용
-            throw new Error('로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.');
-          }
-        }
-        
-        const data = await response.json()
+        // apiPost는 토큰 갱신을 처리하지 않으므로 retry 옵션을 false로 설정
+        const data = await apiPost('/api/auth/login', credentials, { retry: false });
         console.log('로그인 응답 데이터:', data);
         
         // 토큰 검증
@@ -108,63 +95,98 @@ export default {
         commit('SET_AUTH_TOKENS', {
           accessToken: data.data.accessToken,
           refreshToken: data.data.refreshToken || null
-        })
+        });
         
         console.log('액세스 토큰이 성공적으로 저장되었습니다:', data.data.accessToken.substring(0, 10) + '...');
         
         // 로그인 후 사용자 정보 가져오기
         try {
-          await dispatch('fetchUser')
+          await dispatch('fetchUser');
         } catch (fetchError) {
           console.error('사용자 정보 로딩 실패:', fetchError);
           // fetchUser 실패해도 로그인은 성공한 것으로 처리
         }
         
-        return data
+        return data;
       } catch (error) {
-        console.error('로그인 오류:', error)
-        
-        // 네트워크 오류 처리
-        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-          throw new Error('서버에 연결할 수 없습니다. 네트워크 연결을 확인해주세요.');
-        }
-        
-        throw error
+        console.error('로그인 오류:', error);
+        throw error;
       }
     },
     
     async register({ commit }, userData) {
       try {
-        const response = await fetch('/api/auth/signup', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(userData),
-          credentials: 'include'
-        })
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || '회원가입에 실패했습니다.');
-        }
-        
-        const data = await response.json()
+        const data = await apiPost('/api/auth/signup', userData, { retry: false });
         console.log('회원가입 응답:', data);
-        return data
+        return data;
       } catch (error) {
-        console.error('회원가입 오류:', error)
-        
-        // 네트워크 오류 처리
-        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-          throw new Error('서버에 연결할 수 없습니다. 네트워크 연결을 확인해주세요.');
-        }
-        
-        throw error
+        console.error('회원가입 오류:', error);
+        throw error;
       }
     },
+
+    // 토큰 리프레시 함수
+    async refreshToken({ commit, state }) {
+      // 이미 진행 중인 리프레시가 있으면 그 Promise 반환
+      if (state.isRefreshing && state.refreshPromise) {
+        console.log('이미 진행 중인 토큰 리프레시가 있습니다. 기존 요청을 재사용합니다.');
+        return state.refreshPromise;
+      }
+
+      // 리프레시 토큰이 없으면 오류
+      if (!state.refreshToken) {
+        console.error('리프레시 토큰이 없습니다. 로그아웃됩니다.');
+        commit('CLEAR_AUTH');
+        return Promise.reject(new Error('리프레시 토큰이 없습니다.'));
+      }
+
+      // 리프레시 상태 설정
+      commit('SET_REFRESHING', true);
+
+      // 일반 Promise 사용하여 ESLint 오류 해결
+      const refreshPromise = new Promise((resolve, reject) => {
+        // apiPost 사용 (자체적으로 리프레시 처리하지 않도록 설정)
+        apiPost('/api/auth/refresh', { refreshToken: state.refreshToken }, { retry: false })
+          .then(data => {
+            console.log('토큰 리프레시 요청 성공');
+            
+            // 새 토큰 검증
+            if (!data.data || !data.data.accessToken || !data.data.refreshToken) {
+              throw new Error('응답에 필요한 토큰 정보가 없습니다.');
+            }
+
+            // 새 토큰 저장
+            commit('SET_AUTH_TOKENS', {
+              accessToken: data.data.accessToken,
+              refreshToken: data.data.refreshToken
+            });
+
+            console.log('토큰 리프레시 성공:', data.data.accessToken.substring(0, 10) + '...');
+            resolve(data.data.accessToken);
+          })
+          .catch(error => {
+            console.error('토큰 리프레시 오류:', error);
+            
+            // 401 또는 다른 인증 오류면 로그아웃
+            if (error.message.includes('인증이 만료되었습니다') || 
+                error.message.includes('401') || 
+                error.message.includes('권한이 없습니다')) {
+              commit('CLEAR_AUTH');
+            }
+            
+            reject(error);
+          })
+          .finally(() => {
+            commit('SET_REFRESHING', false);
+          });
+      });
+
+      // 리프레시 Promise 저장
+      commit('SET_REFRESH_PROMISE', refreshPromise);
+      return refreshPromise;
+    },
     
-    async fetchUser({ commit, state }) {
+    async fetchUser({ commit, state, dispatch }) {
       if (!state.token) {
         console.log('토큰이 없습니다. 사용자 정보를 가져올 수 없습니다.');
         return null;
@@ -178,7 +200,7 @@ export default {
       }
       
       try {
-        console.log('사용자 정보 가져오기 요청 - 토큰:', state.token.substring(0, 10) + '...');
+        console.log('사용자 정보 가져오기 요청 시작');
         
         // 네트워크 상태 확인
         if (!navigator.onLine) {
@@ -186,44 +208,22 @@ export default {
           throw new Error('네트워크 연결이 없습니다.');
         }
         
-        // API URL 설정
-        const apiUrl = '/api/users/me';
-        console.log('API 요청 URL:', apiUrl);
-        
-        // 캐시를 확실히 무효화하기 위해 헤더와 타임스탬프 사용
+        // 캐시를 무효화하기 위한 타임스탬프 파라미터
         const timestamp = new Date().getTime();
-        const urlWithTimestamp = `${apiUrl}?_t=${timestamp}`;
+        const url = `/api/users/me?_t=${timestamp}`;
         
-        // 사용자 정보 가져오기 요청
-        const response = await fetch(urlWithTimestamp, {
-          method: 'GET', // 명시적으로 GET 메서드 지정
+        // 캐시 관련 옵션 추가
+        const options = {
           headers: {
-            'Authorization': `Bearer ${state.token}`,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
             'Cache-Control': 'no-cache, no-store, must-revalidate',
             'Pragma': 'no-cache',
             'Expires': '0'
           },
-          credentials: 'include',
-          // 리디렉션 처리 방지
-          redirect: 'error',
-          // 캐시 비활성화
           cache: 'no-cache'
-        })
+        };
         
-        console.log('사용자 정보 응답 상태:', response.status, response.statusText);
-        
-        if (!response.ok) {
-          if (response.status === 401) {
-            console.error('인증 오류: 토큰이 유효하지 않거나 만료되었습니다');
-            commit('CLEAR_AUTH')
-            throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
-          }
-          throw new Error('사용자 정보를 불러오는데 실패했습니다.')
-        }
-        
-        const data = await response.json()
+        // apiGet은 자동으로 토큰을 헤더에 추가하고, 토큰 만료 시 갱신 시도
+        const data = await apiGet(url, options);
         console.log('사용자 정보 응답 데이터:', data);
         
         if (data && data.data) {
@@ -262,26 +262,20 @@ export default {
         }
       } catch (error) {
         console.error('사용자 정보 조회 오류:', error)
-        // 네트워크 오류인 경우 토큰을 유지하고 null 반환
-        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-          console.log('네트워크 연결 오류: API 서버에 연결할 수 없습니다.')
-          
-          // 개발 환경에서 더 자세한 정보 제공
-          if (import.meta.env?.MODE === 'development' || window.location.hostname === 'localhost') {
-            console.warn('개발 환경 안내: Spring Boot 백엔드가 실행 중인지 확인하세요(localhost:8080)');
-          }
-          
-          return null;
-        }
         
         // 인증 오류인 경우 로그인 페이지로 리다이렉트
-        if (error.message.includes('인증이 만료되었습니다')) {
+        if (error.message && error.message.includes('인증이 만료되었습니다')) {
           // 로그인 페이지로 프로그래밍 방식으로 리다이렉트
           window.location.href = '/login';
         }
         
+        // 네트워크 오류인 경우 null 반환
+        if (error.message && error.message.includes('서버에 연결할 수 없습니다')) {
+          return null;
+        }
+        
         // 다른 오류의 경우 오류를 전파
-        throw error
+        throw error;
       }
     },
     
@@ -290,31 +284,16 @@ export default {
       if (!state.token) throw new Error('로그인이 필요합니다.')
       
       try {
-        const response = await fetch('/api/users/me', {
-          method: 'PATCH', // PUT이 아닌 PATCH 메서드 사용 (부분 업데이트)
-          headers: {
-            'Authorization': `Bearer ${state.token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(userData),
-          credentials: 'include'
-        })
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || '사용자 정보 업데이트에 실패했습니다.')
-        }
-        
-        const data = await response.json()
+        const data = await apiPatch('/api/users/me', userData);
         
         // 백엔드에서 받은 응답 데이터가 있으면 그것을 사용하고, 없으면 요청 데이터 사용
         const updatedData = data.data || userData;
-        commit('UPDATE_USER', updatedData)
+        commit('UPDATE_USER', updatedData);
         
-        return data.data
+        return data.data;
       } catch (error) {
-        console.error('사용자 정보 업데이트 오류:', error)
-        throw error
+        console.error('사용자 정보 업데이트 오류:', error);
+        throw error;
       }
     },
     
@@ -322,25 +301,11 @@ export default {
       if (!state.token) throw new Error('로그인이 필요합니다.')
       
       try {
-        const response = await fetch('/api/users/password', {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${state.token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ currentPassword, newPassword }),
-          credentials: 'include'
-        })
-        
-        if (!response.ok) {
-          throw new Error('비밀번호 변경에 실패했습니다.')
-        }
-        
-        const data = await response.json()
-        return data
+        const data = await apiPost('/api/users/me/password', { currentPassword, newPassword });
+        return data;
       } catch (error) {
-        console.error('비밀번호 변경 오류:', error)
-        throw error
+        console.error('비밀번호 변경 오류:', error);
+        throw error;
       }
     },
     
