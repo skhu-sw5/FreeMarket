@@ -2,7 +2,7 @@
   <div @click="$emit('click')" class="bg-white rounded-lg overflow-hidden shadow hover:shadow-md transition-all hover:translate-y-[-3px] transform duration-200 cursor-pointer relative">
     <div class="relative">
       <img 
-        :src="product.thumbnailUrl || '/img/no-image.png'" 
+        :src="getImageUrl(product.thumbnailUrl)" 
         :alt="product.name" 
         class="w-full h-48 object-cover"
       />
@@ -63,6 +63,17 @@ export default {
     }
   },
   
+  data() {
+    return {
+      baseUrl: ''
+    }
+  },
+  
+  created() {
+    // 항상 전체 URL 사용
+    this.baseUrl = 'https://freemarket.duckdns.org';
+  },
+  
   computed: {
     isNew() {
       if (!this.product.createdAt) return false;
@@ -88,6 +99,18 @@ export default {
       } catch (error) {
         console.error('관심 상품 처리 오류:', error)
       }
+    },
+    
+    getImageUrl(url) {
+      if (!url) return '/images/no-image.png';
+      
+      // 이미 전체 URL인 경우 그대로 반환
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        return url;
+      }
+      
+      // 상대 경로인 경우 baseUrl 추가
+      return `${this.baseUrl}${url}`;
     },
     
     formatPrice(price) {

@@ -146,9 +146,15 @@
             </div>
             
             <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <!-- 디버깅용 정보 표시 (개발 시에만 사용) -->
+              <div v-if="$NODE_ENV === 'development'" class="text-xs text-gray-500 col-span-full mb-4">
+                디버깅: {{ myProducts.length }}개 제품, 
+                첫번째 제품 ID: {{ myProducts[0]?.product?.id }}
+              </div>
+              
               <ProductCard 
                 v-for="product in myProducts" 
-                :key="product.product.id"
+                :key="product.product.id || 'unknown'"
                 :product="product.product"
                 :stats="product.stats"
                 @click="goToProduct(product.product.id)"
@@ -339,15 +345,44 @@ export default {
               // 판매 내역 응답 구조 (활성 상품 및 판매된 상품 분리)
               console.log('판매 내역 데이터 구조 감지됨:', data.data);
               // 활성 상품과 판매된 상품을 합쳐서 표시
-              const activeProducts = (data.data.activeProducts || []).map(product => ({
-                product,
-                stats: { status: '판매중' }
-              }));
+              console.log('활성 상품 데이터 구조:', data.data.activeProducts ? data.data.activeProducts[0] : null);
+              console.log('판매 완료 상품 데이터 구조:', data.data.soldProducts ? data.data.soldProducts[0] : null);
               
-              const soldProducts = (data.data.soldProducts || []).map(product => ({
-                product,
-                stats: { status: '판매완료' }
-              }));
+              const activeProducts = (data.data.activeProducts || []).map(product => {
+                // 상품 객체 구조 확인
+                console.log('상품 객체 구조:', product);
+                
+                // id가 있는지 확인
+                if (!product.productId && !product.id) {
+                  console.warn('상품 ID가 없습니다:', product);
+                }
+                
+                return {
+                  product: {
+                    ...product,
+                    id: product.productId || product.id // ID 필드 보장
+                  },
+                  stats: { 
+                    viewCount: product.viewCount || 0,
+                    wishlistCount: product.wishlistCount || 0,
+                    status: '판매중' 
+                  }
+                };
+              });
+              
+              const soldProducts = (data.data.soldProducts || []).map(product => {
+                return {
+                  product: {
+                    ...product,
+                    id: product.productId || product.id // ID 필드 보장
+                  },
+                  stats: { 
+                    viewCount: product.viewCount || 0,
+                    wishlistCount: product.wishlistCount || 0,
+                    status: '판매완료' 
+                  }
+                };
+              });
               
               this.myProducts = [...activeProducts, ...soldProducts];
             } else {
@@ -410,7 +445,22 @@ export default {
     },
     
     goToProduct(id) {
-      this.$router.push({ name: 'ProductDetail', params: { id } })
+      // ID 확인 로깅
+      console.log('상품 페이지로 이동 시도:', id);
+      
+      // ID가 유효한지 확인
+      if (!id) {
+        console.error('유효하지 않은 상품 ID:', id);
+        return; // 유효하지 않은 ID면 이동하지 않음
+      }
+      
+      try {
+        this.$router.push({ name: 'ProductDetail', params: { id: String(id) } });
+      } catch (error) {
+        console.error('상품 페이지 이동 오류:', error);
+        // 일반 경로로 시도
+        this.$router.push(`/products/${id}`);
+      }
     },
     
     reloadPage() {

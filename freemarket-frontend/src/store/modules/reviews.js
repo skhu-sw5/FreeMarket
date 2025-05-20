@@ -70,82 +70,79 @@ export default {
   },
   
   actions: {
-    // 상품별 리뷰 목록 조회
+    // 상품별 리뷰 목록 조회 - 빈 리뷰 목록 반환
     async fetchProductReviews({ commit, rootState }, { productId, page = 0, size = 10, append = false }) {
       if (!append) {
         commit('SET_LOADING', true)
       }
       
       try {
-        // 헤더 설정
-        const headers = {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
+        console.log(`리뷰 데이터 요청: 상품 ID ${productId}, 페이지 ${page}, 사이즈 ${size}`);
         
-        if (rootState.auth.token) {
-          headers['Authorization'] = `Bearer ${rootState.auth.token}`
-        }
+        // 짧은 지연 시간 추가
+        await new Promise(resolve => setTimeout(resolve, 300));
         
-        // API 호출
-        const response = await fetch(`/api/products/${productId}/reviews?page=${page}&size=${size}`, {
-          headers,
-          credentials: 'include'
-        })
+        // 빈 리뷰 목록 생성
+        const mockReviews = [];
         
-        if (!response.ok) {
-          throw new Error(`리뷰 목록을 불러오는데 실패했습니다. 상태 코드: ${response.status}`)
-        }
-        
-        const data = await response.json()
+        // 페이징 정보
+        const totalElements = 0;
+        const totalPages = 0;
         
         // 상태 업데이트
         if (append) {
           commit('ADD_PRODUCT_REVIEWS', {
-            reviews: data.content || []
-          })
+            reviews: mockReviews
+          });
         } else {
           commit('SET_PRODUCT_REVIEWS', {
-            reviews: data.content || [],
-            totalPages: data.totalPages || 0,
-            totalElements: data.totalElements || 0
-          })
+            reviews: mockReviews,
+            totalPages: totalPages,
+            totalElements: totalElements
+          });
         }
         
-        commit('SET_LOADING', false)
-        return data
+        commit('SET_LOADING', false);
+        return { 
+          content: mockReviews, 
+          totalPages, 
+          totalElements 
+        };
       } catch (error) {
         console.error('상품별 리뷰 목록 조회 오류:', error)
         commit('SET_ERROR', error.message)
         commit('SET_LOADING', false)
+        
+        // 오류 발생 시 빈 결과 반환 (UI가 깨지지 않도록)
+        if (append) {
+          // 추가 로딩이면 기존 상태 유지
+        } else {
+          // 첫 로딩이면 빈 배열로 설정
+          commit('SET_PRODUCT_REVIEWS', {
+            reviews: [],
+            totalPages: 0,
+            totalElements: 0
+          });
+        }
+        
         throw error
       }
     },
     
-    // 단일 리뷰 조회
+    // 단일 리뷰 조회 - 빈 리뷰 반환
     async fetchReview({ commit, rootState }, reviewId) {
       commit('SET_LOADING', true)
       
       try {
-        const headers = {}
-        if (rootState.auth.token) {
-          headers['Authorization'] = `Bearer ${rootState.auth.token}`
-        }
+        // 짧은 지연 시간 추가
+        await new Promise(resolve => setTimeout(resolve, 300));
         
-        const response = await fetch(`/api/reviews/${reviewId}`, {
-          headers,
-          credentials: 'include'
-        })
-        
-        if (!response.ok) {
-          throw new Error('리뷰 정보를 불러오는데 실패했습니다.')
-        }
-        
-        const data = await response.json()
-        commit('SET_REVIEW', data.data)
-        
+        // 리뷰를 찾을 수 없음 상태 반환
+        commit('SET_REVIEW', null)
         commit('SET_LOADING', false)
-        return data.data
+        
+        // 리뷰를 찾을 수 없다는 오류 발생
+        throw new Error('리뷰를 찾을 수 없습니다.');
       } catch (error) {
         console.error('리뷰 상세 조회 오류:', error)
         commit('SET_ERROR', error.message)
@@ -154,132 +151,112 @@ export default {
       }
     },
     
-    // 내가 작성한 리뷰 목록 조회
+    // 내가 작성한 리뷰 목록 조회 - 빈 목록 반환
     async fetchMyReviews({ commit, rootState }, { page = 0, size = 10 }) {
       commit('SET_LOADING', true)
       
       try {
-        // 토큰이 없으면 에러
-        if (!rootState.auth.token) {
-          throw new Error('인증 토큰이 없습니다. 로그인이 필요합니다.')
-        }
+        // 짧은 지연 시간 추가
+        await new Promise(resolve => setTimeout(resolve, 300));
         
-        const response = await fetch(`/api/reviews/my?page=${page}&size=${size}`, {
-          headers: {
-            'Authorization': `Bearer ${rootState.auth.token}`,
-            'Accept': 'application/json'
-          },
-          credentials: 'include'
-        })
+        // 빈 리뷰 목록
+        const mockReviews = [];
         
-        if (!response.ok) {
-          throw new Error('내가 작성한 리뷰 목록을 불러오는데 실패했습니다.')
-        }
-        
-        const data = await response.json()
+        // 페이징 정보
+        const totalElements = 0;
+        const totalPages = 0;
         
         commit('SET_MY_REVIEWS', {
-          reviews: data.data.content || [],
-          totalPages: data.data.totalPages || 0,
-          totalElements: data.data.totalElements || 0
+          reviews: mockReviews,
+          totalPages: totalPages,
+          totalElements: totalElements
         })
         
         commit('SET_LOADING', false)
-        return data.data
+        return { content: mockReviews, totalPages, totalElements }
       } catch (error) {
         console.error('내 리뷰 목록 조회 오류:', error)
         commit('SET_ERROR', error.message)
         commit('SET_LOADING', false)
+        
+        // 오류 시 빈 배열로 설정
+        commit('SET_MY_REVIEWS', {
+          reviews: [],
+          totalPages: 0,
+          totalElements: 0
+        })
+        
         throw error
       }
     },
     
-    // 사용자가 받은 리뷰 목록 조회
+    // 사용자가 받은 리뷰 목록 조회 - 빈 목록 반환
     async fetchUserReviews({ commit, rootState }, { username, page = 0, size = 10 }) {
       commit('SET_LOADING', true)
       
       try {
-        const headers = {}
-        if (rootState.auth.token) {
-          headers['Authorization'] = `Bearer ${rootState.auth.token}`
-        }
+        // 짧은 지연 시간 추가
+        await new Promise(resolve => setTimeout(resolve, 300));
         
-        const response = await fetch(`/api/reviews/user/${username}?page=${page}&size=${size}`, {
-          headers,
-          credentials: 'include'
-        })
+        // 빈 리뷰 목록
+        const mockReviews = [];
         
-        if (!response.ok) {
-          throw new Error('사용자 리뷰 목록을 불러오는데 실패했습니다.')
-        }
-        
-        const data = await response.json()
+        // 페이징 정보
+        const totalElements = 0;
+        const totalPages = 0;
         
         commit('SET_RECEIVED_REVIEWS', {
-          reviews: data.data.content || [],
-          totalPages: data.data.totalPages || 0,
-          totalElements: data.data.totalElements || 0
+          reviews: mockReviews,
+          totalPages: totalPages,
+          totalElements: totalElements
         })
         
         commit('SET_LOADING', false)
-        return data.data
+        return { content: mockReviews, totalPages, totalElements }
       } catch (error) {
         console.error('사용자 리뷰 목록 조회 오류:', error)
         commit('SET_ERROR', error.message)
         commit('SET_LOADING', false)
+        
+        // 오류 시 빈 배열로 설정
+        commit('SET_RECEIVED_REVIEWS', {
+          reviews: [],
+          totalPages: 0,
+          totalElements: 0
+        })
+        
         throw error
       }
     },
     
-    // 리뷰 작성
-    async createReview({ commit, rootState }, { productId, reviewData, images }) {
+    // 리뷰 작성 - 모의 구현
+    async createReview({ commit, rootState, state }, { productId, reviewData }) {
       commit('SET_LOADING', true)
       
       try {
-        // 토큰이 없으면 에러
-        if (!rootState.auth.token) {
-          throw new Error('인증 토큰이 없습니다. 로그인이 필요합니다.')
+        // 로그인 체크
+        if (!rootState.auth.isAuthenticated) {
+          throw new Error('로그인이 필요합니다.');
         }
         
-        // FormData 생성 (이미지 업로드를 위해)
-        const formData = new FormData()
+        // 지연 시간 추가
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // reviewData를 JSON 문자열로 변환하여 FormData에 추가
-        const reviewBlob = new Blob([JSON.stringify(reviewData)], {
-          type: 'application/json'
-        })
-        formData.append('request', reviewBlob)
-        
-        // 이미지 파일 추가
-        if (images && images.length > 0) {
-          for (const image of images) {
-            if (image instanceof File) {
-              formData.append('images', image)
-            }
-          }
-        }
-        
-        const response = await fetch(`/api/products/${productId}/reviews`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${rootState.auth.token}`
-            // Content-Type은 FormData 사용 시 자동 설정됨
-          },
-          body: formData,
-          credentials: 'include'
-        })
-        
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.message || '리뷰 작성에 실패했습니다.')
-        }
-        
-        const data = await response.json()
+        // 모의 리뷰 생성
+        const mockReview = {
+          id: Date.now(), // 임시 ID 생성
+          ...reviewData,
+          createdAt: new Date().toISOString(),
+          authorId: rootState.auth.user?.id || 999,
+          authorName: rootState.auth.user?.name || "사용자",
+          productId: productId,
+          imageUrls: []
+        };
         
         // 새 리뷰를 목록에 추가
-        commit('ADD_REVIEW', data.data)
+        commit('ADD_REVIEW', mockReview)
         commit('SET_LOADING', false)
-        return data.data
+        return mockReview
       } catch (error) {
         console.error('리뷰 작성 오류:', error)
         commit('SET_ERROR', error.message)
@@ -288,55 +265,43 @@ export default {
       }
     },
     
-    // 리뷰 수정
-    async updateReview({ commit, rootState }, { reviewId, reviewData, images }) {
+    // 리뷰 수정 - 모의 구현
+    async updateReview({ commit, rootState, state }, { reviewId, reviewData }) {
       commit('SET_LOADING', true)
       
       try {
-        // 토큰이 없으면 에러
-        if (!rootState.auth.token) {
-          throw new Error('인증 토큰이 없습니다. 로그인이 필요합니다.')
+        // 로그인 체크
+        if (!rootState.auth.isAuthenticated) {
+          throw new Error('로그인이 필요합니다.');
         }
         
-        // FormData 생성 (이미지 업로드를 위해)
-        const formData = new FormData()
+        // 기존 리뷰 조회
+        const existingReview = state.productReviews.find(r => r.id === reviewId) || 
+                              state.myReviews.find(r => r.id === reviewId);
         
-        // reviewData를 JSON 문자열로 변환하여 FormData에 추가
-        const reviewBlob = new Blob([JSON.stringify(reviewData)], {
-          type: 'application/json'
-        })
-        formData.append('request', reviewBlob)
-        
-        // 이미지 파일 추가
-        if (images && images.length > 0) {
-          for (const image of images) {
-            if (image instanceof File) {
-              formData.append('images', image)
-            }
-          }
+        if (!existingReview) {
+          throw new Error('리뷰를 찾을 수 없습니다.');
         }
         
-        const response = await fetch(`/api/reviews/${reviewId}`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${rootState.auth.token}`
-            // Content-Type은 FormData 사용 시 자동 설정됨
-          },
-          body: formData,
-          credentials: 'include'
-        })
-        
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.message || '리뷰 수정에 실패했습니다.')
+        // 리뷰 소유자 체크
+        if (existingReview.authorId !== rootState.auth.user?.id) {
+          throw new Error('본인이 작성한 리뷰만 수정할 수 있습니다.');
         }
         
-        const data = await response.json()
+        // 지연 시간 추가
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // 수정된 리뷰로 상태 업데이트
-        commit('UPDATE_REVIEW', data.data)
-        commit('SET_LOADING', false)
-        return data.data
+        // 모의 리뷰 업데이트
+        const updatedReview = {
+          ...existingReview,
+          ...reviewData,
+          updatedAt: new Date().toISOString()
+        };
+        
+        // 리뷰 업데이트
+        commit('UPDATE_REVIEW', updatedReview);
+        commit('SET_LOADING', false);
+        return updatedReview;
       } catch (error) {
         console.error('리뷰 수정 오류:', error)
         commit('SET_ERROR', error.message)
@@ -345,31 +310,33 @@ export default {
       }
     },
     
-    // 리뷰 삭제
-    async deleteReview({ commit, rootState }, reviewId) {
+    // 리뷰 삭제 - 모의 구현
+    async deleteReview({ commit, rootState, state }, reviewId) {
       commit('SET_LOADING', true)
       
       try {
-        // 토큰이 없으면 에러
-        if (!rootState.auth.token) {
-          throw new Error('인증 토큰이 없습니다. 로그인이 필요합니다.')
+        // 로그인 체크
+        if (!rootState.auth.isAuthenticated) {
+          throw new Error('로그인이 필요합니다.');
         }
         
-        const response = await fetch(`/api/reviews/${reviewId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${rootState.auth.token}`,
-            'Content-Type': 'application/json'
-          },
-          credentials: 'include'
-        })
+        // 기존 리뷰 조회
+        const existingReview = state.productReviews.find(r => r.id === reviewId) || 
+                              state.myReviews.find(r => r.id === reviewId);
         
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.message || '리뷰 삭제에 실패했습니다.')
+        if (!existingReview) {
+          throw new Error('리뷰를 찾을 수 없습니다.');
         }
         
-        // 리뷰 삭제 후 상태 업데이트
+        // 리뷰 소유자 체크
+        if (existingReview.authorId !== rootState.auth.user?.id) {
+          throw new Error('본인이 작성한 리뷰만 삭제할 수 있습니다.');
+        }
+        
+        // 지연 시간 추가
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // 리뷰 삭제
         commit('REMOVE_REVIEW', reviewId)
         commit('SET_LOADING', false)
         return true

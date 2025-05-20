@@ -154,7 +154,10 @@
             <!-- 리뷰 섹션 추가 -->
             <div class="mt-6 bg-white rounded-lg shadow-sm p-6">
             <h2 class="text-xl font-bold mb-4">상품 리뷰</h2>
-            <ReviewList :productId="product.product.id" />
+            <ReviewList v-if="product && product.product" :productId="String(product.product.id)" />
+            <div v-else class="text-center py-4 text-gray-500">
+              리뷰를 불러오는 중입니다...
+            </div>
           </div>
         </div>
       </div>
@@ -213,7 +216,31 @@ export default {
   
   // created 훅은 그대로 유지
   
+  // 마운트 시 상품 정보 로드
+  created() {
+    console.log('ProductDetail created - 상품 ID:', this.$route.params.id);
+    this.loadProductData();
+  },
+  
   methods: {
+    // 상품 데이터 로드 메서드 추가
+    async loadProductData() {
+      try {
+        const productId = this.$route.params.id;
+        console.log('상품 데이터 로드 시작:', productId);
+        
+        if (!productId) {
+          console.error('상품 ID가 없습니다');
+          return;
+        }
+        
+        await this.fetchProduct(productId);
+        console.log('상품 데이터 로드 완료:', this.product);
+      } catch (error) {
+        console.error('상품 데이터 로드 오류:', error);
+      }
+    },
+    
     // toggleWishlist 액션 제거하고 fetchProduct만 유지
     ...mapActions('products', ['fetchProduct', 'deleteProduct']),
     

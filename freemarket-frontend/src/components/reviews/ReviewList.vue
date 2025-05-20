@@ -276,7 +276,12 @@
     },
     
     created() {
-      this.fetchReviews()
+      if (this.productId) {
+        console.log(`ReviewList 컴포넌트 생성: 상품 ID ${this.productId}`);
+        this.fetchReviews();
+      } else {
+        console.warn('ReviewList 컴포넌트에 상품 ID가 제공되지 않았습니다.');
+      }
     },
     
     methods: {
@@ -289,16 +294,26 @@
       
       async fetchReviews() {
         try {
+          console.log(`리뷰 데이터 요청: 상품 ID=${this.productId}, 페이지=${this.page}, 사이즈=${this.size}`);
+          
+          if (!this.productId) {
+            console.warn('상품 ID가 없어 리뷰 데이터를 요청할 수 없습니다.');
+            return;
+          }
+          
           await this.fetchProductReviews({
             productId: this.productId,
             page: this.page,
             size: this.size,
             append: this.page > 0
-          })
+          });
+          
+          console.log(`리뷰 로드 완료: ${this.reviews.length}개 리뷰`);
         } catch (error) {
-          console.error('리뷰 목록 조회 오류:', error)
+          console.error('리뷰 목록 조회 오류:', error);
+          // 에러가 발생해도 UI가 깨지지 않도록 처리
           if (this.$toast) {
-            this.$toast.error('리뷰를 불러오는데 실패했습니다.')
+            this.$toast.error('리뷰를 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.');
           }
         }
       },
@@ -346,18 +361,27 @@
       },
       
       async confirmDeleteReview(reviewId) {
-        if (!confirm('정말로 이 리뷰를 삭제하시겠습니까?')) return
+        if (!confirm('정말로 이 리뷰를 삭제하시겠습니까?')) return;
         
         try {
-          await this.deleteReview(reviewId)
+          console.log(`리뷰 삭제 요청: 리뷰 ID ${reviewId}`);
+          await this.deleteReview(reviewId);
           
           if (this.$toast) {
-            this.$toast.success('리뷰가 삭제되었습니다.')
+            this.$toast.success('리뷰가 성공적으로 삭제되었습니다.');
           }
         } catch (error) {
-          console.error('리뷰 삭제 오류:', error)
+          console.error('리뷰 삭제 오류:', error);
+          let errorMessage = '리뷰 삭제 중 오류가 발생했습니다.';
+          
+          if (error.message) {
+            errorMessage = error.message;
+          }
+          
           if (this.$toast) {
-            this.$toast.error('리뷰 삭제에 실패했습니다.')
+            this.$toast.error(errorMessage);
+          } else {
+            alert(errorMessage);
           }
         }
       },
@@ -396,55 +420,63 @@
       },
       
       async submitReview() {
-        if (!this.isReviewFormValid || this.submitting) return
+        if (!this.isReviewFormValid || this.submitting) return;
         
-        this.submitting = true
+        this.submitting = true;
         
         try {
           const reviewData = {
             rating: this.reviewForm.rating,
             content: this.reviewForm.content
-          }
+          };
           
           // 이미지 파일 추출
           const imageFiles = this.reviewForm.images
             .filter(img => img.file)
-            .map(img => img.file)
+            .map(img => img.file);
           
           if (this.editingReview) {
             // 리뷰 수정
+            console.log(`리뷰 수정 요청: 리뷰 ID ${this.editingReview.id}`);
             await this.updateReview({
               reviewId: this.editingReview.id,
               reviewData,
               images: imageFiles
-            })
+            });
             
             if (this.$toast) {
-              this.$toast.success('리뷰가 수정되었습니다.')
+              this.$toast.success('리뷰가 성공적으로 수정되었습니다.');
             }
           } else {
             // 새 리뷰 작성
+            console.log(`리뷰 작성 요청: 상품 ID ${this.productId}`);
             await this.createReview({
               productId: this.productId,
               reviewData,
               images: imageFiles
-            })
+            });
             
             if (this.$toast) {
-              this.$toast.success('리뷰가 작성되었습니다.')
+              this.$toast.success('리뷰가 성공적으로 등록되었습니다.');
             }
           }
           
-          this.closeReviewForm()
+          this.closeReviewForm();
         } catch (error) {
-          console.error('리뷰 제출 오류:', error)
+          console.error('리뷰 제출 오류:', error);
+          let errorMessage = '리뷰 처리 중 오류가 발생했습니다.';
+          
+          if (error.message) {
+            errorMessage = error.message;
+          }
+          
           if (this.$toast) {
-            this.$toast.error(error.message)
+            this.$toast.error(errorMessage);
           } else {
-            alert(error.message)
+            alert(errorMessage);
           }
         } finally {
-          this.submitting = false
+          this.submitting = false;
         }
       },
       

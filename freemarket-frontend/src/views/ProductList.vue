@@ -61,20 +61,26 @@
       />
 
       <!-- 상품 카드 리스트 -->
-      <div v-if="products.length > 0" class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
+      <div v-if="products && products.length > 0" class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
         <ProductCard
-            v-for="product in products"
-            :key="product.id"
-            :product="product"
-            @click="goToProduct(product.id)"
+            v-for="item in products"
+            :key="item.product.id"
+            :product="item.product"
+            :stats="item.stats"
+            @click="goToProduct(item.product.id)"
         />
       </div>
-      <div v-else class="text-center text-gray-500 mt-10">상품이 없습니다.</div>
+      <div v-else-if="loading" class="text-center text-gray-500 mt-10">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+        <p class="mt-2">상품을 불러오는 중...</p>
+      </div>
+      <div v-else class="text-center text-gray-500 mt-10">상품을 찾을 수 없습니다.</div>
 
       <!-- 페이지네이션 -->
       <div class="mt-8">
         <AppPagination
             :current-page="currentPage"
+            :total-pages="totalPages"
             :total-items="totalItems"
             :items-per-page="12"
             @page-changed="handlePageChange"
@@ -143,6 +149,9 @@ export default {
     if (category) {
       this.activeCategory = category
     }
+    
+    // 컴포넌트 생성 시 즉시 데이터 로드
+    this.fetchProductsWithFilters()
   },
   watch: {
     $route: {
@@ -151,9 +160,10 @@ export default {
         if (category && category !== this.activeCategory) {
           this.activeCategory = category
         }
+        // 라우트 변경 시 즉시 데이터를 다시 가져옴
         this.fetchProductsWithFilters()
       },
-      immediate: true
+      immediate: false // created에서 이미 호출하므로 immediate를 false로 변경
     }
   },
   methods: {
@@ -221,7 +231,8 @@ export default {
       this.fetchProductsWithFilters()
     },
     goToProduct(id) {
-      this.$router.push({ name: 'ProductDetail', params: { id } })
+      console.log('상품 상세 페이지로 이동:', id);
+      this.$router.push({ name: 'ProductDetail', params: { id } });
     },
     handleSearch() {
       if (this.searchKeyword.trim()) {
