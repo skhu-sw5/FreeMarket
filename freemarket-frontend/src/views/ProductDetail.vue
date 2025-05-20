@@ -95,6 +95,15 @@
                   
                   <button 
                     class="w-full px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 flex items-center justify-center space-x-2"
+                    @click="buyProduct"
+                    :disabled="product.product.stock <= 0 || product.product.status === 'SOLD_OUT'"
+                  >
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>{{ product.product.stock <= 0 || product.product.status === 'SOLD_OUT' ? '품절' : '구매하기' }}</span>
+                  </button>
+                  
+                  <button 
+                    class="w-full px-4 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 flex items-center justify-center space-x-2"
                     @click="contactSeller"
                   >
                     <i class="fas fa-comment-dots"></i>
@@ -182,6 +191,58 @@ export default {
     
     formatPrice(price) {
       return new Intl.NumberFormat('ko-KR').format(price)
+    },
+    
+    // 상품 구매 메서드 추가
+    async buyProduct() {
+      if (!this.isAuthenticated) {
+        return this.$router.push({ name: 'Login', query: { redirect: this.$route.fullPath } })
+      }
+      
+      try {
+        if (confirm('이 상품을 구매하시겠습니까?')) {
+          const productId = this.product.product.id
+          
+          const response = await fetch(`/api/orders`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${this.token}`
+            },
+            body: JSON.stringify({
+              productId: productId,
+              quantity: 1
+            })
+          })
+          
+          if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.message || '상품 구매 중 오류가 발생했습니다.')
+          }
+          
+          const result = await response.json()
+          
+          // 성공 메시지 표시
+          if (this.$toast) {
+            this.$toast.success('상품 구매가 완료되었습니다.')
+          } else {
+            alert('상품 구매가 완료되었습니다.')
+          }
+          
+          // 구매 후 상품 상태 업데이트
+          this.fetchProduct(productId)
+          
+          // 주문 완료 페이지로 이동
+          this.$router.push({ name: 'OrderComplete', params: { id: result.data.id } })
+        }
+      } catch (error) {
+        console.error('상품 구매 오류:', error)
+        if (this.$toast) {
+          this.$toast.error(error.message || '상품 구매 중 오류가 발생했습니다.')
+        } else {
+          alert(error.message || '상품 구매 중 오류가 발생했습니다.')
+        }
+      }
     },
     
     // toggleWishlistItem 메서드를 직접 API 호출 방식으로 수정

@@ -8,6 +8,8 @@ import ProfileView from '../views/user/Profile.vue'
 import WishlistView from '../views/user/Wishlist.vue'
 import SellProduct from '../views/SellProduct.vue'
 import EmailVerificationPage from '../views/user/EmailVerificationPage.vue'
+import OrdersView from '../views/user/Orders.vue'
+import OrderComplete from '../views/OrderComplete.vue'
 import store from '../store'
 
 // 정적 페이지
@@ -66,6 +68,19 @@ const routes = [
     path: '/email-verification',
     name: 'EmailVerification',
     component: EmailVerificationPage,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/user/orders',
+    name: 'Orders',
+    component: OrdersView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/orders/:id/complete',
+    name: 'OrderComplete',
+    component: OrderComplete,
+    props: true,
     meta: { requiresAuth: true }
   },
   

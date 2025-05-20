@@ -30,6 +30,9 @@
             <router-link to="/wishlist" class="text-gray-700 hover:text-blue-600">
               <i class="far fa-heart"></i>
             </router-link>
+            <router-link to="/user/orders" class="text-gray-700 hover:text-blue-600">
+              <i class="fas fa-shopping-bag"></i>
+            </router-link>
             <router-link to="/profile" class="text-gray-700 hover:text-blue-600">
               <i class="far fa-user"></i>
             </router-link>
@@ -71,6 +74,7 @@
           <template v-if="isAuthenticated">
             <router-link to="/profile" class="py-2 hover:text-blue-600">내 프로필</router-link>
             <router-link to="/wishlist" class="py-2 hover:text-blue-600">관심 상품</router-link>
+            <router-link to="/user/orders" class="py-2 hover:text-blue-600">주문 내역</router-link>
             <button @click="handleLogout" class="py-2 text-left hover:text-blue-600">로그아웃</button>
           </template>
         </nav>
