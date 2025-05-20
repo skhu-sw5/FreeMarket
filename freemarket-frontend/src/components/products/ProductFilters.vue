@@ -31,7 +31,7 @@
         </div>
       </div>
       
-      <!-- 필터 버튼 -->
+      <!-- 필터 버튼과 정렬 옵션 -->
       <div class="border-t pt-3 flex justify-between items-center">
         <button 
           class="px-4 py-2 border border-blue-600 text-blue-600 rounded-lg font-medium hover:bg-blue-50 transition-colors flex items-center space-x-1"
@@ -42,9 +42,11 @@
         </button>
         
         <div class="flex space-x-2">
-          <button class="px-4 py-2 bg-gray-200 text-gray-800 hover:bg-gray-300 rounded-lg font-medium transition-colors" @click="setSortOrder('newest')">신규순</button>
-          <button class="px-4 py-2 bg-gray-200 text-gray-800 hover:bg-gray-300 rounded-lg font-medium transition-colors" @click="setSortOrder('popular')">인기순</button>
-          <button class="px-4 py-2 bg-gray-200 text-gray-800 hover:bg-gray-300 rounded-lg font-medium transition-colors" @click="setSortOrder('price')">가격낮은순</button>
+          <select v-model="sortOption" @change="applySortOption" class="border px-2 py-1 rounded">
+            <option value="createdAt,desc">최신순</option>
+            <option value="price,asc">낮은 가격순</option>
+            <option value="price,desc">높은 가격순</option>
+          </select>
         </div>
       </div>
       
@@ -153,27 +155,32 @@ export default {
     return {
       isFilterOpen: false,
       priceRange: { 
-        min: this.filters.priceRange.min, 
-        max: this.filters.priceRange.max 
+        min: this.filters.priceRange?.min || '', 
+        max: this.filters.priceRange?.max || '' 
       },
       selectedStatus: this.filters.status || 'ACTIVE',
-      sortOrder: 'newest'
+      sortOption: 'createdAt,desc' // 기본값 최신순
     }
   },
   
   methods: {
     applyFilters() {
-      this.$emit('filter-change', {
+      this.$emit('update:filters', {
         priceRange: this.priceRange,
-        status: this.selectedStatus,
-        sortOrder: this.sortOrder
+        status: this.selectedStatus
       })
       this.isFilterOpen = false
     },
     
-    setSortOrder(order) {
-      this.sortOrder = order
-      this.applyFilters()
+    applySortOption() {
+      this.$emit('sort-change', this.sortOption);
+    },
+    
+    reset() {
+      this.priceRange = { min: '', max: '' };
+      this.selectedStatus = 'ACTIVE';
+      this.sortOption = 'createdAt,desc';
+      this.$emit('reset');
     }
   }
 }

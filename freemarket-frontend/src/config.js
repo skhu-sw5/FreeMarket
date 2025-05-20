@@ -1,11 +1,15 @@
 // API 서버 기본 URL 설정
-// 모든 환경에서 절대 URL 사용
+// 환경에 따라 적절한 URL 사용
 
-// 개발 환경 상수 정의 (Vue CLI의 환경 변수 대신 사용)
-const IS_PRODUCTION = true; // 항상 프로덕션 모드로 설정하여 절대 URL 사용
+// 개발 환경 판단 (기본값은 개발 환경)
+const IS_PRODUCTION = false; // 개발 환경에서는 false로 설정
 const NODE_ENV = IS_PRODUCTION ? 'production' : 'development';
 
-const API_BASE_URL = 'https://freemarket.duckdns.org';  // 항상 전체 URL 사용
+// 개발 환경에서는 상대 URL 사용 (프록시 설정 활용)
+// 프로덕션 환경에서는 절대 URL 사용
+const API_BASE_URL = IS_PRODUCTION
+  ? 'https://freemarket.duckdns.org'
+  : '';  // 개발 환경에서는 상대 경로 사용 (프록시 설정 활용)
 
 // 현재 환경 정보 출력
 console.log(`현재 환경: ${NODE_ENV}`);
