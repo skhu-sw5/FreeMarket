@@ -58,40 +58,9 @@ export default {
       commit('SET_LOADING', true)
       
       try {
-        // URL 구성
-let targetUrl = '/api/products';  // 프록시를 통해 요청 처리
-
-        
-        if (category) {
-          targetUrl += `&category=${category}`
-        }
-        
-        if (keyword) {
-          targetUrl += `&keyword=${encodeURIComponent(keyword)}`
-        }
-        
-        if (status) {
-          targetUrl += `&status=${status}`
-        }
-        
-        if (minPrice) {
-          targetUrl += `&minPrice=${minPrice}`
-        }
-        
-        if (maxPrice) {
-          targetUrl += `&maxPrice=${maxPrice}`
-        }
-        
-        if (sort) {
-          targetUrl += `&sort=${sort}`
-        }
-        
-        if (seller) {
-          targetUrl += `&sellerName=${encodeURIComponent(seller)}`
-        }
-        
-        // CORS 프록시 사용
-        const url = `/api/products?page=${page}&size=${size}` + 
+        // URL 구성 - 절대 URL 사용
+        const apiUrl = 'https://freemarket.duckdns.org/api/products';
+        const url = `${apiUrl}?page=${page}&size=${size}` + 
                   (category ? `&category=${category}` : '') +
                   (keyword ? `&keyword=${encodeURIComponent(keyword)}` : '') +
                   (status ? `&status=${status}` : '') +
@@ -114,7 +83,7 @@ let targetUrl = '/api/products';  // 프록시를 통해 요청 처리
         
         console.log('API 요청 헤더:', headers)
         
-        // 요청 보내기
+        // 요청 보내기 - credentials 포함
         const response = await fetch(url, { 
           method: 'GET',
           headers,
@@ -134,8 +103,18 @@ let targetUrl = '/api/products';  // 프록시를 통해 요청 처리
         
         // 상태 업데이트
         if (data && data.data) {
+          console.log('API 응답 데이터 구조:', JSON.stringify(data.data, null, 2).substring(0, 200) + '...');
+          
+          const products = data.data.content || [];
+          console.log(`총 ${products.length}개 상품 데이터 로드됨`);
+          
+          // 각 상품에 대해 구조 확인
+          if (products.length > 0) {
+            console.log('첫 번째 상품 구조:', JSON.stringify(products[0], null, 2));
+          }
+          
           commit('SET_PRODUCTS', {
-            products: data.data.content || [],
+            products: products,
             totalPages: data.data.totalPages || 0,
             totalElements: data.data.totalElements || 0
           })
@@ -161,6 +140,7 @@ let targetUrl = '/api/products';  // 프록시를 통해 요청 처리
     
     async fetchProduct({ commit, rootState }, productId) {
       commit('SET_LOADING', true)
+      console.log('ProductDetail 상품 로드 시작:', productId);
       
       try {
         const headers = {}
@@ -168,25 +148,40 @@ let targetUrl = '/api/products';  // 프록시를 통해 요청 처리
           headers['Authorization'] = `Bearer ${rootState.auth.token}`
         }
         
-        const response = await fetch(`/api/products/${productId}`, {
+        console.log('API 요청 URL:', `https://freemarket.duckdns.org/api/products/${productId}`);
+        console.log('API 요청 헤더:', headers);
+        
+        const response = await fetch(`https://freemarket.duckdns.org/api/products/${productId}`, {
           headers,
           credentials: 'include' // 쿠키와 인증 정보 포함
-        })
+        });
+        
+        console.log('API 응답 상태:', response.status, response.statusText);
         
         if (!response.ok) {
-          throw new Error('상품 정보를 불러오는데 실패했습니다.')
+          const errorText = await response.text();
+          console.error('API 응답 오류:', errorText);
+          throw new Error(`상품 정보를 불러오는데 실패했습니다. 상태 코드: ${response.status}`);
         }
         
-        const data = await response.json()
-        commit('SET_PRODUCT', data.data)
+        const data = await response.json();
+        console.log('상품 상세 응답 데이터:', JSON.stringify(data).substring(0, 200) + '...');
         
-        commit('SET_LOADING', false)
-        return data.data
+        // 상태 업데이트
+        if (data && data.data) {
+          commit('SET_PRODUCT', data.data);
+          console.log('상품 상세 데이터 저장 완료:', data.data);
+        } else {
+          throw new Error('API 응답 형식이 올바르지 않습니다.');
+        }
+        
+        commit('SET_LOADING', false);
+        return data.data;
       } catch (error) {
-        console.error('상품 상세 조회 오류:', error)
-        commit('SET_ERROR', error.message)
-        commit('SET_LOADING', false)
-        throw error
+        console.error('상품 상세 조회 오류:', error);
+        commit('SET_ERROR', error.message);
+        commit('SET_LOADING', false);
+        throw error;
       }
     },
     
@@ -220,7 +215,7 @@ let targetUrl = '/api/products';  // 프록시를 통해 요청 처리
         
         console.log('인증 토큰:', rootState.auth.token.substring(0, 10) + '...');
         
-        const response = await fetch('/api/products', {
+        const response = await fetch(`https://freemarket.duckdns.org/api/products`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${rootState.auth.token}`
@@ -261,7 +256,7 @@ let targetUrl = '/api/products';  // 프록시를 통해 요청 처리
     
     async toggleWishlist({ commit, rootState }, productId) {
       try {
-        const response = await fetch(`/api/products/${productId}/wishlist`, {
+        const response = await fetch(`https://freemarket.duckdns.org/api/products/${productId}/wishlist`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${rootState.auth.token}`
@@ -293,7 +288,7 @@ let targetUrl = '/api/products';  // 프록시를 통해 요청 처리
         }
         
         // Authorization 헤더에 Bearer 토큰 추가
-        const response = await fetch('/api/products/wishlist', {
+        const response = await fetch(`https://freemarket.duckdns.org/api/products/wishlist`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${rootState.auth.token}`,
@@ -364,7 +359,7 @@ let targetUrl = '/api/products';  // 프록시를 통해 요청 처리
           throw new Error('인증 토큰이 없습니다. 로그인이 필요합니다.');
         }
         
-        const response = await fetch(`/api/products/${productId}`, {
+        const response = await fetch(`https://freemarket.duckdns.org/api/products/${productId}`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${rootState.auth.token}`
@@ -412,7 +407,7 @@ let targetUrl = '/api/products';  // 프록시를 통해 요청 처리
           throw new Error('인증 토큰이 없습니다. 로그인이 필요합니다.');
         }
         
-        const response = await fetch(`/api/products/${productId}`, {
+        const response = await fetch(`https://freemarket.duckdns.org/api/products/${productId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${rootState.auth.token}`,

@@ -1,5 +1,5 @@
 import store from '@/store'
-import { API_BASE_URL } from '@/config'
+import { API_BASE_URL, NODE_ENV } from '@/config'
 
 /**
  * API 요청을 수행하고, 필요 시 토큰을 자동 갱신하는 함수
@@ -13,7 +13,9 @@ export async function apiRequest(url, options = {}, retry = true) {
   const token = store.state.auth.token
   
   // URL에 기본 URL 추가 (이미 절대 URL이면 그대로 사용)
-  const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`
+  const fullUrl = url.startsWith('http') 
+    ? url 
+    : (NODE_ENV === 'production' ? `${API_BASE_URL}${url}` : url)
   
   // 기본 헤더 설정
   const headers = {

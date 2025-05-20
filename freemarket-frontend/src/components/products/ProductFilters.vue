@@ -126,9 +126,22 @@ export default {
   name: 'ProductFilters',
   
   props: {
+    filters: {
+      type: Object,
+      required: true
+    },
     categories: {
       type: Array,
-      required: true
+      default: () => [
+        { id: 'BOOKS', name: '교재/서적' },
+        { id: 'ELECTRONICS', name: '전자기기' },
+        { id: 'FASHION', name: '의류/패션' },
+        { id: 'BEAUTY', name: '화장품/미용' },
+        { id: 'SPORTS', name: '스포츠/레저' },
+        { id: 'HOUSEHOLD', name: '생활용품' },
+        { id: 'HOBBY', name: '취미/게임' },
+        { id: 'OTHERS', name: '기타' }
+      ]
     },
     activeCategory: {
       type: String,
@@ -139,8 +152,11 @@ export default {
   data() {
     return {
       isFilterOpen: false,
-      priceRange: { min: '', max: '' },
-      selectedStatus: 'ACTIVE',
+      priceRange: { 
+        min: this.filters.priceRange.min, 
+        max: this.filters.priceRange.max 
+      },
+      selectedStatus: this.filters.status || 'ACTIVE',
       sortOrder: 'newest'
     }
   },

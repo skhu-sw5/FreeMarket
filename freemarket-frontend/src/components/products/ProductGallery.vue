@@ -2,7 +2,7 @@
   <div>
     <div class="mb-4 rounded-lg overflow-hidden bg-gray-100">
       <img 
-        :src="images[selectedIndex]?.url || 'https://via.placeholder.com/600x400'" 
+        :src="getImageUrl(images[selectedIndex]?.url)" 
         alt="상품 이미지" 
         class="w-full h-80 md:h-96 object-contain"
       />
@@ -18,7 +18,7 @@
           selectedIndex === index ? 'border-blue-500' : 'border-transparent'
         ]"
       >
-        <img :src="image.thumbnail" :alt="`썸네일 ${index + 1}`" class="w-full h-16 object-cover" />
+        <img :src="getImageUrl(image.thumbnail)" :alt="`썸네일 ${index + 1}`" class="w-full h-16 object-cover" />
       </div>
     </div>
   </div>
@@ -35,9 +35,25 @@ export default {
     }
   },
   
+
   data() {
     return {
-      selectedIndex: 0
+      selectedIndex: 0,
+      baseUrl: 'https://freemarket.duckdns.org' // API 서버 기본 URL
+    }
+  },
+  
+  methods: {
+    getImageUrl(url) {
+      if (!url) return 'https://via.placeholder.com/600x400';
+      
+      // 이미 전체 URL인 경우 그대로 반환
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        return url;
+      }
+      
+      // 상대 경로인 경우 baseUrl 추가
+      return `${this.baseUrl}${url}`;
     }
   },
   

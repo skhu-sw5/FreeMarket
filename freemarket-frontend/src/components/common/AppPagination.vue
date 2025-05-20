@@ -45,7 +45,16 @@ export default {
     },
     totalPages: {
       type: Number,
-      required: true
+      required: true,
+      default: 1
+    },
+    totalItems: {
+      type: Number,
+      default: 0
+    },
+    itemsPerPage: {
+      type: Number,
+      default: 10
     }
   },
   
@@ -54,8 +63,10 @@ export default {
       const pageNumbers = []
       
       // 최대 5개의 페이지 번호를 표시
+      const calculatedTotalPages = this.totalPages || Math.ceil(this.totalItems / this.itemsPerPage) || 1;
+      
       let startPage = Math.max(1, this.currentPage - 2)
-      let endPage = Math.min(this.totalPages, startPage + 4)
+      let endPage = Math.min(calculatedTotalPages, startPage + 4)
       
       if (endPage - startPage < 4) {
         startPage = Math.max(1, endPage - 4)
