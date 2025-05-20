@@ -8,6 +8,7 @@ import ProfileView from '../views/user/Profile.vue'
 import WishlistView from '../views/user/Wishlist.vue'
 import SellProduct from '../views/SellProduct.vue'
 import EmailVerificationPage from '../views/user/EmailVerificationPage.vue'
+import store from '../store'
 
 // 정적 페이지
 import AboutPage from '../views/static/AboutPage.vue'
@@ -102,11 +103,35 @@ const router = createRouter({
 })
 
 // 인증 관련 네비게이션 가드
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const token = localStorage.getItem('accessToken')
-  if (to.matched.some(record => record.meta.requiresAuth) && !token) {
-    next({ name: 'Login', query: { redirect: to.fullPath } })
+  const refreshToken = localStorage.getItem('refreshToken')
+  
+  if (to.matched.some(record => record.meta.requiresAuth)) {
+    // 토큰이 없는 경우 로그인 페이지로 리다이렉트
+    if (!token) {
+      next({ name: 'Login', query: { redirect: to.fullPath } })
+      return
+    }
+    
+    // 토큰은 있지만 인증이 만료된 경우 리프레시 시도
+    if (token && refreshToken) {
+      try {
+        // fetchUser 시도 - 토큰이 유효하면 사용자 정보를 가져옴
+        // 토큰이 만료되면 내부적으로 refreshToken 액션이 실행됨
+        await store.dispatch('auth/fetchUser')
+        next() // 사용자 정보 가져오기 성공, 계속 진행
+      } catch (error) {
+        console.error('인증 확인 오류:', error)
+        // 리프레시 토큰도 만료된 경우 로그인 페이지로 리다이렉트
+        next({ name: 'Login', query: { redirect: to.fullPath } })
+      }
+    } else {
+      // 리프레시 토큰이 없는 경우 로그인 페이지로 리다이렉트
+      next({ name: 'Login', query: { redirect: to.fullPath } })
+    }
   } else {
+    // 인증이 필요하지 않은 페이지는 그냥 진행
     next()
   }
 })

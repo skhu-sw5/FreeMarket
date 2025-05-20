@@ -11,7 +11,7 @@ export default {
   name: 'App',
   
   computed: {
-    ...mapState('auth', ['isAuthenticated', 'token'])
+    ...mapState('auth', ['isAuthenticated', 'token', 'refreshToken'])
   },
   
   created() {
@@ -26,11 +26,30 @@ export default {
           } else {
             console.warn('사용자 정보 로드 실패. 인증 정보가 유효하지 않을 수 있습니다.');
             
-            // 현재 경로가 인증이 필요한 경로인지 확인
-            const currentRoute = this.$router.currentRoute.value;
-            if (currentRoute.meta && currentRoute.meta.requiresAuth) {
-              console.log('인증이 필요한 페이지입니다. 로그인 페이지로 이동합니다.');
-              this.$router.push('/login');
+            // 리프레시 토큰이 있으면 자동 갱신 시도
+            if (this.refreshToken) {
+              console.log('토큰 만료 감지: 리프레시 토큰으로 갱신 시도');
+              this.refreshToken()
+                .then(() => {
+                  console.log('토큰 갱신 성공');
+                  return this.fetchUser(); // 다시 사용자 정보 가져오기
+                })
+                .catch(refreshError => {
+                  console.error('토큰 갱신 실패:', refreshError);
+                  // 현재 경로가 인증이 필요한 경로인지 확인
+                  const currentRoute = this.$router.currentRoute.value;
+                  if (currentRoute.meta && currentRoute.meta.requiresAuth) {
+                    console.log('인증이 필요한 페이지입니다. 로그인 페이지로 이동합니다.');
+                    this.$router.push('/login');
+                  }
+                });
+            } else {
+              // 현재 경로가 인증이 필요한 경로인지 확인
+              const currentRoute = this.$router.currentRoute.value;
+              if (currentRoute.meta && currentRoute.meta.requiresAuth) {
+                console.log('인증이 필요한 페이지입니다. 로그인 페이지로 이동합니다.');
+                this.$router.push('/login');
+              }
             }
           }
         })
@@ -50,7 +69,7 @@ export default {
   },
   
   methods: {
-    ...mapActions('auth', ['fetchUser', 'logout'])
+    ...mapActions('auth', ['fetchUser', 'logout', 'refreshToken'])
   }
 }
 </script>

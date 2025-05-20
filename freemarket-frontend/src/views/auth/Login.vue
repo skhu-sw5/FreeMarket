@@ -179,7 +179,8 @@ export default {
     socialLogin(provider) {
       // 소셜 로그인 URL 생성
       const redirectUri = encodeURIComponent(window.location.origin + '/oauth/callback')
-      window.location.href = `/oauth2/authorization/${provider}?redirect_uri=${redirectUri}`
+      const baseUrl = 'https://freemarket.duckdns.org' // 백엔드 서버 주소
+      window.location.href = `${baseUrl}/oauth2/authorization/${provider}?redirect_uri=${redirectUri}`
     }
   }
 }
