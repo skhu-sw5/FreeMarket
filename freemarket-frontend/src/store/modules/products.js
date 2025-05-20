@@ -330,6 +330,119 @@ let targetUrl = '/api/products';  // 프록시를 통해 요청 처리
         commit('SET_WISHLIST', [])
         throw error
       }
+    },
+    
+    // 상품 수정 액션 추가
+    async updateProduct({ commit, rootState }, { productId, productData, images }) {
+      commit('SET_LOADING', true)
+      
+      try {
+        console.log('상품 수정 요청 데이터:', productData);
+        console.log('상품 이미지:', images);
+        
+        const formData = new FormData();
+        
+        // JSON 데이터를 FormData에 추가
+        const requestBlob = new Blob([JSON.stringify(productData)], {
+          type: 'application/json'
+        });
+        formData.append('request', requestBlob);
+        
+        // 이미지 파일 추가
+        if (images && images.length > 0) {
+          for (const image of images) {
+            // 이미 있는 이미지(URL 형태)가 아닌 새로운 파일만 추가
+            if (image instanceof File) {
+              formData.append('images', image);
+              console.log('이미지 추가:', image.name, image.type, image.size);
+            }
+          }
+        }
+        
+        // 토큰 확인
+        if (!rootState.auth.token) {
+          throw new Error('인증 토큰이 없습니다. 로그인이 필요합니다.');
+        }
+        
+        const response = await fetch(`/api/products/${productId}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${rootState.auth.token}`
+            // FormData 사용 시 Content-Type은 자동으로 설정됨
+          },
+          body: formData,
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          let errorMessage;
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || '상품 수정에 실패했습니다.';
+            console.error('상품 수정 오류 응답:', errorData);
+          } catch (e) {
+            errorMessage = `상품 수정에 실패했습니다. 상태 코드: ${response.status}`;
+            console.error('상품 수정 오류: 응답 본문을 파싱할 수 없음');
+          }
+          throw new Error(errorMessage);
+        }
+        
+        const data = await response.json();
+        console.log('상품 수정 성공 응답:', data);
+        
+        // 성공 시 해당 상품 정보 업데이트
+        commit('SET_PRODUCT', data.data);
+        commit('SET_LOADING', false);
+        return data.data;
+      } catch (error) {
+        console.error('상품 수정 오류:', error);
+        commit('SET_ERROR', error.message);
+        commit('SET_LOADING', false);
+        throw error;
+      }
+    },
+    
+    // 상품 삭제 액션 추가
+    async deleteProduct({ commit, rootState }, productId) {
+      commit('SET_LOADING', true)
+      
+      try {
+        // 토큰 확인
+        if (!rootState.auth.token) {
+          throw new Error('인증 토큰이 없습니다. 로그인이 필요합니다.');
+        }
+        
+        const response = await fetch(`/api/products/${productId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${rootState.auth.token}`,
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          let errorMessage;
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || '상품 삭제에 실패했습니다.';
+            console.error('상품 삭제 오류 응답:', errorData);
+          } catch (e) {
+            errorMessage = `상품 삭제에 실패했습니다. 상태 코드: ${response.status}`;
+            console.error('상품 삭제 오류: 응답 본문을 파싱할 수 없음');
+          }
+          throw new Error(errorMessage);
+        }
+        
+        // 성공 시 상태 업데이트
+        commit('SET_LOADING', false);
+        return true;
+      } catch (error) {
+        console.error('상품 삭제 오류:', error);
+        commit('SET_ERROR', error.message);
+        commit('SET_LOADING', false);
+        throw error;
+      }
     }
   },
   

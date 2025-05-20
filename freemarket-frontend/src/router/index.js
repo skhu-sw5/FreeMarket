@@ -7,6 +7,7 @@ import RegisterView from '../views/auth/Register.vue'
 import ProfileView from '../views/user/Profile.vue'
 import WishlistView from '../views/user/Wishlist.vue'
 import SellProduct from '../views/SellProduct.vue'
+import EditProduct from '../views/EditProduct.vue'
 import EmailVerificationPage from '../views/user/EmailVerificationPage.vue'
 import OrdersView from '../views/user/Orders.vue'
 import OrderComplete from '../views/OrderComplete.vue'
@@ -62,6 +63,12 @@ const routes = [
     path: '/sell',
     name: 'SellProduct',
     component: SellProduct,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/products/:id/edit',
+    name: 'EditProduct',
+    component: EditProduct,
     meta: { requiresAuth: true }
   },
   {

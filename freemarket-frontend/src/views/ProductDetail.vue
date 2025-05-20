@@ -109,6 +109,25 @@
                     <i class="fas fa-comment-dots"></i>
                     <span>판매자에게 문의하기</span>
                   </button>
+                  
+                  <!-- 판매자만 볼 수 있는 상품 관리 버튼 -->
+                  <div v-if="isProductOwner" class="mt-4 grid grid-cols-2 gap-3">
+                    <router-link 
+                      :to="{ name: 'EditProduct', params: { id: product.product.id } }"
+                      class="px-4 py-3 bg-yellow-500 text-white rounded-lg font-medium hover:bg-yellow-600 flex items-center justify-center space-x-2"
+                    >
+                      <i class="fas fa-edit"></i>
+                      <span>상품 수정</span>
+                    </router-link>
+                    
+                    <button 
+                      class="px-4 py-3 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 flex items-center justify-center space-x-2"
+                      @click="confirmDeleteProduct"
+                    >
+                      <i class="fas fa-trash-alt"></i>
+                      <span>상품 삭제</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -163,6 +182,7 @@ export default {
   // computed 부분은 그대로 유지
   computed: {
     ...mapState('products', ['product', 'loading']),
+    ...mapState('auth', ['user']),
     
     productImages() {
       if (!this.product) return []
@@ -180,6 +200,14 @@ export default {
     
     token() {
       return this.$store.state.auth.token
+    },
+    
+    // 현재 사용자가 상품 소유자인지 확인
+    isProductOwner() {
+      return this.isAuthenticated && 
+             this.user && 
+             this.product && 
+             this.product.product.sellerName === this.user.username
     }
   },
   
@@ -187,7 +215,7 @@ export default {
   
   methods: {
     // toggleWishlist 액션 제거하고 fetchProduct만 유지
-    ...mapActions('products', ['fetchProduct']),
+    ...mapActions('products', ['fetchProduct', 'deleteProduct']),
     
     formatPrice(price) {
       return new Intl.NumberFormat('ko-KR').format(price)
@@ -351,6 +379,37 @@ export default {
         )
       } catch (error) {
         console.error('관련 상품 목록 조회 오류:', error)
+      }
+    },
+    
+    // 상품 삭제 확인 메서드 추가
+    confirmDeleteProduct() {
+      if (confirm('정말로 이 상품을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+        this.deleteProductItem()
+      }
+    },
+    
+    // 상품 삭제 메서드 추가
+    async deleteProductItem() {
+      try {
+        await this.deleteProduct(this.product.product.id)
+        
+        // 성공 메시지 표시
+        if (this.$toast) {
+          this.$toast.success('상품이 성공적으로 삭제되었습니다.')
+        } else {
+          alert('상품이 성공적으로 삭제되었습니다.')
+        }
+        
+        // 상품 목록 페이지로 이동
+        this.$router.push({ name: 'ProductList' })
+      } catch (error) {
+        console.error('상품 삭제 오류:', error)
+        if (this.$toast) {
+          this.$toast.error(error.message || '상품 삭제 중 오류가 발생했습니다.')
+        } else {
+          alert(error.message || '상품 삭제 중 오류가 발생했습니다.')
+        }
       }
     }
   }
