@@ -6,6 +6,7 @@ import LoginView from '../views/auth/Login.vue'
 import RegisterView from '../views/auth/Register.vue'
 import PasswordResetRequestView from '../views/auth/PasswordResetRequest.vue'
 import PasswordResetView from '../views/auth/PasswordReset.vue'
+import OAuthCallbackView from '../views/auth/OAuthCallback.vue'
 import ProfileView from '../views/user/Profile.vue'
 import WishlistView from '../views/user/Wishlist.vue'
 import SellProduct from '../views/SellProduct.vue'
@@ -65,6 +66,11 @@ const routes = [
     redirect: to => {
       return { path: '/password-reset', query: to.query };
     }
+  },
+  {
+    path: '/oauth/callback',
+    name: 'OAuthCallback',
+    component: OAuthCallbackView
   },
   {
     path: '/profile',
