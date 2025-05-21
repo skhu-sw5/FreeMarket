@@ -61,6 +61,12 @@ const routes = [
     component: PasswordResetView
   },
   {
+    path: '/reset-password',
+    redirect: to => {
+      return { path: '/password-reset', query: to.query };
+    }
+  },
+  {
     path: '/profile',
     name: 'Profile',
     component: ProfileView,
