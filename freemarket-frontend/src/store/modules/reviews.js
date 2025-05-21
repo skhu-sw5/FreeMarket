@@ -70,7 +70,7 @@ export default {
   },
   
   actions: {
-    // 상품별 리뷰 목록 조회 - 빈 리뷰 목록 반환
+    // 상품별 리뷰 목록 조회 - 현재는 mock 데이터 사용 (백엔드 API 없음)
     async fetchProductReviews({ commit, rootState }, { productId, page = 0, size = 10, append = false }) {
       if (!append) {
         commit('SET_LOADING', true)
@@ -129,222 +129,373 @@ export default {
       }
     },
     
-    // 단일 리뷰 조회 - 빈 리뷰 반환
+    // 단일 리뷰 조회 - 실제 API 연동
     async fetchReview({ commit, rootState }, reviewId) {
-      commit('SET_LOADING', true)
+      commit('SET_LOADING', true);
       
       try {
-        // 짧은 지연 시간 추가
-        await new Promise(resolve => setTimeout(resolve, 300));
+        console.log(`리뷰 상세 조회 요청: 리뷰 ID ${reviewId}`);
         
-        // 리뷰를 찾을 수 없음 상태 반환
-        commit('SET_REVIEW', null)
-        commit('SET_LOADING', false)
-        
-        // 리뷰를 찾을 수 없다는 오류 발생
-        throw new Error('리뷰를 찾을 수 없습니다.');
-      } catch (error) {
-        console.error('리뷰 상세 조회 오류:', error)
-        commit('SET_ERROR', error.message)
-        commit('SET_LOADING', false)
-        throw error
-      }
-    },
-    
-    // 내가 작성한 리뷰 목록 조회 - 빈 목록 반환
-    async fetchMyReviews({ commit, rootState }, { page = 0, size = 10 }) {
-      commit('SET_LOADING', true)
-      
-      try {
-        // 짧은 지연 시간 추가
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        // 빈 리뷰 목록
-        const mockReviews = [];
-        
-        // 페이징 정보
-        const totalElements = 0;
-        const totalPages = 0;
-        
-        commit('SET_MY_REVIEWS', {
-          reviews: mockReviews,
-          totalPages: totalPages,
-          totalElements: totalElements
-        })
-        
-        commit('SET_LOADING', false)
-        return { content: mockReviews, totalPages, totalElements }
-      } catch (error) {
-        console.error('내 리뷰 목록 조회 오류:', error)
-        commit('SET_ERROR', error.message)
-        commit('SET_LOADING', false)
-        
-        // 오류 시 빈 배열로 설정
-        commit('SET_MY_REVIEWS', {
-          reviews: [],
-          totalPages: 0,
-          totalElements: 0
-        })
-        
-        throw error
-      }
-    },
-    
-    // 사용자가 받은 리뷰 목록 조회 - 빈 목록 반환
-    async fetchUserReviews({ commit, rootState }, { username, page = 0, size = 10 }) {
-      commit('SET_LOADING', true)
-      
-      try {
-        // 짧은 지연 시간 추가
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        // 빈 리뷰 목록
-        const mockReviews = [];
-        
-        // 페이징 정보
-        const totalElements = 0;
-        const totalPages = 0;
-        
-        commit('SET_RECEIVED_REVIEWS', {
-          reviews: mockReviews,
-          totalPages: totalPages,
-          totalElements: totalElements
-        })
-        
-        commit('SET_LOADING', false)
-        return { content: mockReviews, totalPages, totalElements }
-      } catch (error) {
-        console.error('사용자 리뷰 목록 조회 오류:', error)
-        commit('SET_ERROR', error.message)
-        commit('SET_LOADING', false)
-        
-        // 오류 시 빈 배열로 설정
-        commit('SET_RECEIVED_REVIEWS', {
-          reviews: [],
-          totalPages: 0,
-          totalElements: 0
-        })
-        
-        throw error
-      }
-    },
-    
-    // 리뷰 작성 - 모의 구현
-    async createReview({ commit, rootState, state }, { productId, reviewData }) {
-      commit('SET_LOADING', true)
-      
-      try {
-        // 로그인 체크
-        if (!rootState.auth.isAuthenticated) {
-          throw new Error('로그인이 필요합니다.');
-        }
-        
-        // 지연 시간 추가
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // 모의 리뷰 생성
-        const mockReview = {
-          id: Date.now(), // 임시 ID 생성
-          ...reviewData,
-          createdAt: new Date().toISOString(),
-          authorId: rootState.auth.user?.id || 999,
-          authorName: rootState.auth.user?.name || "사용자",
-          productId: productId,
-          imageUrls: []
+        // 헤더 설정
+        const headers = {
+          'Accept': 'application/json'
         };
         
-        // 새 리뷰를 목록에 추가
-        commit('ADD_REVIEW', mockReview)
-        commit('SET_LOADING', false)
-        return mockReview
+        if (rootState.auth.token) {
+          headers['Authorization'] = `Bearer ${rootState.auth.token}`;
+        }
+        
+        // API 호출 URL
+        const url = `/api/reviews/${reviewId}`;
+        
+        // 리뷰 상세 요청
+        const response = await fetch(url, {
+          method: 'GET',
+          headers,
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            throw new Error('리뷰를 찾을 수 없습니다.');
+          }
+          throw new Error(`리뷰 조회에 실패했습니다. 상태 코드: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('리뷰 상세 API 응답 데이터:', data);
+        
+        // 데이터 확인 및 상태 업데이트
+        if (data && data.data) {
+          commit('SET_REVIEW', data.data);
+          commit('SET_LOADING', false);
+          return data.data;
+        } else {
+          throw new Error('API 응답 형식이 올바르지 않습니다.');
+        }
       } catch (error) {
-        console.error('리뷰 작성 오류:', error)
-        commit('SET_ERROR', error.message)
-        commit('SET_LOADING', false)
-        throw error
-      }
-    },
-    
-    // 리뷰 수정 - 모의 구현
-    async updateReview({ commit, rootState, state }, { reviewId, reviewData }) {
-      commit('SET_LOADING', true)
-      
-      try {
-        // 로그인 체크
-        if (!rootState.auth.isAuthenticated) {
-          throw new Error('로그인이 필요합니다.');
-        }
-        
-        // 기존 리뷰 조회
-        const existingReview = state.productReviews.find(r => r.id === reviewId) || 
-                              state.myReviews.find(r => r.id === reviewId);
-        
-        if (!existingReview) {
-          throw new Error('리뷰를 찾을 수 없습니다.');
-        }
-        
-        // 리뷰 소유자 체크
-        if (existingReview.authorId !== rootState.auth.user?.id) {
-          throw new Error('본인이 작성한 리뷰만 수정할 수 있습니다.');
-        }
-        
-        // 지연 시간 추가
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // 모의 리뷰 업데이트
-        const updatedReview = {
-          ...existingReview,
-          ...reviewData,
-          updatedAt: new Date().toISOString()
-        };
-        
-        // 리뷰 업데이트
-        commit('UPDATE_REVIEW', updatedReview);
+        console.error('리뷰 상세 조회 오류:', error);
+        commit('SET_ERROR', error.message);
         commit('SET_LOADING', false);
-        return updatedReview;
-      } catch (error) {
-        console.error('리뷰 수정 오류:', error)
-        commit('SET_ERROR', error.message)
-        commit('SET_LOADING', false)
-        throw error
+        throw error;
       }
     },
     
-    // 리뷰 삭제 - 모의 구현
-    async deleteReview({ commit, rootState, state }, reviewId) {
-      commit('SET_LOADING', true)
+    // 내가 작성한 리뷰 목록 조회 - 실제 API 연동
+    async fetchMyReviews({ commit, rootState }, { page = 0, size = 10 }) {
+      commit('SET_LOADING', true);
       
       try {
-        // 로그인 체크
-        if (!rootState.auth.isAuthenticated) {
+        console.log(`내 리뷰 목록 조회 요청: 페이지 ${page}, 사이즈 ${size}`);
+        
+        // 인증 상태 확인
+        if (!rootState.auth.token) {
           throw new Error('로그인이 필요합니다.');
         }
         
-        // 기존 리뷰 조회
-        const existingReview = state.productReviews.find(r => r.id === reviewId) || 
-                              state.myReviews.find(r => r.id === reviewId);
+        // 헤더 설정
+        const headers = {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${rootState.auth.token}`
+        };
         
-        if (!existingReview) {
-          throw new Error('리뷰를 찾을 수 없습니다.');
+        // API 호출 URL
+        const url = `/api/reviews/me?page=${page}&size=${size}`;
+        
+        // 내 리뷰 목록 요청
+        const response = await fetch(url, {
+          method: 'GET',
+          headers,
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          if (response.status === 401) {
+            throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
+          }
+          throw new Error(`내 리뷰 목록 조회에 실패했습니다. 상태 코드: ${response.status}`);
         }
         
-        // 리뷰 소유자 체크
-        if (existingReview.authorId !== rootState.auth.user?.id) {
-          throw new Error('본인이 작성한 리뷰만 삭제할 수 있습니다.');
+        const data = await response.json();
+        console.log('내 리뷰 목록 API 응답 데이터:', data);
+        
+        // 데이터 확인 및 상태 업데이트
+        if (data && data.data) {
+          const reviews = data.data.reviews || [];
+          const totalPages = data.data.totalPages || 0;
+          const totalElements = data.data.totalElements || 0;
+          
+          commit('SET_MY_REVIEWS', {
+            reviews,
+            totalPages,
+            totalElements
+          });
+          
+          commit('SET_LOADING', false);
+          return {
+            content: reviews,
+            totalPages,
+            totalElements
+          };
+        } else {
+          throw new Error('API 응답 형식이 올바르지 않습니다.');
         }
-        
-        // 지연 시간 추가
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // 리뷰 삭제
-        commit('REMOVE_REVIEW', reviewId)
-        commit('SET_LOADING', false)
-        return true
       } catch (error) {
-        console.error('리뷰 삭제 오류:', error)
-        commit('SET_ERROR', error.message)
-        commit('SET_LOADING', false)
-        throw error
+        console.error('내 리뷰 목록 조회 오류:', error);
+        commit('SET_ERROR', error.message);
+        commit('SET_LOADING', false);
+        
+        // 오류 시 빈 배열로 설정
+        commit('SET_MY_REVIEWS', {
+          reviews: [],
+          totalPages: 0,
+          totalElements: 0
+        });
+        
+        throw error;
+      }
+    },
+    
+    // 사용자가 받은 리뷰 목록 조회 - 실제 API 연동
+    async fetchUserReviews({ commit, rootState }, { userId, page = 0, size = 10 }) {
+      commit('SET_LOADING', true);
+      
+      try {
+        console.log(`사용자가 받은 리뷰 목록 조회 요청: 사용자 ID ${userId}, 페이지 ${page}, 사이즈 ${size}`);
+        
+        // 헤더 설정
+        const headers = {
+          'Accept': 'application/json'
+        };
+        
+        if (rootState.auth.token) {
+          headers['Authorization'] = `Bearer ${rootState.auth.token}`;
+        }
+        
+        // API 호출 URL
+        const url = `/api/reviews/users/${userId}?page=${page}&size=${size}`;
+        
+        // 사용자 리뷰 목록 요청
+        const response = await fetch(url, {
+          method: 'GET',
+          headers,
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            throw new Error('사용자를 찾을 수 없습니다.');
+          }
+          throw new Error(`사용자 리뷰 목록 조회에 실패했습니다. 상태 코드: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('사용자 리뷰 목록 API 응답 데이터:', data);
+        
+        // 데이터 확인 및 상태 업데이트
+        if (data && data.data) {
+          const reviews = data.data.reviews || [];
+          const totalPages = data.data.totalPages || 0;
+          const totalElements = data.data.totalElements || 0;
+          
+          commit('SET_RECEIVED_REVIEWS', {
+            reviews,
+            totalPages,
+            totalElements
+          });
+          
+          commit('SET_LOADING', false);
+          return {
+            content: reviews,
+            totalPages,
+            totalElements,
+            stats: data.data.stats
+          };
+        } else {
+          throw new Error('API 응답 형식이 올바르지 않습니다.');
+        }
+      } catch (error) {
+        console.error('사용자 리뷰 목록 조회 오류:', error);
+        commit('SET_ERROR', error.message);
+        commit('SET_LOADING', false);
+        
+        // 오류 시 빈 배열로 설정
+        commit('SET_RECEIVED_REVIEWS', {
+          reviews: [],
+          totalPages: 0,
+          totalElements: 0
+        });
+        
+        throw error;
+      }
+    },
+    
+    // 리뷰 작성 - 실제 API 연동
+    async createReview({ commit, rootState }, { productId, reviewData }) {
+      commit('SET_LOADING', true);
+      
+      try {
+        console.log(`리뷰 작성 요청: 상품 ID ${productId}, 데이터:`, reviewData);
+        
+        // 인증 상태 확인
+        if (!rootState.auth.token) {
+          throw new Error('로그인이 필요합니다.');
+        }
+        
+        // 요청 데이터 구성
+        const requestData = {
+          productId,
+          rating: reviewData.rating,
+          content: reviewData.content
+        };
+        
+        // 헤더 설정
+        const headers = {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${rootState.auth.token}`
+        };
+        
+        // API 호출 URL
+        const url = `/api/reviews`;
+        
+        // 리뷰 작성 요청
+        const response = await fetch(url, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(requestData),
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || `리뷰 작성에 실패했습니다. 상태 코드: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('리뷰 작성 API 응답 데이터:', data);
+        
+        // 데이터 확인 및 상태 업데이트
+        if (data && data.data) {
+          commit('ADD_REVIEW', data.data);
+          commit('SET_LOADING', false);
+          return data.data;
+        } else {
+          throw new Error('API 응답 형식이 올바르지 않습니다.');
+        }
+      } catch (error) {
+        console.error('리뷰 작성 오류:', error);
+        commit('SET_ERROR', error.message);
+        commit('SET_LOADING', false);
+        throw error;
+      }
+    },
+    
+    // 리뷰 수정 - 실제 API 연동
+    async updateReview({ commit, rootState }, { reviewId, reviewData }) {
+      commit('SET_LOADING', true);
+      
+      try {
+        console.log(`리뷰 수정 요청: 리뷰 ID ${reviewId}, 데이터:`, reviewData);
+        
+        // 인증 상태 확인
+        if (!rootState.auth.token) {
+          throw new Error('로그인이 필요합니다.');
+        }
+        
+        // 요청 데이터 구성
+        const requestData = {
+          rating: reviewData.rating,
+          content: reviewData.content
+        };
+        
+        // 헤더 설정
+        const headers = {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${rootState.auth.token}`
+        };
+        
+        // API 호출 URL
+        const url = `/api/reviews/${reviewId}`;
+        
+        // 리뷰 수정 요청
+        const response = await fetch(url, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify(requestData),
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || `리뷰 수정에 실패했습니다. 상태 코드: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('리뷰 수정 API 응답 데이터:', data);
+        
+        // 데이터 확인 및 상태 업데이트
+        if (data && data.data) {
+          commit('UPDATE_REVIEW', data.data);
+          commit('SET_LOADING', false);
+          return data.data;
+        } else {
+          throw new Error('API 응답 형식이 올바르지 않습니다.');
+        }
+      } catch (error) {
+        console.error('리뷰 수정 오류:', error);
+        commit('SET_ERROR', error.message);
+        commit('SET_LOADING', false);
+        throw error;
+      }
+    },
+    
+    // 리뷰 삭제 - 실제 API 연동
+    async deleteReview({ commit, rootState }, reviewId) {
+      commit('SET_LOADING', true);
+      
+      try {
+        console.log(`리뷰 삭제 요청: 리뷰 ID ${reviewId}`);
+        
+        // 인증 상태 확인
+        if (!rootState.auth.token) {
+          throw new Error('로그인이 필요합니다.');
+        }
+        
+        // 헤더 설정
+        const headers = {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${rootState.auth.token}`
+        };
+        
+        // API 호출 URL
+        const url = `/api/reviews/${reviewId}`;
+        
+        // 리뷰 삭제 요청
+        const response = await fetch(url, {
+          method: 'DELETE',
+          headers,
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || `리뷰 삭제에 실패했습니다. 상태 코드: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('리뷰 삭제 API 응답 데이터:', data);
+        
+        // 상태 업데이트
+        commit('REMOVE_REVIEW', reviewId);
+        commit('SET_LOADING', false);
+        return { success: true };
+      } catch (error) {
+        console.error('리뷰 삭제 오류:', error);
+        commit('SET_ERROR', error.message);
+        commit('SET_LOADING', false);
+        throw error;
       }
     }
   },
