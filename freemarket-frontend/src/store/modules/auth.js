@@ -309,6 +309,24 @@ export default {
       }
     },
     
+    // 소셜 로그인을 위한 토큰 설정 액션
+    setAuth({ commit, dispatch }, { accessToken, refreshToken }) {
+      try {
+        console.log('소셜 로그인 토큰 설정 중...');
+        
+        // 토큰 상태 저장
+        commit('SET_AUTH_TOKENS', { accessToken, refreshToken });
+        
+        // 사용자 정보 가져오기
+        dispatch('fetchUser');
+        
+        return true;
+      } catch (error) {
+        console.error('소셜 로그인 토큰 설정 오류:', error);
+        return false;
+      }
+    },
+    
     logout({ commit }) {
       try {
         console.log('로그아웃 처리 중...');

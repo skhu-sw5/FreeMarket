@@ -177,10 +177,21 @@ export default {
     },
     
     socialLogin(provider) {
-      // 소셜 로그인 URL 생성
-      const redirectUri = encodeURIComponent(window.location.origin + '/oauth/callback')
+      // 현재 경로를 저장
+      const currentPath = this.$route.query.redirect || '/'
+      localStorage.setItem('authRedirect', currentPath)
+
+      // 백엔드 URI를 하드코딩으로 사용하여 리다이렉트 문제 해결
       const baseUrl = 'https://freemarket.duckdns.org' // 백엔드 서버 주소
-      window.location.href = `${baseUrl}/oauth2/authorization/${provider}?redirect_uri=${redirectUri}`
+      
+      // 로컬 개발 환경의 콜백 URL을 지정
+      const callbackUrl = encodeURIComponent('http://localhost:8081/oauth/callback')
+      
+      // 백엔드 서버에 콜백 URL을 명시적으로 전달
+      const authUrl = `${baseUrl}/oauth2/authorization/${provider}?redirect_uri=${callbackUrl}`
+      
+      console.log(`${provider} 소셜 로그인으로 이동: ${authUrl}`)
+      window.location.href = authUrl
     }
   }
 }
