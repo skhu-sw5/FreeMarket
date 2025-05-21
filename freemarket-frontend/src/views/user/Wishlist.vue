@@ -86,8 +86,11 @@ export default {
     async removeFromWishlist(productId) {
       try {
         await this.toggleWishlist(productId)
+        await this.fetchWishlist()
+        this.$toast.success('관심 상품에서 제거되었습니다')
       } catch (error) {
         console.error('관심 상품 제거 오류:', error)
+        this.$toast.error('관심 상품 제거에 실패했습니다')
       }
     },
     

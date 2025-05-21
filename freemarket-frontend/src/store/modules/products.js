@@ -50,6 +50,18 @@ export default {
       if (productIndex !== -1) {
         state.products[productIndex].stats.isWishlisted = !state.products[productIndex].stats.isWishlisted
       }
+    },
+    UPDATE_PRODUCT_WISHLIST_STATUS(state, { productId, isWishlisted, count }) {
+      const productIndex = state.products.findIndex(p => p.product.id === productId)
+      if (productIndex !== -1) {
+        state.products[productIndex].stats.isWishlisted = isWishlisted
+      }
+    },
+    REMOVE_FROM_WISHLIST(state, productId) {
+      const productIndex = state.products.findIndex(p => p.product.id === productId)
+      if (productIndex !== -1) {
+        state.products[productIndex].stats.isWishlisted = false
+      }
     }
   },
   
@@ -256,25 +268,51 @@ export default {
     
     async toggleWishlist({ commit, rootState }, productId) {
       try {
+        if (!rootState.auth.token) {
+          throw new Error('인증 토큰이 없습니다. 로그인이 필요합니다.');
+        }
+
         const response = await fetch(`/api/products/${productId}/wishlist`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${rootState.auth.token}`
+            'Authorization': `Bearer ${rootState.auth.token}`,
+            'Accept': 'application/json'
           },
           credentials: 'include' // 쿠키와 인증 정보 포함
-        })
+        });
         
         if (!response.ok) {
-          throw new Error('관심 상품 처리에 실패했습니다.')
+          throw new Error('관심 상품 처리에 실패했습니다.');
         }
         
-        const data = await response.json()
-        commit('TOGGLE_WISHLIST', productId)
+        const data = await response.json();
+        console.log('위시리스트 토글 응답:', data);
         
-        return data
+        // 상품 상세 페이지에서 위시리스트 상태 업데이트를 위한 상태 변경
+        if (data.added !== undefined) {
+          // 백엔드에서 반환된 정보로 위시리스트 상태 업데이트
+          commit('UPDATE_PRODUCT_WISHLIST_STATUS', { 
+            productId, 
+            isWishlisted: data.added, 
+            count: data.count 
+          });
+        }
+        
+        // 위시리스트 페이지에서 보여지는 목록 업데이트
+        if (!data.added) {
+          // 위시리스트에서 제거된 경우 목록에서도 제거
+          commit('REMOVE_FROM_WISHLIST', productId);
+        }
+        
+        // 추가된 후 다음 fetchWishlist 호출 시 목록이 업데이트됨
+        
+        return {
+          isWishlisted: data.added,
+          count: data.count
+        };
       } catch (error) {
-        console.error('관심 상품 처리 오류:', error)
-        throw error
+        console.error('관심 상품 처리 오류:', error);
+        throw error;
       }
     },
     

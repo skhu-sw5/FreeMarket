@@ -4,6 +4,8 @@ import ProductList from '../views/ProductList.vue'
 import ProductDetail from '../views/ProductDetail.vue'
 import LoginView from '../views/auth/Login.vue'
 import RegisterView from '../views/auth/Register.vue'
+import PasswordResetRequestView from '../views/auth/PasswordResetRequest.vue'
+import PasswordResetView from '../views/auth/PasswordReset.vue'
 import ProfileView from '../views/user/Profile.vue'
 import WishlistView from '../views/user/Wishlist.vue'
 import SellProduct from '../views/SellProduct.vue'
@@ -47,6 +49,16 @@ const routes = [
     path: '/register',
     name: 'Register',
     component: RegisterView
+  },
+  {
+    path: '/password-reset-request',
+    name: 'PasswordResetRequest',
+    component: PasswordResetRequestView
+  },
+  {
+    path: '/password-reset',
+    name: 'PasswordReset',
+    component: PasswordResetView
   },
   {
     path: '/profile',

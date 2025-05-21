@@ -43,7 +43,7 @@
           </div>
           
           <div class="text-sm">
-            <router-link to="/forgot-password" class="text-blue-600 hover:text-blue-500">
+            <router-link to="/password-reset-request" class="text-blue-600 hover:text-blue-500">
               비밀번호 찾기
             </router-link>
           </div>
