@@ -1,7 +1,7 @@
 <template>
-  <div class="min-h-screen flex flex-col">
+  <div class="flex flex-col min-h-screen">
     <AppHeader />
-    <main class="flex-grow">
+    <main class="flex-1">
       <Banner />
       <Categories />
       

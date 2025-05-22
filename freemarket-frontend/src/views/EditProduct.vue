@@ -228,6 +228,9 @@ import AppHeader from '@/components/common/AppHeader.vue'
 import AppFooter from '@/components/common/AppFooter.vue'
 import { mapState, mapActions } from 'vuex'
 
+// 이미지 서버 주소 상수 추가
+const IMAGE_BASE_URL = 'https://freemarket.duckdns.org';
+
 export default {
   name: 'EditProduct',
   
@@ -248,6 +251,7 @@ export default {
         description: ''
       },
       previewImages: [],
+      deleteImageIds: [], // 삭제할 이미지 ID 목록 추가
       submitting: false,
       error: null,
       categories: [
@@ -295,36 +299,62 @@ export default {
     
     async loadProduct() {
       this.error = null
-      
       try {
         await this.fetchProduct(this.productId)
-        
-        // 가져온 상품 정보로 폼 초기화
-        if (this.product) {
+        if (this.product && this.product.product) {
           const productData = this.product.product
-          
+
+          // 안전한 데이터 접근 및 기본값 설정
           this.productForm = {
-            name: productData.name,
-            price: productData.price,
-            stock: productData.stock,
-            category: productData.category,
-            status: productData.status,
-            description: productData.description
+            name: productData.name || '',
+            price: productData.price || 0,
+            stock: productData.stock || 1,
+            category: productData.category || '',
+            status: productData.status || 'ACTIVE',
+            description: productData.description || ''
           }
-          
-          // 이미지 미리보기 설정
-          this.previewImages = productData.imageUrls.map(url => ({
-            preview: url,
-            url: url // 기존 이미지 URL 저장
-          }))
-          
+
+          // 카테고리 매칭 (안전한 방식)
+          const matchedCategory = this.categories.find(cat =>
+            cat.id === this.productForm.category || cat.name === this.productForm.category
+          );
+          if (matchedCategory) {
+            this.productForm.category = matchedCategory.id;
+          }
+
+          // 상태 검증
+          const validStatus = this.statusOptions.find(opt => opt.id === this.productForm.status);
+          if (!validStatus) {
+            this.productForm.status = 'ACTIVE';
+          }
+
+          // 이미지 미리보기 안전하게 처리
+          this.previewImages = [];
+          if (productData.imageUrls && Array.isArray(productData.imageUrls)) {
+            this.previewImages = productData.imageUrls.map((url, index) => {
+              if (!url) return null; // null 이미지 URL 건너뛰기
+              
+              const isAbsolute = url.startsWith('http://') || url.startsWith('https://');
+              const fullUrl = isAbsolute ? url : IMAGE_BASE_URL + url;
+              return {
+                preview: fullUrl,
+                url: fullUrl,
+                imageId: String(index + 1),
+                isExisting: true
+              }
+            }).filter(Boolean); // null 값 제거
+          }
+
           // 판매자 확인 (본인이 등록한 상품만 수정 가능)
-          if (productData.sellerName !== this.user.username) {
+          if (this.user && this.user.id && productData.sellerId && productData.sellerId !== this.user.id) {
             this.error = '본인이 등록한 상품만 수정할 수 있습니다.'
           }
+        } else {
+          this.error = '상품 정보를 찾을 수 없습니다.'
         }
       } catch (error) {
-        this.error = error.message || '상품 정보를 불러오는데 실패했습니다.'
+        console.error('상품 로드 오류:', error)
+        this.error = error?.message || '상품 정보를 불러오는데 실패했습니다.'
       }
     },
     
@@ -349,7 +379,8 @@ export default {
         reader.onload = e => {
           this.previewImages.push({
             file,
-            preview: e.target.result
+            preview: e.target.result,
+            isExisting: false // 새로운 이미지 표시
           })
         }
         reader.readAsDataURL(file)
@@ -360,6 +391,15 @@ export default {
     },
     
     removeImage(index) {
+      const image = this.previewImages[index]
+      // 기존 이미지인 경우 삭제 목록에 추가
+      if (image.isExisting && image.imageId) {
+        const imageIdStr = String(image.imageId);
+        if (!this.deleteImageIds.includes(imageIdStr)) {
+          this.deleteImageIds.push(imageIdStr);
+        }
+      }
+      // 미리보기 목록에서 제거
       this.previewImages.splice(index, 1)
     },
     
@@ -367,24 +407,42 @@ export default {
       this.submitting = true
       
       try {
-        // 상품 데이터 준비
+        // 상품 데이터 준비 - 안전한 형변환
         const productData = {
-          name: this.productForm.name,
-          price: parseInt(this.productForm.price),
-          stock: parseInt(this.productForm.stock),
-          category: this.productForm.category,
-          status: this.productForm.status,
-          description: this.productForm.description
+          name: String(this.productForm.name || '').trim(),
+          price: parseInt(this.productForm.price) || 0,
+          stock: parseInt(this.productForm.stock) || 1,
+          category: String(this.productForm.category || ''),
+          status: String(this.productForm.status || 'ACTIVE'),
+          description: String(this.productForm.description || '').trim()
         }
         
-        // 이미지 파일 또는 URL 준비
-        const images = this.previewImages.map(item => item.file || item.url)
+        // 유효성 검사
+        if (!productData.name) {
+          throw new Error('상품명을 입력해주세요.');
+        }
+        if (productData.price < 100) {
+          throw new Error('가격은 100원 이상이어야 합니다.');
+        }
+        if (!productData.category) {
+          throw new Error('카테고리를 선택해주세요.');
+        }
+        
+        // 새로운 이미지 파일만 필터링
+        const newImages = this.previewImages
+          .filter(item => item.file && item.file instanceof File)
+          .map(item => item.file)
+        
+        console.log('상품 수정 데이터:', productData);
+        console.log('새 이미지 개수:', newImages.length);
+        console.log('삭제할 이미지 ID:', this.deleteImageIds);
         
         // 상품 수정 API 호출
         const response = await this.updateProduct({ 
           productId: this.productId, 
           productData, 
-          images 
+          images: newImages,
+          deleteImageIds: this.deleteImageIds.slice() // 배열 복사
         })
         
         // 성공 시 상품 상세 페이지로 이동
@@ -395,7 +453,8 @@ export default {
         })
       } catch (error) {
         console.error('상품 수정 오류:', error)
-        alert(error.message || '상품 수정 중 오류가 발생했습니다. 다시 시도해주세요.')
+        const errorMessage = error?.message || '상품 수정 중 오류가 발생했습니다. 다시 시도해주세요.';
+        alert(errorMessage)
       } finally {
         this.submitting = false
       }

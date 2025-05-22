@@ -1,6 +1,6 @@
 <template>
-  <div class="min-h-screen flex flex-col">
-    <router-view />
+  <div id="app" class="min-h-screen flex flex-col">
+    <router-view class="flex-1" />
   </div>
 </template>
 
@@ -94,7 +94,18 @@ export default {
       // 간단한 console.error 오버라이드
       const originalError = console.error;
       console.error = function(...args) {
-        const message = args.join(' ').toLowerCase();
+        // args를 문자열로 안전하게 변환
+        const message = args.map(arg => {
+          if (typeof arg === 'string') return arg;
+          if (typeof arg === 'object' && arg !== null) {
+            try {
+              return JSON.stringify(arg);
+            } catch (e) {
+              return String(arg);
+            }
+          }
+          return String(arg);
+        }).join(' ').toLowerCase();
         
         // 확장 프로그램 관련 오류만 필터링
         if (message.includes('unchecked runtime.lasterror') ||

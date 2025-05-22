@@ -33,22 +33,34 @@
             <router-link to="/user/orders" class="text-gray-700 hover:text-blue-600">
               <i class="fas fa-shopping-bag"></i>
             </router-link>
+            
+            <!-- 사용자 프로필 링크 -->
             <router-link to="/profile" class="text-gray-700 hover:text-blue-600">
               <i class="far fa-user"></i>
             </router-link>
-            <button @click="handleLogout" class="text-gray-700 hover:text-blue-600">
+            
+            <!-- 로그아웃 버튼 -->
+            <button 
+              @click="handleLogout"
+              class="text-gray-700 hover:text-red-600"
+              title="로그아웃"
+            >
               <i class="fas fa-sign-out-alt"></i>
             </button>
+            
+            <router-link to="/sell" class="button-primary">
+              판매하기
+            </router-link>
           </template>
           <template v-else>
             <router-link to="/login" class="button-outline flex items-center space-x-1">
               <i class="fas fa-sign-in-alt"></i>
               <span>로그인</span>
             </router-link>
+            <router-link to="/sell" class="button-primary">
+              판매하기
+            </router-link>
           </template>
-          <router-link to="/sell" class="button-primary">
-            판매하기
-          </router-link>
         </div>
       </div>
       
@@ -68,14 +80,37 @@
       
       <!-- 모바일 메뉴 -->
       <div v-if="isMenuOpen" class="md:hidden mt-3 py-2 border-t">
-        <nav class="flex flex-col space-y-3">
+        <nav class="flex flex-col space-y-2">
           <router-link to="/categories" class="py-2 hover:text-blue-600">카테고리</router-link>
           <router-link to="/products" class="py-2 hover:text-blue-600">전체 상품</router-link>
           <template v-if="isAuthenticated">
-            <router-link to="/profile" class="py-2 hover:text-blue-600">내 프로필</router-link>
-            <router-link to="/wishlist" class="py-2 hover:text-blue-600">관심 상품</router-link>
-            <router-link to="/user/orders" class="py-2 hover:text-blue-600">주문 내역</router-link>
-            <button @click="handleLogout" class="py-2 text-left hover:text-blue-600">로그아웃</button>
+            <div class="border-t pt-2 mt-2">
+              <router-link to="/wishlist" class="block py-2 hover:text-blue-600">
+                <i class="far fa-heart mr-2"></i>관심 상품
+              </router-link>
+              <router-link to="/user/orders" class="block py-2 hover:text-blue-600">
+                <i class="fas fa-shopping-bag mr-2"></i>주문 내역
+              </router-link>
+              <router-link to="/profile" class="block py-2 hover:text-blue-600">
+                <i class="far fa-user mr-2"></i>프로필
+              </router-link>
+              <button @click="handleLogout" class="py-2 text-left hover:text-red-600 w-full">
+                <i class="fas fa-sign-out-alt mr-2"></i>로그아웃
+              </button>
+              <router-link to="/sell" class="block py-2 hover:text-blue-600 font-medium text-blue-600">
+                <i class="fas fa-plus mr-2"></i>판매하기
+              </router-link>
+            </div>
+          </template>
+          <template v-else>
+            <div class="border-t pt-2 mt-2">
+              <router-link to="/login" class="block py-2 hover:text-blue-600">
+                <i class="fas fa-sign-in-alt mr-2"></i>로그인
+              </router-link>
+              <router-link to="/sell" class="block py-2 hover:text-blue-600 font-medium text-blue-600">
+                <i class="fas fa-plus mr-2"></i>판매하기
+              </router-link>
+            </div>
           </template>
         </nav>
       </div>
@@ -100,10 +135,27 @@ export default {
     ...mapGetters('auth', ['isAuthenticated', 'currentUser'])
   },
   
+  mounted() {
+    // 외부 클릭 시 드롭다운 메뉴 닫기
+    document.addEventListener('click', this.handleOutsideClick)
+  },
+  
+  beforeUnmount() {
+    document.removeEventListener('click', this.handleOutsideClick)
+  },
+  
   methods: {
     ...mapActions('auth', ['logout']),
     
+    handleOutsideClick(event) {
+      // 모바일 메뉴 외부 클릭 시 닫기
+      if (!this.$el.contains(event.target)) {
+        this.isMenuOpen = false
+      }
+    },
+    
     async handleLogout() {
+      this.isMenuOpen = false
       await this.logout();
       // 로그아웃 후 메인 페이지로 리다이렉트
       this.$router.push('/');
