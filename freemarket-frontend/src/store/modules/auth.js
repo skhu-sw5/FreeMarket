@@ -24,16 +24,9 @@ export default {
         return null;
       }
     })(),
-    isAuthenticated: (() => {
-      try {
-        const isAuth = !!localStorage.getItem('accessToken');
-        console.log('인증 상태:', isAuth ? '인증됨' : '인증되지 않음');
-        return isAuth;
-      } catch (e) {
-        console.error('인증 상태 확인 중 오류:', e);
-        return false;
-      }
-    })(),
+    // 초기화 시 로컬 스토리지 토큰을 확인하지 않고 false로 시작합니다
+    // 인증은 App.vue에서 fetchUser 성공 시 설정됨
+    isAuthenticated: false,
     isRefreshing: false, // 토큰 리프레시 중인지 상태 추가
     refreshPromise: null // 리프레시 중인 Promise 객체 저장
   },
@@ -41,6 +34,10 @@ export default {
   mutations: {
     SET_AUTH_USER(state, user) {
       state.user = user
+      // 사용자 정보가 있으면 인증 상태를 true로 설정
+      if (user) {
+        state.isAuthenticated = true
+      }
     },
     SET_AUTH_TOKENS(state, { accessToken, refreshToken }) {
       state.token = accessToken
@@ -126,7 +123,7 @@ export default {
     },
 
     // 토큰 리프레시 함수
-    async refreshToken({ commit, state }) {
+    async refreshTokenAction({ commit, state }) {
       // 이미 진행 중인 리프레시가 있으면 그 Promise 반환
       if (state.isRefreshing && state.refreshPromise) {
         console.log('이미 진행 중인 토큰 리프레시가 있습니다. 기존 요청을 재사용합니다.');
@@ -254,6 +251,7 @@ export default {
           // 기존 사용자 데이터를 보존하면서 새 데이터로 업데이트
           const updatedUser = state.user ? { ...state.user, ...data.data } : data.data;
           commit('SET_AUTH_USER', updatedUser);
+          
           console.log('최종 사용자 정보:', updatedUser);
           return updatedUser;
         } else {
@@ -263,18 +261,22 @@ export default {
       } catch (error) {
         console.error('사용자 정보 조회 오류:', error)
         
-        // 인증 오류인 경우 로그인 페이지로 리다이렉트
-        if (error.message && error.message.includes('인증이 만료되었습니다')) {
-          // 로그인 페이지로 프로그래밍 방식으로 리다이렉트
-          window.location.href = '/login';
+        // 인증 관련 오류인 경우 로그아웃 처리
+        if (error.message && (error.message.includes('인증이 만료되었습니다') || 
+                              error.message.includes('401') || 
+                              error.message.includes('권한이 없습니다'))) {
+          console.log('인증 오류로 인해 로그아웃 처리합니다.');
+          commit('CLEAR_AUTH');
+          return null;
         }
         
-        // 네트워크 오류인 경우 null 반환
+        // 네트워크 오류인 경우 null 반환 (인증 상태 유지)
         if (error.message && error.message.includes('서버에 연결할 수 없습니다')) {
           return null;
         }
         
-        // 다른 오류의 경우 오류를 전파
+        // 다른 오류의 경우 인증 상태 초기화
+        commit('CLEAR_AUTH');
         throw error;
       }
     },

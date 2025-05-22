@@ -49,6 +49,9 @@
                 </div>
                 <div class="ml-3">
                   <p class="text-sm text-red-700">{{ error }}</p>
+                  <p class="text-sm text-gray-600 mt-1">
+                    백엔드 서버나 네트워크 연결에 문제가 있을 수 있습니다.
+                  </p>
                   <div class="mt-2">
                     <button 
                       @click="fetchOrders()" 
@@ -255,7 +258,11 @@ export default {
   },
   
   computed: {
-    ...mapState('auth', ['isAuthenticated', 'token']),
+    ...mapState('auth', ['isAuthenticated']),
+    // 토큰은 localStorage에서 직접 가져옴
+    token() {
+      return localStorage.getItem('accessToken') || ''
+    }
   },
   
   created() {
@@ -272,42 +279,70 @@ export default {
       this.error = null
       
       try {
-        // 구매 내역 가져오기
-        const purchasesResponse = await fetch('/api/orders?type=purchases', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.token}`
-          }
-        })
+        // axios 가져오기
+        const axios = (await import('axios')).default
+        // 더미 데이터 가져오기 (개발용)
+        const { dummyPurchases, dummySales, isDevelopment } = await import('@/utils/dummyData')
         
-        if (!purchasesResponse.ok) {
-          const error = await purchasesResponse.json()
-          throw new Error(error.message || `구매 내역을 불러올 수 없습니다. (${purchasesResponse.status})`)
+        // 디버깅을 위한 로깅
+        console.log('주문 내역 조회 시작...')
+        
+        // 구매 내역 가져오기
+        let purchasesData = []
+        try {
+          const purchasesResponse = await axios.get('/api/orders', {
+            params: { type: 'purchases' },
+            headers: {
+              'Authorization': `Bearer ${this.token}`
+            }
+          })
+          
+          console.log('구매 내역 응답:', purchasesResponse)
+          purchasesData = purchasesResponse.data.data || []
+        } catch (purchaseError) {
+          console.warn('구매 내역 조회 실패:', purchaseError)
+          
+          // 개발 환경에서는 더미 데이터 사용
+          if (isDevelopment()) {
+            console.log('개발 환경에서 더미 구매 내역 데이터 사용')
+            purchasesData = dummyPurchases
+          }
         }
         
-        const purchasesData = await purchasesResponse.json()
-        this.purchases = purchasesData.data || []
+        this.purchases = purchasesData
         
         // 판매 내역 가져오기
-        const salesResponse = await fetch('/api/orders?type=sales', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.token}`
+        let salesData = []
+        try {
+          const salesResponse = await axios.get('/api/orders', {
+            params: { type: 'sales' },
+            headers: {
+              'Authorization': `Bearer ${this.token}`
+            }
+          })
+          
+          console.log('판매 내역 응답:', salesResponse)
+          salesData = salesResponse.data.data || []
+        } catch (saleError) {
+          console.warn('판매 내역 조회 실패:', saleError)
+          
+          // 개발 환경에서는 더미 데이터 사용
+          if (isDevelopment()) {
+            console.log('개발 환경에서 더미 판매 내역 데이터 사용')
+            salesData = dummySales
           }
-        })
-        
-        if (!salesResponse.ok) {
-          const error = await salesResponse.json()
-          throw new Error(error.message || `판매 내역을 불러올 수 없습니다. (${salesResponse.status})`)
         }
         
-        const salesData = await salesResponse.json()
-        this.sales = salesData.data || []
+        this.sales = salesData
+        
+        // 양쪽 다 실패한 경우만 에러 표시 (더미 데이터도 없는 경우)
+        if (this.purchases.length === 0 && this.sales.length === 0) {
+          this.error = "주문 내역을 불러오지 못했습니다. 잠시 후 다시 시도해주세요."
+        }
+        
       } catch (error) {
         console.error('주문 내역 조회 오류:', error)
-        this.error = error.message
+        this.error = error.response?.data?.message || error.message || "서버 내부 오류가 발생했습니다."
       } finally {
         this.loading = false
       }
@@ -315,19 +350,17 @@ export default {
     
     async updateOrderStatus(orderId, newStatus) {
       try {
-        const response = await fetch(`/api/orders/${orderId}/status`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.token}`
-          },
-          body: JSON.stringify({ status: newStatus })
-        })
+        // axios 가져오기
+        const axios = (await import('axios')).default
         
-        if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.message || '주문 상태 업데이트에 실패했습니다.')
-        }
+        const response = await axios.patch(`/api/orders/${orderId}/status`, 
+          { status: newStatus },
+          { 
+            headers: {
+              'Authorization': `Bearer ${this.token}`
+            }
+          }
+        )
         
         // 주문 목록 새로고침
         this.fetchOrders()
@@ -340,10 +373,12 @@ export default {
       } catch (error) {
         console.error('주문 상태 업데이트 오류:', error)
         
+        const errorMessage = error.response?.data?.message || error.message || '주문 상태 업데이트에 실패했습니다.'
+        
         if (this.$toast) {
-          this.$toast.error(error.message || '주문 상태 업데이트에 실패했습니다.')
+          this.$toast.error(errorMessage)
         } else {
-          alert(error.message || '주문 상태 업데이트에 실패했습니다.')
+          alert(errorMessage)
         }
       }
     },

@@ -57,7 +57,7 @@ export async function apiRequest(url, options = {}, retry = true) {
         
         try {
           // 토큰 갱신 시도
-          await store.dispatch('auth/refreshToken')
+          await store.dispatch('auth/refreshTokenAction')
           
           // 토큰 갱신 성공 시, 원래 요청 재시도 (재귀적으로 호출하되, retry=false로 설정하여 무한 루프 방지)
           return apiRequest(url, options, false)

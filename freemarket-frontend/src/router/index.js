@@ -159,28 +159,44 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const token = localStorage.getItem('accessToken')
   const refreshToken = localStorage.getItem('refreshToken')
+  const isAuthenticated = store.getters['auth/isAuthenticated']
   
   if (to.matched.some(record => record.meta.requiresAuth)) {
+    // 이미 인증된 상태이면 계속 진행
+    if (isAuthenticated) {
+      next()
+      return
+    }
+    
     // 토큰이 없는 경우 로그인 페이지로 리다이렉트
     if (!token) {
       next({ name: 'Login', query: { redirect: to.fullPath } })
       return
     }
     
-    // 토큰은 있지만 인증이 만료된 경우 리프레시 시도
-    if (token && refreshToken) {
-      try {
-        // fetchUser 시도 - 토큰이 유효하면 사용자 정보를 가져옴
-        // 토큰이 만료되면 내부적으로 refreshToken 액션이 실행됨
-        await store.dispatch('auth/fetchUser')
+    // 토큰은 있지만 인증 상태가 아니면 사용자 정보 확인 시도
+    try {
+      // fetchUser 시도 - 토큰이 유효하면 사용자 정보를 가져옴
+      const user = await store.dispatch('auth/fetchUser')
+      if (user) {
         next() // 사용자 정보 가져오기 성공, 계속 진행
-      } catch (error) {
-        console.error('인증 확인 오류:', error)
-        // 리프레시 토큰도 만료된 경우 로그인 페이지로 리다이렉트
-        next({ name: 'Login', query: { redirect: to.fullPath } })
+      } else {
+        // 토큰이 유효하지 않고 리프레시 토큰이 있으면 갱신 시도
+        if (refreshToken) {
+          try {
+            await store.dispatch('auth/refreshTokenAction')
+            await store.dispatch('auth/fetchUser')
+            next()
+          } catch (refreshError) {
+            console.error('토큰 갱신 실패:', refreshError)
+            next({ name: 'Login', query: { redirect: to.fullPath } })
+          }
+        } else {
+          next({ name: 'Login', query: { redirect: to.fullPath } })
+        }
       }
-    } else {
-      // 리프레시 토큰이 없는 경우 로그인 페이지로 리다이렉트
+    } catch (error) {
+      console.error('인증 확인 오류:', error)
       next({ name: 'Login', query: { redirect: to.fullPath } })
     }
   } else {

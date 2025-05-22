@@ -15,61 +15,94 @@ export default {
   },
   
   created() {
-    // 앱 로드 시 localStorage 토큰 유효성 검사
-    if (this.isAuthenticated && this.token) {
-      console.log('앱 로드: 로그인되어 있습니다. 사용자 정보를 불러옵니다.');
+    // 로컬 스토리지에 토큰이 있는지 확인
+    const token = localStorage.getItem('accessToken')
+    
+    if (token) {
+      console.log('앱 로드: 토큰이 존재합니다. 사용자 정보를 불러옵니다.');
       
       this.fetchUser()
         .then(user => {
           if (user) {
             console.log('사용자 정보 로드 성공:', user.name);
+            // 유효한 사용자 정보가 있을 때 인증 상태를 true로 변경합니다
+            this.$store.commit('auth/SET_AUTH_USER', user);
           } else {
             console.warn('사용자 정보 로드 실패. 인증 정보가 유효하지 않을 수 있습니다.');
-            
-            // 리프레시 토큰이 있으면 자동 갱신 시도
-            if (this.refreshToken) {
-              console.log('토큰 만료 감지: 리프레시 토큰으로 갱신 시도');
-              this.refreshToken()
-                .then(() => {
-                  console.log('토큰 갱신 성공');
-                  return this.fetchUser(); // 다시 사용자 정보 가져오기
-                })
-                .catch(refreshError => {
-                  console.error('토큰 갱신 실패:', refreshError);
-                  // 현재 경로가 인증이 필요한 경로인지 확인
-                  const currentRoute = this.$router.currentRoute.value;
-                  if (currentRoute.meta && currentRoute.meta.requiresAuth) {
-                    console.log('인증이 필요한 페이지입니다. 로그인 페이지로 이동합니다.');
-                    this.$router.push('/login');
-                  }
-                });
-            } else {
-              // 현재 경로가 인증이 필요한 경로인지 확인
-              const currentRoute = this.$router.currentRoute.value;
-              if (currentRoute.meta && currentRoute.meta.requiresAuth) {
-                console.log('인증이 필요한 페이지입니다. 로그인 페이지로 이동합니다.');
-                this.$router.push('/login');
-              }
-            }
+            this.tryRefreshToken();
           }
         })
         .catch(error => {
           console.error("앱 초기화 중 사용자 정보 로딩 실패:", error);
-          
-          // 현재 인증이 필요한 페이지인 경우에만 로그인으로 리다이렉트
-          const currentRoute = this.$router.currentRoute.value;
-          if (currentRoute.meta && currentRoute.meta.requiresAuth) {
-            console.log('인증 오류로 로그인 페이지로 이동합니다.');
-            this.$router.push('/login');
-          }
+          // 사용자 정보 로딩 실패 시 인증 상태를 false로 설정
+          this.$store.commit('auth/CLEAR_AUTH');
+          this.tryRefreshToken();
         });
     } else {
-      console.log('앱 로드: 로그인 상태가 아닙니다.');
+      console.log('앱 로드: 토큰이 없습니다.');
     }
+    
+    // runtime.lastError 경고 숨기기
+    this.suppressChromeExtensionErrors();
   },
   
   methods: {
-    ...mapActions('auth', ['fetchUser', 'logout', 'refreshToken'])
+    ...mapActions('auth', ['fetchUser', 'logout', 'refreshTokenAction']),
+    
+    tryRefreshToken() {
+      const refreshTokenValue = localStorage.getItem('refreshToken');
+      
+      // 리프레시 토큰이 있으면 자동 갱신 시도
+      if (refreshTokenValue) {
+        console.log('토큰 만료 감지: 리프레시 토큰으로 갱신 시도');
+        this.refreshTokenAction()
+          .then(() => {
+            console.log('토큰 갱신 성공');
+            return this.fetchUser(); // 다시 사용자 정보 가져오기
+          })
+          .catch(refreshError => {
+            console.error('토큰 갱신 실패:', refreshError);
+            // 현재 경로가 인증이 필요한 경로인지 확인
+            const currentRoute = this.$router.currentRoute.value;
+            if (currentRoute.meta && currentRoute.meta.requiresAuth) {
+              console.log('인증이 필요한 페이지입니다. 로그인 페이지로 이동합니다.');
+              this.$router.push('/login');
+            }
+          });
+      } else {
+        // 현재 경로가 인증이 필요한 경로인지 확인
+        const currentRoute = this.$router.currentRoute.value;
+        if (currentRoute.meta && currentRoute.meta.requiresAuth) {
+          console.log('인증이 필요한 페이지입니다. 로그인 페이지로 이동합니다.');
+          this.$router.push('/login');
+        }
+      }
+    },
+    
+    suppressChromeExtensionErrors() {
+      // 개발 환경에서만 확장 프로그램 오류 필터링
+      if (process.env.NODE_ENV !== 'development') {
+        return; // 프로덕션에서는 실행하지 않음
+      }
+      
+      // 간단한 console.error 오버라이드
+      const originalError = console.error;
+      console.error = function(...args) {
+        const message = args.join(' ').toLowerCase();
+        
+        // 확장 프로그램 관련 오류만 필터링
+        if (message.includes('unchecked runtime.lasterror') ||
+            message.includes('message port closed') ||
+            message.includes('extension context invalidated')) {
+          return; // 출력하지 않음
+        }
+        
+        // 실제 애플리케이션 오류는 출력
+        originalError.apply(console, args);
+      };
+      
+      console.info('🔇 Chrome extension error filtering enabled (dev mode)');
+    }
   }
 }
 </script>
