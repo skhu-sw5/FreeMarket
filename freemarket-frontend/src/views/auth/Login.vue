@@ -177,20 +177,27 @@ export default {
     },
     
     socialLogin(provider) {
-      // 현재 경로를 저장
+      // 현재 경로를 저장 (소셜 로그인 완료 후 리다이렉트용)
       const currentPath = this.$route.query.redirect || '/'
       localStorage.setItem('authRedirect', currentPath)
 
-      // 백엔드 URI를 하드코딩으로 사용하여 리다이렉트 문제 해결
-      const baseUrl = 'https://freemarket.duckdns.org' // 백엔드 서버 주소
+      // 백엔드 서버 URL 설정
+      // 로컬 백엔드를 사용하는 경우 아래 주석을 해제하고 위 라인을 주석 처리
+      const baseUrl = 'https://freemarket.duckdns.org'  // 프로덕션 서버
+      // const baseUrl = 'http://localhost:8080'  // 로컬 서버 (필요시 사용)
       
-      // 로컬 개발 환경의 콜백 URL을 지정
-      const callbackUrl = encodeURIComponent('http://localhost:8081/oauth/callback')
-      
-      // 백엔드 서버에 콜백 URL을 명시적으로 전달
-      const authUrl = `${baseUrl}/oauth2/authorization/${provider}?redirect_uri=${callbackUrl}`
+      const authUrl = `${baseUrl}/oauth2/authorization/${provider}`
       
       console.log(`${provider} 소셜 로그인으로 이동: ${authUrl}`)
+      console.log('현재 프론트엔드 위치:', window.location.href)
+      console.log('백엔드 서버:', baseUrl)
+      
+      // 서버 접근 가능 여부 간단 테스트
+      fetch(`${baseUrl}/actuator/health`, { method: 'GET', mode: 'no-cors' })
+        .then(() => console.log('백엔드 서버 접근 가능'))
+        .catch(() => console.warn('백엔드 서버 접근 불가능 - 확인 필요'))
+      
+      // 현재 창에서 직접 이동
       window.location.href = authUrl
     }
   }
