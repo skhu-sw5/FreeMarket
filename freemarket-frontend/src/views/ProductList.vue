@@ -6,8 +6,6 @@
       <section class="max-w-7xl mx-auto px-4 py-6">
         <h1 class="text-2xl font-semibold mb-4">{{ getPageTitle() }}</h1>
 
-        <!-- 카테고리 필터는 ProductFilters 컴포넌트에서 처리하므로 여기서는 삭제 -->
-
         <!-- 정렬은 ProductFilters 컴포넌트에서 처리하므로 여기서는 검색만 남김 -->
         <div class="flex justify-end items-center mb-4">
           <div class="flex gap-2">
@@ -153,16 +151,21 @@ export default {
       });
       
       try {
+        // 로딩 상태로 변경
+        this.loading = true;
+        
         const response = await this.fetchProducts({
           page: this.currentPage - 1,
+          size: 12, // 페이지당 상품 수 명시
           category: this.activeCategory,
-          keyword: this.searchQuery,
+          keyword: this.searchKeyword || this.searchQuery,
           seller: this.seller,
           status,
           minPrice: priceRange.min || undefined,
           maxPrice: priceRange.max || undefined,
           sort: this.sortOption
         })
+        
         this.totalItems = response.totalElements || 0
         console.log('페이지 정보:', {
           현재페이지: this.currentPage,
@@ -180,25 +183,31 @@ export default {
         return `"${this.searchQuery}" 검색 결과`
       } else if (this.activeCategory) {
         const category = this.categories.find(cat => cat.id === this.activeCategory)
-        return category ? category.name : '전체 상품'
+        return category ? `${category.name} 카테고리` : '전체 상품'
       } else {
         return '전체 상품'
       }
     },
     handleCategoryChange(categoryId) {
+      // 카테고리 변경 시
       this.activeCategory = categoryId
-      this.currentPage = 1
+      this.currentPage = 1 // 페이지 초기화
+      
+      // URL 쿼리 파라미터 업데이트
       this.$router.replace({
         query: {
           ...this.$route.query,
-          category: categoryId || undefined
+          category: categoryId || undefined,
+          page: undefined // 페이지 초기화
         }
       })
+      
+      // 필터 적용하여 상품 목록 다시 로드
       this.fetchProductsWithFilters()
     },
     handleFilterChange(newFilters) {
       this.filters = newFilters
-      this.currentPage = 1
+      this.currentPage = 1 // 페이지 초기화
       this.fetchProductsWithFilters()
     },
     handleSortChange(sortValue) {

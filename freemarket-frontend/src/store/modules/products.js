@@ -71,9 +71,16 @@ export default {
       
       try {
         // URL 구성 - 상대 URL 사용 (프록시 활용)
-        const apiUrl = '/api/products';
+        let apiUrl = '';
+        if (category) {
+          // 카테고리별 상품 조회 API 사용
+          apiUrl = `/api/products/category/${category}`;
+        } else {
+          // 일반 상품 조회 API 사용
+          apiUrl = '/api/products';
+        }
+        
         const url = `${apiUrl}?page=${page}&size=${size}` + 
-                  (category ? `&category=${category}` : '') +
                   (keyword ? `&keyword=${encodeURIComponent(keyword)}` : '') +
                   (status ? `&status=${status}` : '') +
                   (minPrice ? `&minPrice=${minPrice}` : '') +

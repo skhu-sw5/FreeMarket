@@ -140,6 +140,33 @@
                 </div>
               </div>
             </div>
+            
+            <!-- 페이지네이션 -->
+            <div class="flex justify-center mt-6">
+              <button 
+                @click="handlePageChange(purchasesPagination.currentPage - 1, 'purchases')" 
+                :disabled="purchasesPagination.currentPage === 0" 
+                class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+              >
+                이전
+              </button>
+              <button 
+                v-for="page in purchasesPagination.totalPages" 
+                :key="page" 
+                @click="handlePageChange(page, 'purchases')" 
+                :class="{'bg-blue-600 text-white': purchasesPagination.currentPage === page - 1}" 
+                class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+              >
+                {{ page }}
+              </button>
+              <button 
+                @click="handlePageChange(purchasesPagination.currentPage + 1, 'purchases')" 
+                :disabled="purchasesPagination.currentPage === purchasesPagination.totalPages - 1" 
+                class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+              >
+                다음
+              </button>
+            </div>
           </div>
           
           <!-- 판매 내역 탭 -->
@@ -225,6 +252,33 @@
                 </div>
               </div>
             </div>
+            
+            <!-- 페이지네이션 -->
+            <div class="flex justify-center mt-6">
+              <button 
+                @click="handlePageChange(salesPagination.currentPage - 1, 'sales')" 
+                :disabled="salesPagination.currentPage === 0" 
+                class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+              >
+                이전
+              </button>
+              <button 
+                v-for="page in salesPagination.totalPages" 
+                :key="page" 
+                @click="handlePageChange(page, 'sales')" 
+                :class="{'bg-blue-600 text-white': salesPagination.currentPage === page - 1}" 
+                class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+              >
+                {{ page }}
+              </button>
+              <button 
+                @click="handlePageChange(salesPagination.currentPage + 1, 'sales')" 
+                :disabled="salesPagination.currentPage === salesPagination.totalPages - 1" 
+                class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+              >
+                다음
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -253,13 +307,24 @@ export default {
       purchases: [],
       sales: [],
       loading: false,
-      error: null
+      error: null,
+      purchasesPagination: {
+        currentPage: 0,
+        totalPages: 0,
+        totalElements: 0,
+        size: 10
+      },
+      salesPagination: {
+        currentPage: 0,
+        totalPages: 0,
+        totalElements: 0,
+        size: 10
+      }
     }
   },
   
   computed: {
     ...mapState('auth', ['isAuthenticated']),
-    // 토큰은 localStorage에서 직접 가져옴
     token() {
       return localStorage.getItem('accessToken') || ''
     }
@@ -273,113 +338,140 @@ export default {
     }
   },
   
+  watch: {
+    activeTab() {
+      this.error = null;
+      if (this.activeTab === 'purchases' && this.purchases.length === 0) {
+        this.fetchPurchases();
+      } else if (this.activeTab === 'sales' && this.sales.length === 0) {
+        this.fetchSales();
+      }
+    }
+  },
+  
   methods: {
     async fetchOrders() {
-      this.loading = true
-      this.error = null
+      this.loading = true;
+      this.error = null;
       
       try {
-        // axios 가져오기
-        const axios = (await import('axios')).default
-        // 더미 데이터 가져오기 (개발용)
-        const { dummyPurchases, dummySales, isDevelopment } = await import('@/utils/dummyData')
-        
-        // 디버깅을 위한 로깅
-        console.log('주문 내역 조회 시작...')
-        
-        // 구매 내역 가져오기
-        let purchasesData = []
-        try {
-          const purchasesResponse = await axios.get('/api/orders', {
-            params: { type: 'purchases' },
-            headers: {
-              'Authorization': `Bearer ${this.token}`
-            }
-          })
-          
-          console.log('구매 내역 응답:', purchasesResponse)
-          purchasesData = purchasesResponse.data.data || []
-        } catch (purchaseError) {
-          console.warn('구매 내역 조회 실패:', purchaseError)
-          
-          // 개발 환경에서는 더미 데이터 사용
-          if (isDevelopment()) {
-            console.log('개발 환경에서 더미 구매 내역 데이터 사용')
-            purchasesData = dummyPurchases
-          }
-        }
-        
-        this.purchases = purchasesData
-        
-        // 판매 내역 가져오기
-        let salesData = []
-        try {
-          const salesResponse = await axios.get('/api/orders', {
-            params: { type: 'sales' },
-            headers: {
-              'Authorization': `Bearer ${this.token}`
-            }
-          })
-          
-          console.log('판매 내역 응답:', salesResponse)
-          salesData = salesResponse.data.data || []
-        } catch (saleError) {
-          console.warn('판매 내역 조회 실패:', saleError)
-          
-          // 개발 환경에서는 더미 데이터 사용
-          if (isDevelopment()) {
-            console.log('개발 환경에서 더미 판매 내역 데이터 사용')
-            salesData = dummySales
-          }
-        }
-        
-        this.sales = salesData
-        
-        // 양쪽 다 실패한 경우만 에러 표시 (더미 데이터도 없는 경우)
-        if (this.purchases.length === 0 && this.sales.length === 0) {
-          this.error = "주문 내역을 불러오지 못했습니다. 잠시 후 다시 시도해주세요."
-        }
-        
+        await Promise.all([
+          this.fetchPurchases(),
+          this.fetchSales()
+        ]);
       } catch (error) {
-        console.error('주문 내역 조회 오류:', error)
-        this.error = error.response?.data?.message || error.message || "서버 내부 오류가 발생했습니다."
+        console.error('주문 내역 조회 오류:', error);
+        this.error = error.message || "주문 내역을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.";
       } finally {
-        this.loading = false
+        this.loading = false;
+      }
+    },
+    
+    async fetchPurchases(page = 0) {
+      try {
+        const response = await fetch(`/api/users/profile/me/purchases?page=${page}&size=${this.purchasesPagination.size}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${this.token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`구매 내역을 불러오는데 실패했습니다. 상태 코드: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('구매 내역 응답:', data);
+        
+        if (data && data.data) {
+          this.purchases = data.data.content || [];
+          this.purchasesPagination = {
+            currentPage: data.data.number || 0,
+            totalPages: data.data.totalPages || 0,
+            totalElements: data.data.totalElements || 0,
+            size: data.data.size || 10
+          };
+        } else {
+          throw new Error('API 응답 형식이 올바르지 않습니다.');
+        }
+      } catch (error) {
+        console.error('구매 내역 조회 오류:', error);
+        if (this.activeTab === 'purchases') {
+          this.error = error.message;
+        }
+      }
+    },
+    
+    async fetchSales(page = 0) {
+      try {
+        const response = await fetch(`/api/users/profile/selling?page=${page}&size=${this.salesPagination.size}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${this.token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`판매 내역을 불러오는데 실패했습니다. 상태 코드: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('판매 내역 응답:', data);
+        
+        if (data && data.data) {
+          this.sales = data.data.content || [];
+          this.salesPagination = {
+            currentPage: data.data.number || 0,
+            totalPages: data.data.totalPages || 0,
+            totalElements: data.data.totalElements || 0,
+            size: data.data.size || 10
+          };
+        } else {
+          throw new Error('API 응답 형식이 올바르지 않습니다.');
+        }
+      } catch (error) {
+        console.error('판매 내역 조회 오류:', error);
+        if (this.activeTab === 'sales') {
+          this.error = error.message;
+        }
+      }
+    },
+    
+    handlePageChange(page, type) {
+      if (type === 'purchases') {
+        this.fetchPurchases(page - 1);
+      } else if (type === 'sales') {
+        this.fetchSales(page - 1);
       }
     },
     
     async updateOrderStatus(orderId, newStatus) {
       try {
-        // axios 가져오기
-        const axios = (await import('axios')).default
+        const response = await fetch(`/api/orders/${orderId}/status`, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${this.token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ status: newStatus })
+        });
         
-        const response = await axios.patch(`/api/orders/${orderId}/status`, 
-          { status: newStatus },
-          { 
-            headers: {
-              'Authorization': `Bearer ${this.token}`
-            }
-          }
-        )
-        
-        // 주문 목록 새로고침
-        this.fetchOrders()
-        
-        if (this.$toast) {
-          this.$toast.success('주문 상태가 업데이트되었습니다.')
-        } else {
-          alert('주문 상태가 업데이트되었습니다.')
+        if (!response.ok) {
+          throw new Error(`주문 상태 업데이트에 실패했습니다. 상태 코드: ${response.status}`);
         }
+        
+        if (this.activeTab === 'purchases') {
+          this.fetchPurchases();
+        } else {
+          this.fetchSales();
+        }
+        
+        alert('주문 상태가 업데이트되었습니다.');
       } catch (error) {
-        console.error('주문 상태 업데이트 오류:', error)
-        
-        const errorMessage = error.response?.data?.message || error.message || '주문 상태 업데이트에 실패했습니다.'
-        
-        if (this.$toast) {
-          this.$toast.error(errorMessage)
-        } else {
-          alert(errorMessage)
-        }
+        console.error('주문 상태 업데이트 오류:', error);
+        alert(error.message || '주문 상태 업데이트에 실패했습니다.');
       }
     },
     
@@ -423,4 +515,4 @@ export default {
     }
   }
 }
-</script> 
+</script>
