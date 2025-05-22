@@ -44,8 +44,8 @@
       <ProductList title="신규 상품" :products="newProducts" :loading="loading" />
       <ProductList title="인기 상품" :products="popularProducts" :loading="loading" />
       
-      <!-- 가입 유도 섹션 -->
-      <section class="py-16 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+      <!-- 가입 유도 섹션 (비로그인 사용자) -->
+      <section v-if="!isAuthenticated" class="py-16 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
         <div class="container mx-auto px-4 text-center">
           <h2 class="text-3xl font-bold mb-4">지금 바로 시작하세요!</h2>
           <p class="text-xl mb-8">FreeMarket에서 필요한 물건을 쉽고 안전하게 거래하세요.</p>
@@ -55,6 +55,28 @@
               class="px-6 py-3 bg-white text-blue-600 font-bold rounded-lg hover:bg-gray-100 transition-colors"
             >
               회원가입
+            </router-link>
+            <router-link 
+              to="/products" 
+              class="px-6 py-3 bg-transparent border-2 border-white text-white font-bold rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors"
+            >
+              상품 둘러보기
+            </router-link>
+          </div>
+        </div>
+      </section>
+      
+      <!-- 로그인한 사용자 전용 섹션 -->
+      <section v-else class="py-16 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+        <div class="container mx-auto px-4 text-center">
+          <h2 class="text-3xl font-bold mb-4">환영합니다! 🎉</h2>
+          <p class="text-xl mb-8">지금 바로 상품을 등록하거나 원하는 상품을 찾아보세요.</p>
+          <div class="flex justify-center space-x-4">
+            <router-link 
+              to="/products/create" 
+              class="px-6 py-3 bg-white text-blue-600 font-bold rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              상품 등록하기
             </router-link>
             <router-link 
               to="/products" 
@@ -116,17 +138,13 @@ export default {
       this.loading = true;
       
       try {
-        // 임시 데이터 사용 (API 연결 문제 해결될 때까지)
-        this.newProducts = this.getMockProducts(4);
-        this.popularProducts = this.getMockProducts(4);
-        
-        // 실제 API 호출 코드 (현재는 주석 처리)
-        /*
+        // 신규 상품 (최신순, 판매중인 상품만)
         try {
           const newProductsResponse = await this.fetchProducts({
             page: 0,
             size: 4,
-            status: 'ACTIVE'
+            status: 'ACTIVE',
+            sort: 'createdDate,desc'  // 최신순 정렬
           });
           this.newProducts = newProductsResponse.content || [];
         } catch (error) {
@@ -134,21 +152,24 @@ export default {
           this.newProducts = this.getMockProducts(4);
         }
         
+        // 인기 상품 (찜 수 높은 순, 판매중인 상품만)  
         try {
           const popularProductsResponse = await this.fetchProducts({
             page: 0,
             size: 4,
             status: 'ACTIVE',
-            sort: 'viewCount,desc'
+            sort: 'wishlistCount,desc'  // 찜 수 높은 순 정렬
           });
           this.popularProducts = popularProductsResponse.content || [];
         } catch (error) {
           console.error('인기 상품 로딩 오류:', error);
           this.popularProducts = this.getMockProducts(4);
         }
-        */
       } catch (error) {
         console.error('상품 로딩 오류:', error);
+        // API 호출 실패 시 임시 데이터로 대체
+        this.newProducts = this.getMockProducts(4);
+        this.popularProducts = this.getMockProducts(4);
       } finally {
         this.loading = false;
       }
