@@ -384,10 +384,13 @@ export default {
           content: this.editForm.content
         }
         
-        // 이미지 파일 추출
+        // 이미지 파일 추출 - 새로 추가된 이미지만 파일로 전송
         const imageFiles = this.editForm.images
-          .filter(img => img.file)
+          .filter(img => img.file instanceof File)
           .map(img => img.file)
+        
+        console.log('전송할 리뷰 데이터:', reviewData)
+        console.log('전송할 이미지 파일:', imageFiles.map(f => f.name))
         
         await this.updateReview({
           reviewId: this.currentReview.id,
@@ -403,9 +406,9 @@ export default {
       } catch (error) {
         console.error('리뷰 수정 오류:', error)
         if (this.$toast) {
-          this.$toast.error(error.message)
+          this.$toast.error(error.message || '리뷰 수정에 실패했습니다.')
         } else {
-          alert(error.message)
+          alert(error.message || '리뷰 수정에 실패했습니다.')
         }
       } finally {
         this.submitting = false

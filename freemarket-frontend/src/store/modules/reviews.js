@@ -392,44 +392,67 @@ export default {
     },
     
     // 리뷰 수정 - 실제 API 연동
-    async updateReview({ commit, rootState }, { reviewId, reviewData }) {
+    async updateReview({ commit, rootState }, { reviewId, reviewData, images = [] }) {
       commit('SET_LOADING', true);
       
       try {
         console.log(`리뷰 수정 요청: 리뷰 ID ${reviewId}, 데이터:`, reviewData);
+        console.log('업로드할 이미지:', images);
         
         // 인증 상태 확인
         if (!rootState.auth.token) {
           throw new Error('로그인이 필요합니다.');
         }
         
-        // 요청 데이터 구성
-        const requestData = {
-          rating: reviewData.rating,
-          content: reviewData.content
-        };
+        // FormData 사용하여 데이터와 이미지 함께 전송
+        const formData = new FormData();
         
-        // 헤더 설정
-        const headers = {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${rootState.auth.token}`
-        };
+        // 리뷰 데이터를 JSON으로 변환하여 추가
+        const reviewBlob = new Blob(
+          [JSON.stringify({ rating: reviewData.rating, content: reviewData.content })], 
+          { type: 'application/json' }
+        );
+        formData.append('review', reviewBlob);
+        
+        // 이미지 파일 추가
+        if (images && images.length > 0) {
+          for (const image of images) {
+            formData.append('images', image);
+            console.log('이미지 추가:', image.name, image.type, image.size);
+          }
+        }
         
         // API 호출 URL
         const url = `/api/reviews/${reviewId}`;
+        
+        // 헤더 설정 (FormData 사용 시 Content-Type은 자동으로 설정됨)
+        const headers = {
+          'Authorization': `Bearer ${rootState.auth.token}`,
+          'Accept': 'application/json'
+        };
         
         // 리뷰 수정 요청
         const response = await fetch(url, {
           method: 'PATCH',
           headers,
-          body: JSON.stringify(requestData),
+          body: formData,
           credentials: 'include'
         });
         
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || `리뷰 수정에 실패했습니다. 상태 코드: ${response.status}`);
+          const errorText = await response.text();
+          let errorMessage = `리뷰 수정에 실패했습니다. 상태 코드: ${response.status}`;
+          
+          try {
+            const errorData = JSON.parse(errorText);
+            if (errorData.message) {
+              errorMessage = errorData.message;
+            }
+          } catch (e) {
+            console.error('오류 응답 파싱 실패:', e);
+          }
+          
+          throw new Error(errorMessage);
         }
         
         const data = await response.json();
