@@ -17,29 +17,35 @@ export default {
   created() {
     // 로컬 스토리지에 토큰이 있는지 확인
     const token = localStorage.getItem('accessToken')
+    const refreshToken = localStorage.getItem('refreshToken')
     
     if (token) {
-      console.log('앱 로드: 토큰이 존재합니다. 사용자 정보를 불러옵니다.');
+      console.log('앱 로드: 토큰이 존재합니다.');
       
+      // 토큰이 있으면 즉시 인증 상태를 true로 설정 (UI 반응성 향상)
+      this.$store.commit('auth/SET_AUTH_TOKENS', {
+        accessToken: token,
+        refreshToken: refreshToken
+      });
+      
+      // 사용자 정보 불러오기
       this.fetchUser()
         .then(user => {
           if (user) {
             console.log('사용자 정보 로드 성공:', user.name);
-            // 유효한 사용자 정보가 있을 때 인증 상태를 true로 변경합니다
-            this.$store.commit('auth/SET_AUTH_USER', user);
           } else {
-            console.warn('사용자 정보 로드 실패. 인증 정보가 유효하지 않을 수 있습니다.');
+            console.warn('사용자 정보 로드 실패. 토큰 갱신을 시도합니다.');
             this.tryRefreshToken();
           }
         })
         .catch(error => {
-          console.error("앱 초기화 중 사용자 정보 로딩 실패:", error);
-          // 사용자 정보 로딩 실패 시 인증 상태를 false로 설정
-          this.$store.commit('auth/CLEAR_AUTH');
+          console.error("사용자 정보 로딩 실패:", error);
           this.tryRefreshToken();
         });
     } else {
       console.log('앱 로드: 토큰이 없습니다.');
+      // 토큰이 없으면 명시적으로 인증 상태를 false로 설정
+      this.$store.commit('auth/CLEAR_AUTH');
     }
     
     // runtime.lastError 경고 숨기기

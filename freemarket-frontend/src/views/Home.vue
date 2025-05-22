@@ -49,6 +49,10 @@
         <div class="container mx-auto px-4 text-center">
           <h2 class="text-3xl font-bold mb-4">지금 바로 시작하세요!</h2>
           <p class="text-xl mb-8">FreeMarket에서 필요한 물건을 쉽고 안전하게 거래하세요.</p>
+          <!-- 디버그 정보 (개발용) -->
+          <div v-if="$route.query.debug" class="mb-4 text-sm opacity-70">
+            인증상태: {{ isAuthenticated }}, 토큰: {{ token ? '있음' : '없음' }}
+          </div>
           <div class="flex justify-center space-x-4">
             <router-link 
               to="/register" 
@@ -71,6 +75,10 @@
         <div class="container mx-auto px-4 text-center">
           <h2 class="text-3xl font-bold mb-4">환영합니다! 🎉</h2>
           <p class="text-xl mb-8">지금 바로 상품을 등록하거나 원하는 상품을 찾아보세요.</p>
+          <!-- 디버그 정보 (개발용) -->
+          <div v-if="$route.query.debug" class="mb-4 text-sm opacity-70">
+            인증상태: {{ isAuthenticated }}, 사용자: {{ user ? user.name : '정보없음' }}
+          </div>
           <div class="flex justify-center space-x-4">
             <router-link 
               to="/products/create" 
@@ -120,10 +128,14 @@ export default {
   },
   
   computed: {
-    ...mapState('auth', ['isAuthenticated'])
+    ...mapState('auth', ['isAuthenticated', 'token', 'user'])
   },
   
   async created() {
+    console.log('Home.vue created - 인증 상태:', this.isAuthenticated);
+    console.log('Home.vue created - 토큰:', this.token ? '있음' : '없음');
+    console.log('Home.vue created - 사용자:', this.user);
+    
     try {
       await this.fetchHomePageProducts()
     } catch (error) {
@@ -152,13 +164,13 @@ export default {
           this.newProducts = this.getMockProducts(4);
         }
         
-        // 인기 상품 (찜 수 높은 순, 판매중인 상품만)  
+        // 인기 상품 (조회수 높은 순, 판매중인 상품만)  
         try {
           const popularProductsResponse = await this.fetchProducts({
             page: 0,
             size: 4,
             status: 'ACTIVE',
-            sort: 'wishlistCount,desc'  // 찜 수 높은 순 정렬
+            sort: 'createdDate,desc'  // 현재 백엔드에서 wishlistCount 정렬 미지원으로 최신순 사용
           });
           this.popularProducts = popularProductsResponse.content || [];
         } catch (error) {
