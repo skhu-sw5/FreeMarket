@@ -366,12 +366,13 @@ export default {
     },
     
     // 상품 수정 액션 추가
-    async updateProduct({ commit, rootState }, { productId, productData, images }) {
+    async updateProduct({ commit, rootState }, { productId, productData, images, deleteImageIds }) {
       commit('SET_LOADING', true)
       
       try {
         console.log('상품 수정 요청 데이터:', productData);
         console.log('상품 이미지:', images);
+        console.log('삭제할 이미지 ID:', deleteImageIds);
         
         const formData = new FormData();
         
@@ -381,14 +382,29 @@ export default {
         });
         formData.append('request', requestBlob);
         
-        // 이미지 파일 추가
+        // 새로운 이미지 파일 추가
         if (images && images.length > 0) {
           for (const image of images) {
-            // 이미 있는 이미지(URL 형태)가 아닌 새로운 파일만 추가
+            // 새로운 파일만 추가 (File 객체인 경우)
             if (image instanceof File) {
-              formData.append('images', image);
-              console.log('이미지 추가:', image.name, image.type, image.size);
+              formData.append('newImages', image);
+              console.log('새 이미지 추가:', image.name, image.type, image.size);
             }
+          }
+        }
+        
+        // 삭제할 이미지 ID들을 쿼리 파라미터로 추가
+        let url = `/api/products/${productId}`;
+        if (deleteImageIds && Array.isArray(deleteImageIds) && deleteImageIds.length > 0) {
+          const params = new URLSearchParams();
+          deleteImageIds.forEach(id => {
+            if (id !== null && id !== undefined) {
+              params.append('deleteImageIds', String(id));
+            }
+          });
+          const paramString = params.toString();
+          if (paramString) {
+            url += '?' + paramString;
           }
         }
         
@@ -397,8 +413,8 @@ export default {
           throw new Error('인증 토큰이 없습니다. 로그인이 필요합니다.');
         }
         
-        const response = await fetch(`/api/products/${productId}`, {
-          method: 'PUT',
+        const response = await fetch(url, {
+          method: 'PATCH',
           headers: {
             'Authorization': `Bearer ${rootState.auth.token}`
             // FormData 사용 시 Content-Type은 자동으로 설정됨

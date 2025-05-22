@@ -114,7 +114,7 @@
                   <div v-if="isProductOwner" class="mt-4 grid grid-cols-2 gap-3">
                     <router-link 
                       :to="{ name: 'EditProduct', params: { id: product.product.id } }"
-                      class="px-4 py-3 bg-yellow-500 text-white rounded-lg font-medium hover:bg-yellow-600 flex items-center justify-center space-x-2"
+                      class="px-4 py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 flex items-center justify-center space-x-2"
                     >
                       <i class="fas fa-edit"></i>
                       <span>상품 수정</span>
@@ -210,7 +210,10 @@ export default {
       return this.isAuthenticated && 
              this.user && 
              this.product && 
-             this.product.product.sellerName === this.user.username
+             this.product.product &&
+             (this.product.product.sellerId === this.user.id || 
+              this.product.product.sellerName === this.user.name ||
+              this.product.product.sellerName === this.user.username)
     }
   },
   

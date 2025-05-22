@@ -133,7 +133,15 @@
           </div>
           
           <div class="bg-white p-6 rounded-lg shadow-sm">
-            <h2 class="text-xl font-bold mb-4">내 판매 상품</h2>
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-xl font-bold">내 판매 상품</h2>
+              <router-link 
+                to="/user/products" 
+                class="text-blue-600 hover:text-blue-800 text-sm font-medium"
+              >
+                전체 관리 <i class="fas fa-arrow-right ml-1"></i>
+              </router-link>
+            </div>
             
             <div v-if="myProducts.length === 0" class="text-center py-8">
               <p class="text-gray-500 mb-4">등록한 상품이 없습니다.</p>
@@ -359,13 +367,23 @@ export default {
                 
                 return {
                   product: {
-                    ...product,
-                    id: product.productId || product.id // ID 필드 보장
+                    id: product.productId || product.id, // ID 필드 보장
+                    name: product.name,
+                    price: product.price,
+                    stock: product.stock || 0,
+                    category: product.category,
+                    status: product.status || 'ACTIVE',
+                    description: product.description || '',
+                    thumbnailUrl: product.thumbnailUrl, // 썸네일 URL 추가
+                    sellerName: product.sellerName || this.user?.name,
+                    createdDate: product.createdDate,
+                    soldDate: product.soldDate,
+                    buyerName: product.buyerName
                   },
                   stats: { 
                     viewCount: product.viewCount || 0,
                     wishlistCount: product.wishlistCount || 0,
-                    status: '판매중' 
+                    isWishlisted: false
                   }
                 };
               });
@@ -373,13 +391,23 @@ export default {
               const soldProducts = (data.data.soldProducts || []).map(product => {
                 return {
                   product: {
-                    ...product,
-                    id: product.productId || product.id // ID 필드 보장
+                    id: product.productId || product.id, // ID 필드 보장
+                    name: product.name,
+                    price: product.price,
+                    stock: product.stock || 0,
+                    category: product.category,
+                    status: product.status || 'SOLD_OUT',
+                    description: product.description || '',
+                    thumbnailUrl: product.thumbnailUrl, // 썸네일 URL 추가
+                    sellerName: product.sellerName || this.user?.name,
+                    createdDate: product.createdDate,
+                    soldDate: product.soldDate,
+                    buyerName: product.buyerName
                   },
                   stats: { 
                     viewCount: product.viewCount || 0,
                     wishlistCount: product.wishlistCount || 0,
-                    status: '판매완료' 
+                    isWishlisted: false
                   }
                 };
               });

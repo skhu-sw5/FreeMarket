@@ -1,64 +1,66 @@
 <template>
-  <div>
+  <div class="flex flex-col min-h-screen">
     <AppHeader />
 
-    <section class="max-w-7xl mx-auto px-4 py-6">
-      <h1 class="text-2xl font-semibold mb-4">{{ getPageTitle() }}</h1>
+    <main class="flex-1">
+      <section class="max-w-7xl mx-auto px-4 py-6">
+        <h1 class="text-2xl font-semibold mb-4">{{ getPageTitle() }}</h1>
 
-      <!-- 카테고리 필터는 ProductFilters 컴포넌트에서 처리하므로 여기서는 삭제 -->
+        <!-- 카테고리 필터는 ProductFilters 컴포넌트에서 처리하므로 여기서는 삭제 -->
 
-      <!-- 정렬은 ProductFilters 컴포넌트에서 처리하므로 여기서는 검색만 남김 -->
-      <div class="flex justify-end items-center mb-4">
-        <div class="flex gap-2">
-          <input
-              type="text"
-              v-model="searchKeyword"
-              @keyup.enter="handleSearch"
-              placeholder="상품명을 입력하세요"
-              class="border px-3 py-1 rounded"
-          />
-          <button @click="handleSearch" class="bg-blue-500 text-white px-4 py-1 rounded">검색</button>
+        <!-- 정렬은 ProductFilters 컴포넌트에서 처리하므로 여기서는 검색만 남김 -->
+        <div class="flex justify-end items-center mb-4">
+          <div class="flex gap-2">
+            <input
+                type="text"
+                v-model="searchKeyword"
+                @keyup.enter="handleSearch"
+                placeholder="상품명을 입력하세요"
+                class="border px-3 py-1 rounded"
+            />
+            <button @click="handleSearch" class="bg-blue-500 text-white px-4 py-1 rounded">검색</button>
+          </div>
         </div>
-      </div>
 
-      <!-- 필터 -->
-      <ProductFilters
-          :filters="filters"
-          :activeCategory="activeCategory"
-          :categories="categories"
-          @category-change="handleCategoryChange"
-          @update:filters="handleFilterChange"
-          @sort-change="handleSortChange"
-          @reset="resetFilters"
-      />
-
-      <!-- 상품 카드 리스트 -->
-      <div v-if="products && products.length > 0" class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
-        <ProductCard
-            v-for="item in products"
-            :key="item.product.id"
-            :product="item.product"
-            :stats="item.stats"
-            @click="goToProduct(item.product.id)"
+        <!-- 필터 -->
+        <ProductFilters
+            :filters="filters"
+            :activeCategory="activeCategory"
+            :categories="categories"
+            @category-change="handleCategoryChange"
+            @update:filters="handleFilterChange"
+            @sort-change="handleSortChange"
+            @reset="resetFilters"
         />
-      </div>
-      <div v-else-if="loading" class="text-center text-gray-500 mt-10">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-        <p class="mt-2">상품을 불러오는 중...</p>
-      </div>
-      <div v-else class="text-center text-gray-500 mt-10">상품을 찾을 수 없습니다.</div>
 
-      <!-- 페이지네이션 -->
-      <div class="mt-8">
-        <AppPagination
-            :current-page="currentPage"
-            :total-pages="totalPages"
-            :total-items="totalItems"
-            :items-per-page="12"
-            @page-changed="handlePageChange"
-        />
-      </div>
-    </section>
+        <!-- 상품 카드 리스트 -->
+        <div v-if="products && products.length > 0" class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
+          <ProductCard
+              v-for="item in products"
+              :key="item.product.id"
+              :product="item.product"
+              :stats="item.stats"
+              @click="goToProduct(item.product.id)"
+          />
+        </div>
+        <div v-else-if="loading" class="text-center text-gray-500 mt-10">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p class="mt-2">상품을 불러오는 중...</p>
+        </div>
+        <div v-else class="text-center text-gray-500 mt-10">상품을 찾을 수 없습니다.</div>
+
+        <!-- 페이지네이션 -->
+        <div class="mt-8">
+          <AppPagination
+              :current-page="currentPage"
+              :total-pages="totalPages"
+              :total-items="totalItems"
+              :items-per-page="12"
+              @page-changed="handlePageChange"
+          />
+        </div>
+      </section>
+    </main>
 
     <AppFooter />
   </div>
