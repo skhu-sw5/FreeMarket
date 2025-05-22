@@ -24,8 +24,7 @@ export default {
         return null;
       }
     })(),
-    // 초기화 시 로컬 스토리지 토큰을 확인하지 않고 false로 시작합니다
-    // 인증은 App.vue에서 fetchUser 성공 시 설정됨
+    // 초기화 시에는 false로 시작하고, App.vue에서 토큰 확인 후 설정
     isAuthenticated: false,
     isRefreshing: false, // 토큰 리프레시 중인지 상태 추가
     refreshPromise: null // 리프레시 중인 Promise 객체 저장
