@@ -144,7 +144,8 @@ export default {
         console.log('로그인 시도...');
         const result = await this.login({
           email: this.email,
-          password: this.password
+          password: this.password,
+          rememberMe: this.rememberMe
         });
         
         console.log('로그인 성공!', result);
