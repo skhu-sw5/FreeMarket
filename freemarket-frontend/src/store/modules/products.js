@@ -303,15 +303,15 @@ export default {
             isWishlisted: data.added, 
             count: data.count 
           });
+          
+          // 만약 위시리스트에 추가된 경우, 즉시 위시리스트 목록을 새로고침
+          if (data.added) {
+            await this.dispatch('products/fetchWishlist', null, { root: true });
+          } else {
+            // 위시리스트에서 제거된 경우 목록에서도 제거
+            commit('REMOVE_FROM_WISHLIST', productId);
+          }
         }
-        
-        // 위시리스트 페이지에서 보여지는 목록 업데이트
-        if (!data.added) {
-          // 위시리스트에서 제거된 경우 목록에서도 제거
-          commit('REMOVE_FROM_WISHLIST', productId);
-        }
-        
-        // 추가된 후 다음 fetchWishlist 호출 시 목록이 업데이트됨
         
         return {
           isWishlisted: data.added,
@@ -332,7 +332,9 @@ export default {
           return [];
         }
         
-        // Authorization 헤더에 Bearer 토큰 추가
+        console.log('관심 상품 목록 가져오기 요청 시작...');
+        
+        // Authorization 헤더에 Bearer 토큰 추가 (스웨거 문서에 맞는 정확한 경로로 수정)
         const response = await fetch(`/api/products/wishlist`, {
           method: 'GET',
           headers: {
@@ -341,7 +343,7 @@ export default {
             'Content-Type': 'application/json'
           },
           credentials: 'include' // 쿠키와 인증 정보 포함
-        })
+        });
         
         if (!response.ok) {
           // 401 오류인 경우 토큰이 만료되었을 수 있음
@@ -351,24 +353,60 @@ export default {
             // commit('auth/CLEAR_AUTH', null, { root: true });
           }
           
-          throw new Error('관심 상품 목록을 불러오는데 실패했습니다. 상태 코드: ' + response.status)
+          throw new Error('관심 상품 목록을 불러오는데 실패했습니다. 상태 코드: ' + response.status);
         }
         
-        const data = await response.json()
+        const data = await response.json();
+        console.log('관심 상품 목록 응답:', data);
         
         if (data && data.data) {
-          commit('SET_WISHLIST', data.data)
-          return data.data
+          // 데이터가 있는 경우 위시리스트 업데이트
+          // 스웨거 문서에 따라 결과 구조에 맞게 처리
+          const wishlistItems = Array.isArray(data.data) ? data.data : [];
+          
+          // 각 상품에 필요한 필드 포함되었는지 확인하고 필요시 형식 맞추기
+          const formattedWishlist = wishlistItems.map(item => {
+            // 상품 정보가 product 필드 안에 들어있지 않으면 형식 맞추기
+            if (!item.product) {
+              return {
+                product: {
+                  id: item.productId || item.id,
+                  name: item.name,
+                  price: item.price,
+                  description: item.description,
+                  category: item.category,
+                  status: item.status,
+                  thumbnailUrl: item.thumbnailUrl || item.imageUrls?.[0],
+                  imageUrls: item.imageUrls || [item.thumbnailUrl],
+                  sellerName: item.sellerName,
+                  sellerId: item.sellerId,
+                  createdDate: item.createdDate
+                },
+                stats: {
+                  viewCount: item.viewCount || 0,
+                  wishlistCount: item.wishlistCount || 0,
+                  isWishlisted: true
+                }
+              };
+            }
+            
+            // 이미 올바른 형식이면 그대로 반환
+            return item;
+          });
+          
+          console.log('처리된 관심 상품 목록:', formattedWishlist);
+          commit('SET_WISHLIST', formattedWishlist);
+          return formattedWishlist;
         } else {
           console.warn('관심 상품 API 응답 형식이 올바르지 않습니다:', data);
-          commit('SET_WISHLIST', [])
-          return []
+          commit('SET_WISHLIST', []);
+          return [];
         }
       } catch (error) {
-        console.error('관심 상품 목록 조회 오류:', error)
+        console.error('관심 상품 목록 조회 오류:', error);
         // 오류가 발생해도 UI가 깨지지 않도록 빈 목록으로 설정
-        commit('SET_WISHLIST', [])
-        throw error
+        commit('SET_WISHLIST', []);
+        throw error;
       }
     },
     
