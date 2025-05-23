@@ -291,10 +291,11 @@
 <script>
 import AppHeader from '@/components/common/AppHeader.vue'
 import AppFooter from '@/components/common/AppFooter.vue'
-import { mapState } from 'vuex'
+import { mapState, mapActions } from 'vuex'
+import { apiGet } from '@/utils/api'
 
 export default {
-  name: 'UserOrders',
+  name: 'OrdersPage',
   
   components: {
     AppHeader,
@@ -324,17 +325,17 @@ export default {
   },
   
   computed: {
-    ...mapState('auth', ['isAuthenticated']),
-    token() {
-      return localStorage.getItem('accessToken') || ''
-    }
+    ...mapState('auth', ['isAuthenticated', 'token', 'user']),
   },
   
   created() {
     if (!this.isAuthenticated) {
       this.$router.push({ name: 'Login', query: { redirect: this.$route.fullPath } })
     } else {
-      this.fetchOrders()
+      // 초기 로딩 시 에러 방지를 위한 타임아웃 설정
+      setTimeout(() => {
+        this.fetchOrders()
+      }, 500)
     }
   },
   
@@ -355,13 +356,27 @@ export default {
       this.error = null;
       
       try {
-        await Promise.all([
-          this.fetchPurchases(),
-          this.fetchSales()
-        ]);
+        // 순차적으로 데이터를 가져와서 한쪽이 실패해도 다른 쪽이 로드되도록 함
+        try {
+          await this.fetchPurchases();
+        } catch (purchaseError) {
+          console.error('구매 내역 조회 실패:', purchaseError);
+          if (this.activeTab === 'purchases') {
+            this.error = purchaseError.message || "구매 내역을 불러오지 못했습니다.";
+          }
+        }
+        
+        try {
+          await this.fetchSales();
+        } catch (salesError) {
+          console.error('판매 내역 조회 실패:', salesError);
+          if (this.activeTab === 'sales') {
+            this.error = salesError.message || "판매 내역을 불러오지 못했습니다.";
+          }
+        }
       } catch (error) {
         console.error('주문 내역 조회 오류:', error);
-        this.error = error.message || "주문 내역을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.";
+        this.error = "주문 내역을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.";
       } finally {
         this.loading = false;
       }
@@ -369,73 +384,132 @@ export default {
     
     async fetchPurchases(page = 0) {
       try {
-        const response = await fetch(`/api/users/profile/me/purchases?page=${page}&size=${this.purchasesPagination.size}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${this.token}`,
-            'Content-Type': 'application/json'
+        // 공통 API 유틸리티 사용
+        const apiUrl = `/api/users/profile/me/purchases?page=${page}&size=${this.purchasesPagination.size}`;
+        console.log('구매 내역 API 호출:', apiUrl);
+        
+        const response = await apiGet(apiUrl, {
+          handleError: (status) => {
+            console.log(`구매 내역 조회 오류 상태 코드: ${status}`);
+            return true; // 기본 오류 처리 진행
           }
         });
         
-        if (!response.ok) {
-          throw new Error(`구매 내역을 불러오는데 실패했습니다. 상태 코드: ${response.status}`);
-        }
+        console.log('구매 내역 응답 데이터:', response);
         
-        const data = await response.json();
-        console.log('구매 내역 응답:', data);
-        
-        if (data && data.data) {
-          this.purchases = data.data.content || [];
+        if (response && response.data) {
+          // 데이터가 올바르게 존재하는지 확인 후 처리
+          const purchaseItems = response.data.content || [];
+          
+          // 응답 데이터 구조 확인 및 변환
+          this.purchases = purchaseItems.map(item => {
+            // product 객체가 없는 경우 기본 객체 제공
+            if (!item.product) {
+              console.warn('구매 항목에 product 객체가 없음:', item);
+              item.product = {
+                id: item.id || 0,
+                name: '상품 정보 없음',
+                imageUrls: [],
+                price: 0,
+                sellerName: '판매자 정보 없음'
+              };
+            }
+            return item;
+          });
+          
           this.purchasesPagination = {
-            currentPage: data.data.number || 0,
-            totalPages: data.data.totalPages || 0,
-            totalElements: data.data.totalElements || 0,
-            size: data.data.size || 10
+            currentPage: response.data.number || 0,
+            totalPages: response.data.totalPages || 0,
+            totalElements: response.data.totalElements || 0,
+            size: response.data.size || 10
           };
+          
+          // 성공 시 에러 메시지 초기화
+          if (this.activeTab === 'purchases') {
+            this.error = null;
+          }
         } else {
+          console.warn('API 응답에 data 객체가 없습니다:', response);
           throw new Error('API 응답 형식이 올바르지 않습니다.');
         }
       } catch (error) {
         console.error('구매 내역 조회 오류:', error);
         if (this.activeTab === 'purchases') {
-          this.error = error.message;
+          this.error = error.message || "구매 내역을 불러오지 못했습니다.";
         }
+        // 빈 배열로 초기화하여 UI 오류 방지
+        this.purchases = [];
       }
     },
     
     async fetchSales(page = 0) {
       try {
-        const response = await fetch(`/api/users/profile/selling?page=${page}&size=${this.salesPagination.size}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${this.token}`,
-            'Content-Type': 'application/json'
+        // 공통 API 유틸리티 사용
+        const apiUrl = `/api/users/profile/selling?page=${page}&size=${this.salesPagination.size}`;
+        console.log('판매 내역 API 호출:', apiUrl);
+        
+        const response = await apiGet(apiUrl, {
+          handleError: (status) => {
+            console.log(`판매 내역 조회 오류 상태 코드: ${status}`);
+            return true; // 기본 오류 처리 진행
           }
         });
         
-        if (!response.ok) {
-          throw new Error(`판매 내역을 불러오는데 실패했습니다. 상태 코드: ${response.status}`);
-        }
+        console.log('판매 내역 응답 데이터:', response);
         
-        const data = await response.json();
-        console.log('판매 내역 응답:', data);
-        
-        if (data && data.data) {
-          this.sales = data.data.content || [];
+        if (response && response.data) {
+          // API 응답 구조에 맞게 처리
+          // 응답은 { activeProducts: [...], soldProducts: [...], totalProductCount: N } 형태
+          
+          // 판매 완료된 상품 목록 가져오기 (요구사항에 맞게)
+          const soldProducts = response.data.soldProducts || [];
+          console.log('판매 완료된 상품 수:', soldProducts.length);
+          
+          // 각 상품을 orders.vue 템플릿에서 사용하는 형식으로 변환
+          this.sales = soldProducts.map(item => ({
+            id: item.productId,
+            createdAt: item.soldDate || item.createdDate,
+            status: 'SOLD_OUT', // 판매 완료 상태로 설정
+            product: {
+              id: item.productId,
+              name: item.name,
+              price: item.price,
+              category: item.category,
+              status: 'SOLD_OUT',
+              imageUrls: item.thumbnailUrl ? [item.thumbnailUrl] : [],
+              sellerName: this.user ? this.user.name : '판매자'
+            },
+            buyer: {
+              name: item.buyerName || '구매자'
+            },
+            quantity: 1,
+            totalAmount: item.price
+          }));
+          
+          console.log('변환된 판매 내역:', this.sales);
+          
           this.salesPagination = {
-            currentPage: data.data.number || 0,
-            totalPages: data.data.totalPages || 0,
-            totalElements: data.data.totalElements || 0,
-            size: data.data.size || 10
+            currentPage: page,
+            totalPages: Math.ceil(response.data.totalProductCount / this.salesPagination.size) || 1,
+            totalElements: response.data.totalProductCount || 0,
+            size: this.salesPagination.size
           };
+          
+          // 성공 시 에러 메시지 초기화
+          if (this.activeTab === 'sales') {
+            this.error = null;
+          }
         } else {
+          console.warn('API 응답에 data 객체가 없습니다:', response);
           throw new Error('API 응답 형식이 올바르지 않습니다.');
         }
       } catch (error) {
         console.error('판매 내역 조회 오류:', error);
         if (this.activeTab === 'sales') {
-          this.error = error.message;
+          this.error = error.message || "판매 내역을 불러오지 못했습니다.";
         }
+        // 빈 배열로 초기화하여 UI 오류 방지
+        this.sales = [];
       }
     },
     
