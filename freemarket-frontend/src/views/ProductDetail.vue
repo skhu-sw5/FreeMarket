@@ -70,7 +70,10 @@
                     </div>
                     <div>
                       <h3 class="text-sm text-gray-500">상태</h3>
-                      <p>{{ product.product.status }}</p>
+                      <p v-if="product.product.status === 'SOLD_OUT'" class="flex items-center">
+                        <span class="text-red-500 font-medium">상품 판매 완료</span>
+                      </p>
+                      <p v-else>{{ product.product.status === 'ACTIVE' ? '판매중' : product.product.status }}</p>
                     </div>
                     <div>
                       <h3 class="text-sm text-gray-500">판매자</h3>
@@ -234,6 +237,11 @@ export default {
       return this.$store.state.auth.token
     },
     
+    // 현재 로그인한 사용자 정보 가져오기
+    currentUser() {
+      return this.$store.state.auth.user
+    },
+    
     // 현재 사용자가 상품 소유자인지 확인
     isProductOwner() {
       return this.isAuthenticated && 
@@ -293,40 +301,26 @@ export default {
       }
       
       try {
-        if (confirm('이 상품을 구매하시겠습니까?')) {
-          const productId = this.product.product.id
-          
-          const response = await fetch(`/api/orders`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${this.token}`
-            },
-            body: JSON.stringify({
-              productId: productId,
-              quantity: 1
-            })
-          })
-          
-          if (!response.ok) {
-            const error = await response.json()
-            throw new Error(error.message || '상품 구매 중 오류가 발생했습니다.')
-          }
-          
-          const result = await response.json()
+        // 자신의 상품을 구매하려는 경우 에러 메시지 표시
+        if (this.isProductOwner) {
+          alert('자신의 상품은 구매할 수 없습니다.');
+          return;
+        }
+        
+        // 현재 로그인한 사용자가 해당 상품의 판매자가 아니므로 직접 구매 완료 처리할 수 없습니다.
+        // 대신 판매자에게 연락하여 거래를 진행하도록 안내합니다.
+        const confirmMessage = '현재 시스템에서는 판매자가 구매 완료 처리를 해야 합니다.\n\n판매자에게 연락하시겠습니까?';
+        
+        if (confirm(confirmMessage)) {
+          // 판매자에게 연락하기 기능 호출
+          this.contactSeller();
           
           // 성공 메시지 표시
           if (this.$toast) {
-            this.$toast.success('상품 구매가 완료되었습니다.')
+            this.$toast.success('판매자에게 연락 요청이 전송되었습니다. 판매자의 응답을 기다려주세요.');
           } else {
-            alert('상품 구매가 완료되었습니다.')
+            alert('판매자에게 연락 요청이 전송되었습니다. 판매자의 응답을 기다려주세요.');
           }
-          
-          // 구매 후 상품 상태 업데이트
-          this.fetchProduct(productId)
-          
-          // 주문 완료 페이지로 이동
-          this.$router.push({ name: 'OrderComplete', params: { id: result.data.id } })
         }
       } catch (error) {
         console.error('상품 구매 오류:', error)
@@ -368,7 +362,7 @@ export default {
         if (result.wishlisted) {
           this.product.stats.wishlistCount = (this.product.stats.wishlistCount || 0) + 1
         } else {
-          this.product.stats.wishlistCount = Math.max(0, (this.product.stats.wishlistCount || 0) - 1)
+          this.product.stats.wishlistCount = Math.max(0, (this.product.stats.wishlistCount || 1) - 1)
         }
         
         // 토스트 메시지 표시
@@ -434,7 +428,6 @@ export default {
         
         if (result && result.data) {
           this.sellerProfile = result.data
-          
           if (this.$toast) {
             this.$toast.success('판매자 프로필을 조회했습니다.')
           }
