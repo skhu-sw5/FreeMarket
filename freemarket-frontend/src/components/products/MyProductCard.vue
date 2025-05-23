@@ -112,6 +112,29 @@
           <span>삭제</span>
         </button>
       </div>
+      
+      <!-- 판매 완료 처리 및 취소 버튼 -->
+      <div class="mt-2">
+        <!-- 판매중인 상품에 대한 판매 완료 처리 버튼 -->
+        <button 
+          v-if="isActive"
+          @click="markAsSold"
+          class="w-full px-3 py-2 bg-green-600 text-white text-sm rounded font-medium hover:bg-green-700 transition-colors flex items-center justify-center space-x-1"
+        >
+          <i class="fas fa-check-circle"></i>
+          <span>판매 완료 처리</span>
+        </button>
+        
+        <!-- 판매완료된 상품에 대한 판매 취소 버튼 -->
+        <button 
+          v-if="isSoldOut"
+          @click="cancelSold"
+          class="w-full px-3 py-2 bg-yellow-500 text-white text-sm rounded font-medium hover:bg-yellow-600 transition-colors flex items-center justify-center space-x-1"
+        >
+          <i class="fas fa-undo"></i>
+          <span>판매 완료 취소</span>
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -134,7 +157,17 @@ export default {
     }
   },
   
-  emits: ['edit', 'delete', 'click'],
+  emits: ['edit', 'delete', 'click', 'refresh'],
+  
+  computed: {
+    isActive() {
+      return this.product.status === 'ACTIVE' || this.product.status === '판매중'
+    },
+    
+    isSoldOut() {
+      return this.product.status === 'SOLD_OUT' || this.product.status === '판매완료'
+    }
+  },
   
   methods: {
     formatPrice(price) {
@@ -176,6 +209,110 @@ export default {
     confirmDelete() {
       if (confirm(`'${this.product.name}' 상품을 정말로 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) {
         this.$emit('delete', this.product.id)
+      }
+    },
+    
+    // 판매 완료 처리 메서드
+    async markAsSold() {
+      try {
+        // 구매자 ID 입력 받기
+        const buyerId = prompt('구매자 ID를 입력해주세요:', '')
+        
+        if (!buyerId) {
+          return // 취소 버튼 누르거나 입력하지 않은 경우
+        }
+        
+        if (isNaN(buyerId)) {
+          alert('구매자 ID는 숫자만 입력해주세요.')
+          return
+        }
+        
+        // 토큰 가져오기
+        const token = this.$store.state.auth.token
+        if (!token) {
+          alert('인증 토큰이 없습니다. 다시 로그인해주세요.')
+          return
+        }
+        
+        // API 호출
+        const response = await fetch(`/api/products/${this.product.id}/sold?buyerId=${buyerId}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (!response.ok) {
+          throw new Error(`판매 완료 처리에 실패했습니다. (${response.status})`)
+        }
+        
+        const result = await response.json()
+        
+        // 토스트 메시지 표시
+        if (this.$toast) {
+          this.$toast.success('상품이 판매 완료 처리되었습니다.')
+        } else {
+          alert('상품이 판매 완료 처리되었습니다.')
+        }
+        
+        // 목록 새로고침 이벤트 발생
+        this.$emit('refresh')
+      } catch (error) {
+        console.error('판매 완료 처리 오류:', error)
+        if (this.$toast) {
+          this.$toast.error(`판매 완료 처리 중 오류가 발생했습니다: ${error.message}`)
+        } else {
+          alert(`판매 완료 처리 중 오류가 발생했습니다: ${error.message}`)
+        }
+      }
+    },
+    
+    // 판매 완료 취소 메서드
+    async cancelSold() {
+      try {
+        if (!confirm(`'${this.product.name}' 상품의 판매 완료를 취소하시겠습니까?`)) {
+          return
+        }
+        
+        // 토큰 가져오기
+        const token = this.$store.state.auth.token
+        if (!token) {
+          alert('인증 토큰이 없습니다. 다시 로그인해주세요.')
+          return
+        }
+        
+        // API 호출
+        const response = await fetch(`/api/products/${this.product.id}/cancel-sold`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (!response.ok) {
+          throw new Error(`판매 완료 취소에 실패했습니다. (${response.status})`)
+        }
+        
+        const result = await response.json()
+        
+        // 토스트 메시지 표시
+        if (this.$toast) {
+          this.$toast.success('판매 완료가 취소되었습니다.')
+        } else {
+          alert('판매 완료가 취소되었습니다.')
+        }
+        
+        // 목록 새로고침 이벤트 발생
+        this.$emit('refresh')
+      } catch (error) {
+        console.error('판매 완료 취소 오류:', error)
+        if (this.$toast) {
+          this.$toast.error(`판매 완료 취소 중 오류가 발생했습니다: ${error.message}`)
+        } else {
+          alert(`판매 완료 취소 중 오류가 발생했습니다: ${error.message}`)
+        }
       }
     }
   }
