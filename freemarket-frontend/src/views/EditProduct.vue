@@ -266,8 +266,7 @@ export default {
       ],
       statusOptions: [
         { id: 'ACTIVE', name: '판매중' },
-        { id: 'SOLD_OUT', name: '품절' },
-        { id: 'INACTIVE', name: '판매중지' }
+        { id: 'SOLD_OUT', name: '품절' }
       ]
     }
   },
