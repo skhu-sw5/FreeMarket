@@ -60,6 +60,7 @@
             @click="goToProduct"
             @edit="editProduct"
             @delete="deleteProductItem"
+            @refresh="fetchMyProducts"
           />
         </div>
         
