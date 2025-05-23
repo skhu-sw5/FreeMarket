@@ -146,8 +146,37 @@
               <div class="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
                 <i class="fas fa-user text-gray-400 text-xl"></i>
               </div>
-              <div class="ml-4">
+              <div class="ml-4 flex items-center">
                 <h3 class="font-medium">{{ product.product.sellerName }}</h3>
+                <button 
+                  @click="viewSellerProfile"
+                  class="ml-4 px-3 py-1 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  프로필 조회
+                </button>
+              </div>
+            </div>
+            
+            <!-- 판매자 프로필 상세 정보 (조회 시 표시) -->
+            <div v-if="sellerProfile" class="mt-4 border-t pt-4">
+              <h4 class="font-medium mb-2">판매자 상세 정보</h4>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <p class="text-sm text-gray-500">이름</p>
+                  <p>{{ sellerProfile.name }}</p>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-500">연락처</p>
+                  <p>{{ sellerProfile.phone || '미등록' }}</p>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-500">이메일</p>
+                  <p>{{ sellerProfile.email || '미등록' }}</p>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-500">회원 등급</p>
+                  <p>{{ sellerProfile.grade || '일반' }}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -223,6 +252,12 @@ export default {
   created() {
     console.log('ProductDetail created - 상품 ID:', this.$route.params.id);
     this.loadProductData();
+  },
+  
+  data() {
+    return {
+      sellerProfile: null
+    }
   },
   
   methods: {
@@ -346,6 +381,72 @@ export default {
           this.$toast.error('관심 상품 처리 중 오류가 발생했습니다.')
         } else {
           alert('관심 상품 처리 중 오류가 발생했습니다.')
+        }
+      }
+    },
+    
+    // 판매자 프로필 조회 메서드 추가
+    async viewSellerProfile() {
+      try {
+        if (!this.product || !this.product.product || !this.product.product.sellerId) {
+          if (this.$toast) {
+            this.$toast.error('판매자 정보를 불러올 수 없습니다.')
+          } else {
+            alert('판매자 정보를 불러올 수 없습니다.')
+          }
+          return
+        }
+        
+        const sellerId = this.product.product.sellerId
+        
+        // 이미 프로필을 불러온 경우 토글
+        if (this.sellerProfile) {
+          this.sellerProfile = null
+          return
+        }
+        
+        // 토큰 가져오기
+        const token = this.$store.state.auth.token
+        if (!token) {
+          if (this.$toast) {
+            this.$toast.error('로그인이 필요한 서비스입니다.')
+          } else {
+            alert('로그인이 필요한 서비스입니다.')
+          }
+          return
+        }
+        
+        // API 호출 (스웨거 문서에 맞는 정확한 경로로 수정)
+        const response = await fetch(`/api/users/profile/${sellerId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (!response.ok) {
+          throw new Error(`판매자 프로필 조회에 실패했습니다. (${response.status})`)
+        }
+        
+        const result = await response.json()
+        console.log('판매자 프로필 응답:', result)
+        
+        if (result && result.data) {
+          this.sellerProfile = result.data
+          
+          if (this.$toast) {
+            this.$toast.success('판매자 프로필을 조회했습니다.')
+          }
+        } else {
+          throw new Error('판매자 프로필 정보가 없습니다.')
+        }
+      } catch (error) {
+        console.error('판매자 프로필 조회 오류:', error)
+        if (this.$toast) {
+          this.$toast.error(`판매자 프로필 조회 중 오류가 발생했습니다: ${error.message}`)
+        } else {
+          alert(`판매자 프로필 조회 중 오류가 발생했습니다: ${error.message}`)
         }
       }
     },
