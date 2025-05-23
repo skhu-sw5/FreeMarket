@@ -38,17 +38,28 @@ export default {
         state.isAuthenticated = true
       }
     },
-    SET_AUTH_TOKENS(state, { accessToken, refreshToken }) {
+    SET_AUTH_TOKENS(state, { accessToken, refreshToken, rememberMe = false }) {
       state.token = accessToken
       state.refreshToken = refreshToken
       state.isAuthenticated = true
       
       try {
-        localStorage.setItem('accessToken', accessToken)
-        localStorage.setItem('refreshToken', refreshToken)
-        console.log('토큰이 localStorage에 저장되었습니다.');
+        // rememberMe가 true인 경우에만 localStorage에 저장
+        if (rememberMe) {
+          localStorage.setItem('accessToken', accessToken)
+          localStorage.setItem('refreshToken', refreshToken)
+          console.log('토큰이 localStorage에 저장되었습니다 (자동 로그인 활성화)');
+        } else {
+          // rememberMe가 false인 경우 sessionStorage에 저장 (브라우저 종료 시 삭제됨)
+          sessionStorage.setItem('accessToken', accessToken)
+          sessionStorage.setItem('refreshToken', refreshToken)
+          // localStorage에 저장된 토큰이 있다면 제거
+          localStorage.removeItem('accessToken')
+          localStorage.removeItem('refreshToken')
+          console.log('토큰이 sessionStorage에 저장되었습니다 (자동 로그인 비활성화)');
+        }
       } catch (error) {
-        console.error('localStorage에 토큰 저장 중 오류:', error);
+        console.error('토큰 저장 중 오류:', error);
       }
     },
     CLEAR_AUTH(state) {
@@ -59,6 +70,8 @@ export default {
       
       localStorage.removeItem('accessToken')
       localStorage.removeItem('refreshToken')
+      sessionStorage.removeItem('accessToken')
+      sessionStorage.removeItem('refreshToken')
     },
     UPDATE_USER(state, userData) {
       state.user = { ...state.user, ...userData }
@@ -79,8 +92,12 @@ export default {
       try {
         console.log('로그인 요청...');
         
+        // rememberMe 옵션 추출
+        const { rememberMe = false, ...loginCredentials } = credentials;
+        console.log('자동 로그인 옵션:', rememberMe ? '활성화' : '비활성화');
+        
         // apiPost는 토큰 갱신을 처리하지 않으므로 retry 옵션을 false로 설정
-        const data = await apiPost('/api/auth/login', credentials, { retry: false });
+        const data = await apiPost('/api/auth/login', loginCredentials, { retry: false });
         console.log('로그인 응답 데이터:', data);
         
         // 토큰 검증
@@ -90,7 +107,8 @@ export default {
         
         commit('SET_AUTH_TOKENS', {
           accessToken: data.data.accessToken,
-          refreshToken: data.data.refreshToken || null
+          refreshToken: data.data.refreshToken || null,
+          rememberMe: rememberMe
         });
         
         console.log('액세스 토큰이 성공적으로 저장되었습니다:', data.data.accessToken.substring(0, 10) + '...');
