@@ -2,12 +2,12 @@ package com.freemarket.freemarket.product.application;
 
 import com.freemarket.freemarket.product.api.dto.ProductDto;
 import com.freemarket.freemarket.product.domain.Product;
-import com.freemarket.freemarket.product.domain.ProductRepository;
+import com.freemarket.freemarket.product.domain.repository.ProductRepository;
 import com.freemarket.freemarket.product.domain.ProductWishlist;
-import com.freemarket.freemarket.product.domain.ProductWishlistRepository;
+import com.freemarket.freemarket.product.domain.repository.ProductWishlistRepository;
 import com.freemarket.freemarket.product.exception.ProductException;
 import com.freemarket.freemarket.user.domain.User;
-import com.freemarket.freemarket.user.domain.UserRepository;
+import com.freemarket.freemarket.user.domain.repository.UserRepository;
 import com.freemarket.freemarket.user.exception.UserException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

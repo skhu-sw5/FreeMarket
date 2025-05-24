@@ -1,4 +1,4 @@
-package com.freemarket.freemarket.global.auth.domain.password;
+package com.freemarket.freemarket.global.auth.domain.password.repository;
 
 import java.time.LocalDateTime;
 

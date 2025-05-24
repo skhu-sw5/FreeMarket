@@ -1,4 +1,4 @@
-package com.freemarket.freemarket.global.auth.domain.refresh;
+package com.freemarket.freemarket.global.auth.domain.refresh.repository;
 
 import java.time.LocalDateTime;
 

@@ -1,7 +1,9 @@
-package com.freemarket.freemarket.product.domain;
+package com.freemarket.freemarket.product.domain.repository;
 
-import com.freemarket.freemarket.product.api.dto.ProductDto;
 import com.freemarket.freemarket.product.api.dto.ProductWithStatsDto;
+import com.freemarket.freemarket.product.domain.Product;
+import com.freemarket.freemarket.product.domain.ProductCategory;
+import com.freemarket.freemarket.product.domain.ProductStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

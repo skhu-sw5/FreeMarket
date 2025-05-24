@@ -1,11 +1,13 @@
 package com.freemarket.freemarket.user.application;
 
-import com.freemarket.freemarket.product.api.dto.ProductDto;
 import com.freemarket.freemarket.product.domain.*;
+import com.freemarket.freemarket.product.domain.repository.ProductRepository;
+import com.freemarket.freemarket.product.domain.repository.ProductViewCountRepository;
+import com.freemarket.freemarket.product.domain.repository.ProductWishlistRepository;
 import com.freemarket.freemarket.review.application.ReviewService;
 import com.freemarket.freemarket.user.api.dto.UserProfileDto;
 import com.freemarket.freemarket.user.domain.User;
-import com.freemarket.freemarket.user.domain.UserRepository;
+import com.freemarket.freemarket.user.domain.repository.UserRepository;
 import com.freemarket.freemarket.user.exception.UserException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +15,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.servlet.View;
 
 import java.util.List;
 import java.util.stream.Collectors;

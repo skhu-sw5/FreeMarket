@@ -3,7 +3,7 @@ package com.freemarket.freemarket.global.oauth2.application;
 import com.freemarket.freemarket.global.oauth2.api.dto.OAuthAttributes;
 import com.freemarket.freemarket.global.oauth2.exception.OAuth2Exception;
 import com.freemarket.freemarket.user.domain.User;
-import com.freemarket.freemarket.user.domain.UserRepository;
+import com.freemarket.freemarket.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

@@ -4,7 +4,7 @@ import com.freemarket.freemarket.product.api.dto.ProductDto;
 import com.freemarket.freemarket.product.api.dto.ProductWithStatsDto;
 import com.freemarket.freemarket.product.domain.Product;
 import com.freemarket.freemarket.product.domain.ProductCategory;
-import com.freemarket.freemarket.product.domain.ProductRepository;
+import com.freemarket.freemarket.product.domain.repository.ProductRepository;
 import com.freemarket.freemarket.product.domain.ProductStatus;
 import com.freemarket.freemarket.product.exception.ProductException;
 import lombok.RequiredArgsConstructor;

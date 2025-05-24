@@ -1,5 +1,8 @@
-package com.freemarket.freemarket.review.domain;
+package com.freemarket.freemarket.review.domain.repository;
 
+import com.freemarket.freemarket.review.domain.RatingCount;
+import com.freemarket.freemarket.review.domain.RatingDistribution;
+import com.freemarket.freemarket.review.domain.Review;
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;

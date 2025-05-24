@@ -1,4 +1,4 @@
-package com.freemarket.freemarket.product.domain;
+package com.freemarket.freemarket.product.domain.repository;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
