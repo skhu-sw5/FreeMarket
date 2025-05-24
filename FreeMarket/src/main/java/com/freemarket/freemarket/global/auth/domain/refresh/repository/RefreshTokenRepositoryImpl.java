@@ -1,6 +1,5 @@
-package com.freemarket.freemarket.global.auth.domain.refresh;
+package com.freemarket.freemarket.global.auth.domain.refresh.repository;
 
-import com.freemarket.freemarket.global.auth.domain.refresh.repository.RefreshTokenRepositoryCustom;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 
