@@ -81,11 +81,18 @@
                 <div class="mt-6">
                   <button 
                     @click="isEditMode = true" 
-                    class="px-4 py-2 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 transition-colors"
+                    class="px-4 py-2 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 transition-colors mr-2"
                     v-if="!isEditMode"
                   >
                     프로필 수정
                   </button>
+                  <router-link 
+                    to="/profile/change-password" 
+                    class="px-4 py-2 bg-gray-200 text-gray-800 rounded font-medium hover:bg-gray-300 transition-colors"
+                    v-if="!isEditMode"
+                  >
+                    비밀번호 변경
+                  </router-link>
                 </div>
                 
                 <form v-if="isEditMode" class="mt-6" @submit.prevent="updateProfile">
@@ -557,7 +564,7 @@ export default {
             this.initForm()
             return this.fetchMyProducts()
           } else {
-            console.error('사용자 정보를 불러올 수 없습니다. 다시 로그인이 필요할 수 있습니다.');
+            console.error('사용자 정보를 불러오지 못했습니다. 다시 로그인이 필요할 수 있습니다.');
             alert('사용자 정보를 불러올 수 없습니다. 다시 로그인해주세요.');
             this.$router.push('/login');
           }
