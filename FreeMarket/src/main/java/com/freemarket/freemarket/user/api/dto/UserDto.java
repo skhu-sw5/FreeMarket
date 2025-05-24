@@ -1,12 +1,13 @@
 package com.freemarket.freemarket.user.api.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.freemarket.freemarket.user.domain.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
+
+import java.time.LocalDateTime;
 
 public class UserDto {
 
@@ -54,9 +55,22 @@ public class UserDto {
             String role,
 
             @Schema(description = "이메일 인증 여부", example = "true")
-            boolean emailVerified
+            boolean emailVerified,
+
+            @Schema(description = "총 판매 중인 상품 수", example = "3")
+            int totalSellingCount,
+
+            @Schema(description = "총 판매 완료 수", example = "7")
+            int totalSoldCount,
+
+            @Schema(description = "총 구매 수", example = "15")
+            int totalPurchaseCount,
+
+            @Schema(description = "가입 날짜", example = "2025-01-01T09:00:00")
+            LocalDateTime joinDate
     ) {
-        public static UserResponse from(User user) {
+        public static UserResponse from(User user, int sellingCount, int soldCount,
+                                        int purchaseCount) {
             return UserResponse.builder()
                     .id(user.getId())
                     .email(user.getEmail())
@@ -64,6 +78,40 @@ public class UserDto {
                     .phone(user.getPhone())
                     .role(user.getRole().getDisplayName())
                     .emailVerified(user.isEmailVerified())
+                    .totalSellingCount(sellingCount)
+                    .totalSoldCount(soldCount)
+                    .totalPurchaseCount(purchaseCount)
+                    .joinDate(user.getCreatedDate())
+                    .build();
+        }
+    }
+
+    @Builder
+    @Schema(description = "다른 사용자 응답 정보")
+    public record DiffUserResponse(
+            @Schema(description = "이름", example = "홍길동")
+            String name,
+
+            @Schema(description = "총 판매 중인 상품 수", example = "3")
+            int totalSellingCount,
+
+            @Schema(description = "총 판매 완료 수", example = "7")
+            int totalSoldCount,
+
+            @Schema(description = "총 구매 수", example = "15")
+            int totalPurchaseCount,
+
+            @Schema(description = "가입 날짜", example = "2025-01-01T09:00:00")
+            LocalDateTime joinDate
+    ) {
+        public static DiffUserResponse from(User user, int sellingCount, int soldCount,
+                                        int purchaseCount) {
+            return DiffUserResponse.builder()
+                    .name(user.getName())
+                    .totalSellingCount(sellingCount)
+                    .totalSoldCount(soldCount)
+                    .totalPurchaseCount(purchaseCount)
+                    .joinDate(user.getCreatedDate())
                     .build();
         }
     }

@@ -158,13 +158,6 @@ public class ReviewService {
                 .build();
     }
 
-    // 특정 사용자의 평균 평점 조회
-    public double getUserAverageRating(Long userId) {
-        Double averageRating = reviewRepository.getAverageRatingByUserId(userId);
-        return averageRating != null ? averageRating : 0.0;
-    }
-
-
     // 권한 확인 후 리뷰 조회
     private Review getReviewWithReviewerCheck(Long reviewId, Long reviewerId) {
         Review review = getReview(reviewId);

@@ -92,31 +92,4 @@ public class UserProfileDto {
         }
     }
 
-    @Builder
-    @Schema(description = "프로필 요약 정보")
-    public record ProfileSummaryResponse(
-            @Schema(description = "사용자 ID", example = "1")
-            Long userId,
-            
-            @Schema(description = "이메일", example = "user@example.com")
-            String email,
-            
-            @Schema(description = "이름", example = "홍길동")
-            String name,
-            
-            @Schema(description = "총 판매 중인 상품 수", example = "3")
-            int totalSellingCount,
-            
-            @Schema(description = "총 판매 완료 수", example = "7")
-            int totalSoldCount,
-            
-            @Schema(description = "총 구매 수", example = "15")
-            int totalPurchaseCount,
-            
-            @Schema(description = "평균 평점", example = "4.5")
-            double averageRating,
-            
-            @Schema(description = "가입 날짜", example = "2025-01-01T09:00:00")
-            LocalDateTime joinDate
-    ) {}
 }

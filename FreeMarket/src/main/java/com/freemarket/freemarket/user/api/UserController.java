@@ -76,4 +76,16 @@ public class UserController {
         userService.changePassword(userDetails.getUserId(), request);
         return ResponseEntity.ok(ResponseDTO.success(null, "비밀번호가 성공적으로 변경되었습니다."));
     }
+
+    @Operation(summary = "다른 사용자 프로필 조회", description = "다른 사용자의 프로필 정보를 조회합니다. (제한된 정보만 제공)")
+    @ApiResponse(responseCode = "200", description = "사용자 프로필 조회 성공")
+    @GetMapping("/{userId}")
+    public ResponseEntity<ResponseDTO<UserDto.DiffUserResponse>> getUserProfile(
+            @Parameter(description = "조회할 사용자 ID", required = true) @PathVariable Long userId) {
+
+        log.info("사용자 프로필 조회: 사용자 ID {}", userId);
+        UserDto.DiffUserResponse response = userService.getDiffUserProfile(userId);
+
+        return ResponseEntity.ok(ResponseDTO.success(response));
+    }
 }

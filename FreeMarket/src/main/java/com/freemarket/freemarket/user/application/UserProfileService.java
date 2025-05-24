@@ -31,34 +31,6 @@ public class UserProfileService {
     private final ProductViewCountRepository viewCountRepository;
     private final ProductWishlistRepository wishlistRepository;
 
-    // 사용자의 프로필 요약 정보를 조회
-    public UserProfileDto.ProfileSummaryResponse getProfileSummary(Long userId) {
-        User user = getUser(userId);
-
-        // 판매 중인 상품 수
-        long activeProductCount = productRepository.countBySellerIdAndStatus(userId, ProductStatus.ACTIVE);
-
-        // 판매 완료된 상품 수
-        long soldProductCount = productRepository.countBySellerIdAndStatus(userId, ProductStatus.SOLD_OUT);
-
-        // 구매한 상품 수
-        long purchaseCount = productRepository.countByBuyerId(userId);
-
-        // 평균 평점 조회
-        double averageRating = reviewService.getUserAverageRating(userId);
-
-        return UserProfileDto.ProfileSummaryResponse.builder()
-                .userId(user.getId())
-                .email(user.getEmail())
-                .name(user.getName())
-                .totalSellingCount((int) activeProductCount)
-                .totalSoldCount((int) soldProductCount)
-                .totalPurchaseCount((int) purchaseCount)
-                .averageRating(averageRating)
-                .joinDate(user.getCreatedDate())
-                .build();
-    }
-
     // 사용자의 판매 상품 내역을 조회
     public UserProfileDto.SellingHistoryResponse getSellingHistoryDetail(Long userId, Pageable pageable) {
         // 판매중인 상품 조회
