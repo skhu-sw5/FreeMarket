@@ -166,6 +166,7 @@
                 :product="product.product"
                 :stats="product.stats"
                 @click="goToProduct(product.product.id)"
+                @wishlist-toggle="handleWishlistToggle"
               />
             </div>
           </div>
@@ -242,6 +243,36 @@ export default {
     }
   },
   
+  // Vuex 스토어 상태 변화 감지
+  watch: {
+    // 스토어의 상품 상태 변화를 감지하여 프로필 페이지의 상품 목록 업데이트
+    '$store.state.products.product': {
+      handler(newProduct) {
+        if (newProduct && newProduct.product && this.myProducts.length > 0) {
+          const productId = newProduct.product.id;
+          const productIndex = this.myProducts.findIndex(item => item.product.id === productId);
+          
+          if (productIndex !== -1) {
+            // 위시리스트 상태만 업데이트 (다른 정보는 유지)
+            this.myProducts[productIndex].stats.isWishlisted = newProduct.stats.isWishlisted;
+            this.myProducts[productIndex].stats.wishlistCount = newProduct.stats.wishlistCount;
+            this.myProducts[productIndex].stats.viewCount = newProduct.stats.viewCount;
+            
+            console.log(`프로필 페이지 상품 ${productId} 상태 자동 업데이트:`, {
+              isWishlisted: newProduct.stats.isWishlisted,
+              wishlistCount: newProduct.stats.wishlistCount,
+              viewCount: newProduct.stats.viewCount
+            });
+            
+            // Vue의 반응성을 위해 배열 요소 강제 업데이트
+            this.$set(this.myProducts, productIndex, { ...this.myProducts[productIndex] });
+          }
+        }
+      },
+      deep: true
+    }
+  },
+  
   // 라우터 가드 설정
   beforeRouteEnter(to, from, next) {
     next(vm => {
@@ -255,6 +286,9 @@ export default {
   
   async created() {
     try {
+      // 프로필 페이지에서 조회수 증가를 건너뛰도록 설정
+      this.$store.dispatch('products/setSkipViewIncrement', true);
+      
       if (!this.user) {
         console.log('사용자 정보 가져오기 시도...');
         const userData = await this.fetchUser();
@@ -301,6 +335,9 @@ export default {
       }
     } finally {
       this.loading = false;
+      
+      // 원래 상태로 복원
+      this.$store.dispatch('products/setSkipViewIncrement', false);
     }
   },
   
@@ -352,38 +389,29 @@ export default {
             } else if (data.data.activeProducts || data.data.soldProducts) {
               // 판매 내역 응답 구조 (활성 상품 및 판매된 상품 분리)
               console.log('판매 내역 데이터 구조 감지됨:', data.data);
-              // 활성 상품과 판매된 상품을 합쳐서 표시
-              console.log('활성 상품 데이터 구조:', data.data.activeProducts ? data.data.activeProducts[0] : null);
-              console.log('판매 완료 상품 데이터 구조:', data.data.soldProducts ? data.data.soldProducts[0] : null);
               
               const activeProducts = (data.data.activeProducts || []).map(product => {
-                // 상품 객체 구조 확인
-                console.log('상품 객체 구조:', product);
-                
-                // id가 있는지 확인
-                if (!product.productId && !product.id) {
-                  console.warn('상품 ID가 없습니다:', product);
-                }
-                
+                // API 응답에서 상품 정보와 통계 정보를 직접 추출
                 return {
                   product: {
-                    id: product.productId || product.id, // ID 필드 보장
+                    id: product.id || product.productId,
                     name: product.name,
                     price: product.price,
                     stock: product.stock || 0,
                     category: product.category,
                     status: product.status || 'ACTIVE',
                     description: product.description || '',
-                    thumbnailUrl: product.thumbnailUrl, // 썸네일 URL 추가
+                    thumbnailUrl: product.thumbnailUrl,
                     sellerName: product.sellerName || this.user?.name,
                     createdDate: product.createdDate,
                     soldDate: product.soldDate,
                     buyerName: product.buyerName
                   },
                   stats: { 
-                    viewCount: product.viewCount || 0,
-                    wishlistCount: product.wishlistCount || 0,
-                    isWishlisted: false
+                    // API가 이미 이 정보를 제공한다면 그대로 사용, 아니면 기본값 설정
+                    viewCount: product.viewCount || product.stats?.viewCount || 0,
+                    wishlistCount: product.wishlistCount || product.stats?.wishlistCount || 0,
+                    isWishlisted: product.isWishlisted || product.stats?.isWishlisted || false
                   }
                 };
               });
@@ -391,28 +419,30 @@ export default {
               const soldProducts = (data.data.soldProducts || []).map(product => {
                 return {
                   product: {
-                    id: product.productId || product.id, // ID 필드 보장
+                    id: product.id || product.productId,
                     name: product.name,
                     price: product.price,
                     stock: product.stock || 0,
                     category: product.category,
                     status: product.status || 'SOLD_OUT',
                     description: product.description || '',
-                    thumbnailUrl: product.thumbnailUrl, // 썸네일 URL 추가
+                    thumbnailUrl: product.thumbnailUrl,
                     sellerName: product.sellerName || this.user?.name,
                     createdDate: product.createdDate,
                     soldDate: product.soldDate,
                     buyerName: product.buyerName
                   },
                   stats: { 
-                    viewCount: product.viewCount || 0,
-                    wishlistCount: product.wishlistCount || 0,
-                    isWishlisted: false
+                    // API가 이미 이 정보를 제공한다면 그대로 사용, 아니면 기본값 설정
+                    viewCount: product.viewCount || product.stats?.viewCount || 0,
+                    wishlistCount: product.wishlistCount || product.stats?.wishlistCount || 0,
+                    isWishlisted: product.isWishlisted || product.stats?.isWishlisted || false
                   }
                 };
               });
               
               this.myProducts = [...activeProducts, ...soldProducts];
+              console.log('변환된 상품 목록 (개별 조회 없음):', this.myProducts);
             } else {
               // 다른 구조인 경우, 로그만 남기고 빈 배열 사용
               console.warn('예상치 못한 응답 구조:', data);
@@ -436,6 +466,8 @@ export default {
         this.myProducts = [];
       }
     },
+    
+
     
     goToEmailVerification() {
       this.$router.push('/email-verification');
@@ -554,6 +586,50 @@ export default {
         .finally(() => {
           this.loading = false;
         });
+    },
+    
+    // 위시리스트 토글 이벤트 핸들러
+    handleWishlistToggle(productId) {
+      console.log('프로필 페이지에서 위시리스트 토글 이벤트 수신:', productId);
+      
+      // 해당 상품 찾기
+      const productIndex = this.myProducts.findIndex(item => item.product.id === productId);
+      
+      if (productIndex !== -1) {
+        // Vuex 스토어에서 최신 상태 가져오기
+        const storeProduct = this.$store.state.products.product;
+        
+        if (storeProduct && storeProduct.product && storeProduct.product.id === productId) {
+          // 스토어에서 최신 상태로 업데이트
+          this.myProducts[productIndex].stats.isWishlisted = storeProduct.stats.isWishlisted;
+          this.myProducts[productIndex].stats.wishlistCount = storeProduct.stats.wishlistCount;
+          
+          console.log(`상품 ${productId}의 위시리스트 상태 업데이트:`, {
+            isWishlisted: storeProduct.stats.isWishlisted,
+            wishlistCount: storeProduct.stats.wishlistCount
+          });
+        } else {
+          // 스토어에 없는 경우 현재 상태 토글
+          this.myProducts[productIndex].stats.isWishlisted = !this.myProducts[productIndex].stats.isWishlisted;
+          
+          // 위시리스트 수량 조정
+          if (this.myProducts[productIndex].stats.isWishlisted) {
+            this.myProducts[productIndex].stats.wishlistCount += 1;
+          } else {
+            this.myProducts[productIndex].stats.wishlistCount = Math.max(0, this.myProducts[productIndex].stats.wishlistCount - 1);
+          }
+          
+          console.log(`상품 ${productId}의 위시리스트 상태 로컬 토글:`, {
+            isWishlisted: this.myProducts[productIndex].stats.isWishlisted,
+            wishlistCount: this.myProducts[productIndex].stats.wishlistCount
+          });
+        }
+        
+        // Vue의 반응성을 위해 배열 요소 강제 업데이트
+        this.$set(this.myProducts, productIndex, { ...this.myProducts[productIndex] });
+      } else {
+        console.warn(`상품 ID ${productId}를 myProducts 배열에서 찾을 수 없습니다.`);
+      }
     }
   }
 }

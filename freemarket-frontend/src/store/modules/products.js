@@ -10,7 +10,8 @@ export default {
     error: null,
     totalPages: 0,
     totalElements: 0,
-    wishlist: []
+    wishlist: [],
+    skipViewIncrement: false
   },
   
   mutations: {
@@ -31,41 +32,58 @@ export default {
     SET_WISHLIST(state, wishlist) {
       state.wishlist = wishlist
     },
-    TOGGLE_WISHLIST(state, productId) {
-      const index = state.wishlist.findIndex(item => item.id === productId)
-      
-      if (index !== -1) {
-        state.wishlist.splice(index, 1)
-      } else if (state.product && state.product.id === productId) {
-        state.wishlist.push(state.product)
+    SET_SKIP_VIEW_INCREMENT(state, skip) {
+      state.skipViewIncrement = skip
+    },
+    TOGGLE_WISHLIST_STATUS(state, { productId, isWishlisted, wishlistCount }) {
+      // 상품 상세 페이지의 위시리스트 상태 업데이트
+      if (state.product && state.product.product && state.product.product.id === productId) {
+        state.product.stats.isWishlisted = isWishlisted;
+        if (wishlistCount !== undefined) {
+          state.product.stats.wishlistCount = wishlistCount;
+        }
       }
       
-      // 현재 상품 상세 페이지의 위시리스트 상태도 업데이트
-      if (state.product && state.product.id === productId) {
-        state.product.stats.isWishlisted = !state.product.stats.isWishlisted
-      }
-      
-      // 상품 목록의 위시리스트 상태도 업데이트
-      const productIndex = state.products.findIndex(p => p.product.id === productId)
+      // 상품 목록에서 해당 상품의 위시리스트 상태 업데이트
+      const productIndex = state.products.findIndex(p => p.product && p.product.id === productId);
       if (productIndex !== -1) {
-        state.products[productIndex].stats.isWishlisted = !state.products[productIndex].stats.isWishlisted
+        state.products[productIndex].stats.isWishlisted = isWishlisted;
+        if (wishlistCount !== undefined) {
+          state.products[productIndex].stats.wishlistCount = wishlistCount;
+        }
+      }
+      
+      // 위시리스트에서 해당 상품 추가/제거
+      if (isWishlisted) {
+        // 위시리스트에 없으면 추가
+        const wishlistIndex = state.wishlist.findIndex(item => item.id === productId);
+        if (wishlistIndex === -1 && state.product && state.product.product && state.product.product.id === productId) {
+          state.wishlist.push({
+            id: productId,
+            ...state.product.product
+          });
+        }
+      } else {
+        // 위시리스트에서 제거
+        state.wishlist = state.wishlist.filter(item => item.id !== productId);
       }
     },
     UPDATE_PRODUCT_WISHLIST_STATUS(state, { productId, isWishlisted, count }) {
-      const productIndex = state.products.findIndex(p => p.product.id === productId)
-      if (productIndex !== -1) {
-        state.products[productIndex].stats.isWishlisted = isWishlisted
-      }
+      // TOGGLE_WISHLIST_STATUS와 중복되므로 이 함수 내용은 생략
+      // 이전 코드를 유지하기 위해 빈 함수로 남겨둠
     },
     REMOVE_FROM_WISHLIST(state, productId) {
-      const productIndex = state.products.findIndex(p => p.product.id === productId)
-      if (productIndex !== -1) {
-        state.products[productIndex].stats.isWishlisted = false
-      }
+      // TOGGLE_WISHLIST_STATUS와 중복되므로 이 함수 내용은 생략
+      // 이전 코드를 유지하기 위해 빈 함수로 남겨둠
     }
   },
   
   actions: {
+    // 조회수 증가 건너뛰기 상태 설정
+    setSkipViewIncrement({ commit }, skip) {
+      commit('SET_SKIP_VIEW_INCREMENT', skip);
+    },
+    
     async fetchProducts({ commit, rootState }, { page = 0, size = 12, category = null, keyword = null, status = null, minPrice = null, maxPrice = null, sort = 'createdAt,desc', seller = null }) {
       commit('SET_LOADING', true)
       
@@ -157,9 +175,10 @@ export default {
       }
     },
     
-    async fetchProduct({ commit, rootState }, productId) {
+    async fetchProduct({ commit, rootState, state }, productId) {
       commit('SET_LOADING', true)
-      console.log('ProductDetail 상품 로드 시작:', productId);
+      console.log('상품 로드 시작:', productId);
+      console.log('조회수 증가 스킵 여부:', state.skipViewIncrement);
       
       try {
         const headers = {}
@@ -167,10 +186,21 @@ export default {
           headers['Authorization'] = `Bearer ${rootState.auth.token}`
         }
         
-        console.log('API 요청 URL:', `${API_BASE_URL}/api/products/${productId}`);
+        // 조회수 증가 스킵 여부 확인 (상품 상세 페이지가 아닐 경우 스킵)
+        // 쿼리 파라미터로 조회수 증가 스킵 여부 전달
+        let url = `/api/products/${productId}`;
+        
+        // skipViewIncrement가 true이면 조회수 증가를 건너뛰는 파라미터 추가
+        if (state.skipViewIncrement) {
+          url += '?skipViewIncrement=true';
+          console.log('조회수 증가를 건너뛰는 파라미터 추가:', url);
+        }
+        
+        // 상품 정보 조회
+        console.log('API 요청 URL:', url);
         console.log('API 요청 헤더:', headers);
         
-        const response = await fetch(`/api/products/${productId}`, {
+        const response = await fetch(url, {
           headers,
           credentials: 'include' // 쿠키와 인증 정보 포함
         });
@@ -190,6 +220,12 @@ export default {
         if (data && data.data) {
           commit('SET_PRODUCT', data.data);
           console.log('상품 상세 데이터 저장 완료:', data.data);
+          
+          if (state.skipViewIncrement) {
+            console.log('조회수 증가 건너뜀 (프로필 또는 위시리스트 페이지)');
+          } else {
+            console.log('조회수 증가 처리 완료 (상품 상세 페이지)');
+          }
         } else {
           throw new Error('API 응답 형식이 올바르지 않습니다.');
         }
@@ -295,23 +331,13 @@ export default {
         const data = await response.json();
         console.log('위시리스트 토글 응답:', data);
         
-        // 상품 상세 페이지에서 위시리스트 상태 업데이트를 위한 상태 변경
-        if (data.added !== undefined) {
-          // 백엔드에서 반환된 정보로 위시리스트 상태 업데이트
-          commit('UPDATE_PRODUCT_WISHLIST_STATUS', { 
-            productId, 
-            isWishlisted: data.added, 
-            count: data.count 
-          });
-          
-          // 만약 위시리스트에 추가된 경우, 즉시 위시리스트 목록을 새로고침
-          if (data.added) {
-            await this.dispatch('products/fetchWishlist', null, { root: true });
-          } else {
-            // 위시리스트에서 제거된 경우 목록에서도 제거
-            commit('REMOVE_FROM_WISHLIST', productId);
-          }
-        }
+        // 백엔드에서 반환된 정보로 위시리스트 상태 업데이트
+        // 이 때, data 객체에는 added(boolean)와 count(number) 필드가 있어야 함
+        commit('TOGGLE_WISHLIST_STATUS', { 
+          productId, 
+          isWishlisted: data.added, 
+          wishlistCount: data.count 
+        });
         
         return {
           isWishlisted: data.added,
@@ -334,7 +360,7 @@ export default {
         
         console.log('관심 상품 목록 가져오기 요청 시작...');
         
-        // Authorization 헤더에 Bearer 토큰 추가 (스웨거 문서에 맞는 정확한 경로로 수정)
+        // Authorization 헤더에 Bearer 토큰 추가
         const response = await fetch(`/api/products/wishlist`, {
           method: 'GET',
           headers: {
@@ -342,15 +368,13 @@ export default {
             'Accept': 'application/json',
             'Content-Type': 'application/json'
           },
-          credentials: 'include' // 쿠키와 인증 정보 포함
+          credentials: 'include'
         });
         
         if (!response.ok) {
           // 401 오류인 경우 토큰이 만료되었을 수 있음
           if (response.status === 401) {
             console.warn('인증이 만료되었습니다. 다시 로그인해주세요.');
-            // 선택적: 자동 로그아웃 처리
-            // commit('auth/CLEAR_AUTH', null, { root: true });
           }
           
           throw new Error('관심 상품 목록을 불러오는데 실패했습니다. 상태 코드: ' + response.status);
@@ -361,7 +385,6 @@ export default {
         
         if (data && data.data) {
           // 데이터가 있는 경우 위시리스트 업데이트
-          // 스웨거 문서에 따라 결과 구조에 맞게 처리
           const wishlistItems = Array.isArray(data.data) ? data.data : [];
           
           // 각 상품에 필요한 필드 포함되었는지 확인하고 필요시 형식 맞추기
@@ -383,6 +406,7 @@ export default {
                   createdDate: item.createdDate
                 },
                 stats: {
+                  // API 응답에서 직접 통계 정보 사용, 없으면 기본값 설정
                   viewCount: item.viewCount || 0,
                   wishlistCount: item.wishlistCount || 0,
                   isWishlisted: true
@@ -390,8 +414,16 @@ export default {
               };
             }
             
-            // 이미 올바른 형식이면 그대로 반환
-            return item;
+            // 이미 올바른 형식이면 stats 필드 확인하여 기본값 설정
+            return {
+              ...item,
+              stats: {
+                // API 응답에서 직접 통계 정보 사용, 없으면 기본값 설정
+                viewCount: item.stats?.viewCount || item.viewCount || 0,
+                wishlistCount: item.stats?.wishlistCount || item.wishlistCount || 0,
+                isWishlisted: true
+              }
+            };
           });
           
           console.log('처리된 관심 상품 목록:', formattedWishlist);

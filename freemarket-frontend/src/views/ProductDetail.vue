@@ -90,9 +90,9 @@
                   <button 
                     @click="toggleWishlistItem"
                     class="w-full px-4 py-3 border rounded-lg font-medium flex items-center justify-center space-x-2"
-                    :class="product.stats.isWishlisted ? 'bg-red-50 border-red-400 text-red-500' : 'border-gray-300 hover:bg-gray-50'"
+                    :class="product.stats.isWishlisted ? 'bg-red-50 border-red-400 text-red-500' : 'border-gray-300 hover:bg-gray-50 text-gray-500'"
                   >
-                    <i class="fa" :class="product.stats.isWishlisted ? 'fa-heart text-red-500' : 'fa-heart'"></i>
+                    <i :class="product.stats.isWishlisted ? 'fas fa-heart' : 'far fa-heart'"></i>
                     <span>{{ product.stats.isWishlisted ? '관심 상품에서 제거' : '관심 상품에 추가' }}</span>
                   </button>
                   
@@ -280,6 +280,10 @@ export default {
           return;
         }
         
+        // 상품 상세 페이지에서는 조회수 증가를 명시적으로 허용
+        // 이 페이지에서만 조회수가 증가되도록 skipViewIncrement 플래그를 false로 설정
+        this.$store.dispatch('products/setSkipViewIncrement', false);
+        
         await this.fetchProduct(productId);
         console.log('상품 데이터 로드 완료:', this.product);
       } catch (error) {
@@ -332,7 +336,7 @@ export default {
       }
     },
     
-    // toggleWishlistItem 메서드를 직접 API 호출 방식으로 수정
+    // 상품 상세 페이지의 관심상품 토글 기능
     async toggleWishlistItem() {
       if (!this.isAuthenticated) {
         return this.$router.push({ name: 'Login', query: { redirect: this.$route.fullPath } })
@@ -341,33 +345,15 @@ export default {
       try {
         const productId = this.product.product.id
         
-        const response = await fetch(`https://freemarket.duckdns.org/api/products/${productId}/wishlist`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.token}`
-          }
-        })
+        // 현재 상태를 저장
+        const wasWishlisted = this.product.stats.isWishlisted
         
-        if (!response.ok) {
-          throw new Error('관심 상품 처리 중 오류가 발생했습니다.')
-        }
+        // Vuex action을 통해 API 호출
+        await this.$store.dispatch('products/toggleWishlist', productId)
         
-        const result = await response.json()
-        
-        // 위시리스트 상태 업데이트
-        this.product.stats.isWishlisted = result.wishlisted
-        
-        // 위시리스트 카운트 업데이트
-        if (result.wishlisted) {
-          this.product.stats.wishlistCount = (this.product.stats.wishlistCount || 0) + 1
-        } else {
-          this.product.stats.wishlistCount = Math.max(0, (this.product.stats.wishlistCount || 1) - 1)
-        }
-        
-        // 토스트 메시지 표시
+        // 토스트 메시지 표시 (상태가 변경된 후)
         if (this.$toast) {
-          this.$toast.success(result.wishlisted ? '관심 상품에 추가되었습니다.' : '관심 상품에서 제거되었습니다.')
+          this.$toast.success(wasWishlisted ? '관심 상품에서 제거되었습니다.' : '관심 상품에 추가되었습니다.')
         }
       } catch (error) {
         console.error('관심 상품 처리 오류:', error)
