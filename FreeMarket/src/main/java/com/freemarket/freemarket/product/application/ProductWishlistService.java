@@ -24,6 +24,7 @@ public class ProductWishlistService {
     private final ProductWishlistRepository productWishlistRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final ProductViewService viewService;
 
     @Transactional
     public boolean toggleWishlist(Long userId, Long productId) {
@@ -50,6 +51,22 @@ public class ProductWishlistService {
         return productWishlistRepository.findAllByUser(user).stream()
                 .map(ProductWishlist::getProduct)
                 .collect(Collectors.toList());
+    }
+
+    public List<ProductDto.ProductDetailResponse> getUserWishlistDetailDto(Long userId) {
+        User user = getUser(userId);
+        return productWishlistRepository.findAllByUser(user).stream()
+                .map(wishlist -> {
+                    Product product = wishlist.getProduct();
+
+                    Long viewCount = viewService.getViewCount(product.getId());
+                    Long wishlistCount = getWishlistCount(product.getId());
+                    // 현재 사용자의 관심 등록 여부
+                    boolean isWishlisted = userId != null ? isWishlisted(userId, product.getId()) : false;
+
+                    return ProductDto.ProductDetailResponse.from(product, viewCount, wishlistCount, isWishlisted);
+                })
+                .toList();
     }
 
     public boolean isWishlisted(Long userId, Long productId) {

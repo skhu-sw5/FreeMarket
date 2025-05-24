@@ -50,7 +50,7 @@ public class UserProfileController {
             @PageableDefault(size = 10) Pageable pageable) {
 
         log.info("판매 내역 조회: 사용자 ID {}", userDetails.getUserId());
-        UserProfileDto.SellingHistoryResponse response = userProfileService.getSellingHistory(userDetails.getUserId(), pageable);
+        UserProfileDto.SellingHistoryResponse response = userProfileService.getSellingHistoryDetail(userDetails.getUserId(), pageable);
 
         return ResponseEntity.ok(ResponseDTO.success(response));
     }
@@ -65,7 +65,7 @@ public class UserProfileController {
 
         log.info("구매 내역 조회: 사용자 ID {}", userDetails.getUserId());
         UserProfileDto.PurchaseHistoryResponse response =
-                userProfileService.getPurchaseHistory(userDetails.getUserId(), pageable);
+                userProfileService.getPurchaseHistoryDetail(userDetails.getUserId(), pageable);
 
         return ResponseEntity.ok(ResponseDTO.success(response));
     }
