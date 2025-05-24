@@ -1,31 +1,22 @@
 import { API_BASE_URL } from '@/config'
 import { apiGet, apiPost, apiPatch } from '@/utils/api'
+import { 
+  isTokenExpired, 
+  getTokenFromStorage, 
+  setTokenToStorage, 
+  removeTokenFromStorage 
+} from '@/utils/auth'
 
 export default {
   namespaced: true,
   
   state: {
     user: null,
-    token: (() => {
-      try {
-        const token = localStorage.getItem('accessToken');
-        console.log('localStorage에서 토큰 로드:', token ? '토큰 있음' : '토큰 없음');
-        return token;
-      } catch (e) {
-        console.error('localStorage에서 토큰을 읽는 중 오류:', e);
-        return null;
-      }
-    })(),
-    refreshToken: (() => {
-      try {
-        return localStorage.getItem('refreshToken');
-      } catch (e) {
-        console.error('localStorage에서 리프레시 토큰을 읽는 중 오류:', e);
-        return null;
-      }
-    })(),
-    // 초기화 시에는 false로 시작하고, App.vue에서 토큰 확인 후 설정
+    token: getTokenFromStorage('accessToken'),
+    refreshToken: getTokenFromStorage('refreshToken'),
+    // 초기화 시에는 false로 시작하고, 토큰 검증 완료 후에만 true로 설정
     isAuthenticated: false,
+    isInitialized: false, // 초기화 완료 여부 추가
     isRefreshing: false, // 토큰 리프레시 중인지 상태 추가
     refreshPromise: null // 리프레시 중인 Promise 객체 저장
   },
@@ -41,37 +32,30 @@ export default {
     SET_AUTH_TOKENS(state, { accessToken, refreshToken, rememberMe = false }) {
       state.token = accessToken
       state.refreshToken = refreshToken
-      state.isAuthenticated = true
+      // 토큰이 검증되기 전까지는 인증 상태를 true로 설정하지 않음
       
-      try {
-        // rememberMe가 true인 경우에만 localStorage에 저장
-        if (rememberMe) {
-          localStorage.setItem('accessToken', accessToken)
-          localStorage.setItem('refreshToken', refreshToken)
-          console.log('토큰이 localStorage에 저장되었습니다 (자동 로그인 활성화)');
-        } else {
-          // rememberMe가 false인 경우 sessionStorage에 저장 (브라우저 종료 시 삭제됨)
-          sessionStorage.setItem('accessToken', accessToken)
-          sessionStorage.setItem('refreshToken', refreshToken)
-          // localStorage에 저장된 토큰이 있다면 제거
-          localStorage.removeItem('accessToken')
-          localStorage.removeItem('refreshToken')
-          console.log('토큰이 sessionStorage에 저장되었습니다 (자동 로그인 비활성화)');
-        }
-      } catch (error) {
-        console.error('토큰 저장 중 오류:', error);
-      }
+      // Storage에 토큰 저장
+      setTokenToStorage('accessToken', accessToken, rememberMe);
+      setTokenToStorage('refreshToken', refreshToken, rememberMe);
+      
+      console.log(`토큰이 ${rememberMe ? 'localStorage' : 'sessionStorage'}에 저장되었습니다`);
+    },
+    SET_AUTHENTICATED(state, isAuthenticated) {
+      state.isAuthenticated = isAuthenticated
+    },
+    SET_INITIALIZED(state, isInitialized) {
+      state.isInitialized = isInitialized
     },
     CLEAR_AUTH(state) {
       state.user = null
       state.token = null
       state.refreshToken = null
       state.isAuthenticated = false
+      state.isInitialized = true // 로그아웃 시에는 초기화 완료로 설정
       
-      localStorage.removeItem('accessToken')
-      localStorage.removeItem('refreshToken')
-      sessionStorage.removeItem('accessToken')
-      sessionStorage.removeItem('refreshToken')
+      // 모든 storage에서 토큰 제거
+      removeTokenFromStorage('accessToken');
+      removeTokenFromStorage('refreshToken');
     },
     UPDATE_USER(state, userData) {
       state.user = { ...state.user, ...userData }
@@ -96,8 +80,11 @@ export default {
         const { rememberMe = false, ...loginCredentials } = credentials;
         console.log('자동 로그인 옵션:', rememberMe ? '활성화' : '비활성화');
         
-        // apiPost는 토큰 갱신을 처리하지 않으므로 retry 옵션을 false로 설정
-        const data = await apiPost('/api/auth/login', loginCredentials, { retry: false });
+        // 로그인 요청 (인증 헤더 없이, 토큰 갱신도 하지 않음)
+        const data = await apiPost('/api/auth/login', loginCredentials, { 
+          retry: false,
+          skipAuth: true // 인증 헤더를 추가하지 않음
+        });
         console.log('로그인 응답 데이터:', data);
         
         // 토큰 검증
@@ -113,12 +100,14 @@ export default {
         
         console.log('액세스 토큰이 성공적으로 저장되었습니다:', data.data.accessToken.substring(0, 10) + '...');
         
-        // 로그인 후 사용자 정보 가져오기
+        // 로그인 후 사용자 정보 가져오기 (인증 상태는 fetchUser에서 설정)
         try {
           await dispatch('fetchUser');
         } catch (fetchError) {
           console.error('사용자 정보 로딩 실패:', fetchError);
-          // fetchUser 실패해도 로그인은 성공한 것으로 처리
+          // fetchUser 실패 시 토큰 정리
+          commit('CLEAR_AUTH');
+          throw fetchError;
         }
         
         return data;
@@ -130,7 +119,10 @@ export default {
     
     async register({ commit }, userData) {
       try {
-        const data = await apiPost('/api/auth/signup', userData, { retry: false });
+        const data = await apiPost('/api/auth/signup', userData, { 
+          retry: false,
+          skipAuth: true // 인증 헤더를 추가하지 않음
+        });
         console.log('회원가입 응답:', data);
         return data;
       } catch (error) {
@@ -160,7 +152,10 @@ export default {
       // 일반 Promise 사용하여 ESLint 오류 해결
       const refreshPromise = new Promise((resolve, reject) => {
         // apiPost 사용 (자체적으로 리프레시 처리하지 않도록 설정)
-        apiPost('/api/auth/refresh', { refreshToken: state.refreshToken }, { retry: false })
+        apiPost('/api/auth/refresh', { refreshToken: state.refreshToken }, { 
+          retry: false,
+          skipAuth: true // 인증 헤더를 추가하지 않음 
+        })
           .then(data => {
             console.log('토큰 리프레시 요청 성공');
             
@@ -169,10 +164,12 @@ export default {
               throw new Error('응답에 필요한 토큰 정보가 없습니다.');
             }
 
-            // 새 토큰 저장
+            // 새 토큰 저장 (기존 rememberMe 설정 유지)
+            const rememberMe = localStorage.getItem('accessToken') !== null;
             commit('SET_AUTH_TOKENS', {
               accessToken: data.data.accessToken,
-              refreshToken: data.data.refreshToken
+              refreshToken: data.data.refreshToken,
+              rememberMe: rememberMe
             });
 
             console.log('토큰 리프레시 성공:', data.data.accessToken.substring(0, 10) + '...');
@@ -203,6 +200,8 @@ export default {
     async fetchUser({ commit, state, dispatch }) {
       if (!state.token) {
         console.log('토큰이 없습니다. 사용자 정보를 가져올 수 없습니다.');
+        commit('SET_AUTHENTICATED', false);
+        commit('SET_INITIALIZED', true);
         return null;
       }
       
@@ -268,6 +267,7 @@ export default {
           // 기존 사용자 데이터를 보존하면서 새 데이터로 업데이트
           const updatedUser = state.user ? { ...state.user, ...data.data } : data.data;
           commit('SET_AUTH_USER', updatedUser);
+          commit('SET_INITIALIZED', true);
           
           console.log('최종 사용자 정보:', updatedUser);
           return updatedUser;
@@ -287,14 +287,86 @@ export default {
           return null;
         }
         
-        // 네트워크 오류인 경우 null 반환 (인증 상태 유지)
+        // 네트워크 오류인 경우 초기화만 완료하고 인증 상태 유지
         if (error.message && error.message.includes('서버에 연결할 수 없습니다')) {
+          commit('SET_INITIALIZED', true);
           return null;
         }
         
         // 다른 오류의 경우 인증 상태 초기화
         commit('CLEAR_AUTH');
         throw error;
+      }
+    },
+    
+    // 토큰 유효성 검증 액션 (앱 초기화 시 사용)
+    async validateToken({ commit, state, dispatch }) {
+      console.log('토큰 유효성 검증 시작');
+      
+      if (!state.token) {
+        console.log('토큰이 없습니다.');
+        commit('SET_AUTHENTICATED', false);
+        commit('SET_INITIALIZED', true);
+        return false;
+      }
+      
+      // 토큰 만료 시간 확인
+      if (isTokenExpired(state.token)) {
+        console.log('액세스 토큰이 만료되었습니다. 리프레시 토큰으로 갱신을 시도합니다.');
+        
+        // 리프레시 토큰이 있으면 갱신 시도
+        if (state.refreshToken && !isTokenExpired(state.refreshToken)) {
+          try {
+            await dispatch('refreshTokenAction');
+            console.log('토큰 갱신 성공');
+            // 갱신 후 사용자 정보 가져오기
+            const user = await dispatch('fetchUser');
+            return !!user;
+          } catch (error) {
+            console.error('토큰 갱신 실패:', error);
+            commit('CLEAR_AUTH');
+            return false;
+          }
+        } else {
+          console.log('리프레시 토큰이 없거나 만료되었습니다.');
+          commit('CLEAR_AUTH');
+          return false;
+        }
+      }
+      
+      try {
+        // 사용자 정보 가져오기로 토큰 유효성 확인
+        const user = await dispatch('fetchUser');
+        
+        if (user) {
+          console.log('토큰 검증 성공 - 사용자:', user.name);
+          return true;
+        } else {
+          console.log('토큰 검증 실패 - 사용자 정보 없음');
+          return false;
+        }
+      } catch (error) {
+        console.error('토큰 검증 오류:', error);
+        
+        // 리프레시 토큰으로 재시도
+        if (state.refreshToken && !isTokenExpired(state.refreshToken)) {
+          try {
+            console.log('리프레시 토큰으로 재시도');
+            await dispatch('refreshTokenAction');
+            const user = await dispatch('fetchUser');
+            
+            if (user) {
+              console.log('리프레시 후 토큰 검증 성공');
+              return true;
+            }
+          } catch (refreshError) {
+            console.error('리프레시 토큰으로 재시도 실패:', refreshError);
+          }
+        }
+        
+        // 모든 시도 실패 시 로그아웃
+        commit('CLEAR_AUTH');
+        return false;
       }
     },
     
@@ -364,6 +436,7 @@ export default {
   
   getters: {
     isAuthenticated: state => state.isAuthenticated,
+    isInitialized: state => state.isInitialized,
     currentUser: state => state.user,
     token: state => state.token
   }

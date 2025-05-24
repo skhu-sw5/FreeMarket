@@ -1,6 +1,15 @@
 <template>
   <div id="app" class="min-h-screen flex flex-col">
-    <router-view class="flex-1" />
+    <!-- 초기화 중 로딩 표시 -->
+    <div v-if="!isInitialized" class="flex items-center justify-center min-h-screen bg-gray-50">
+      <div class="flex flex-col items-center space-y-4">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <p class="text-gray-600">앱을 초기화하는 중...</p>
+      </div>
+    </div>
+    
+    <!-- 초기화 완료 후 메인 컨텐츠 -->
+    <router-view v-else class="flex-1" />
   </div>
 </template>
 
@@ -11,40 +20,24 @@ export default {
   name: 'App',
   
   computed: {
-    ...mapState('auth', ['isAuthenticated', 'token', 'refreshToken'])
+    ...mapState('auth', ['isAuthenticated', 'isInitialized', 'token', 'refreshToken'])
   },
   
-  created() {
-    // 로컬 스토리지에 토큰이 있는지 확인
-    const token = localStorage.getItem('accessToken')
-    const refreshToken = localStorage.getItem('refreshToken')
+  async created() {
+    console.log('App.vue created - 초기화 시작');
     
-    if (token) {
-      console.log('앱 로드: 토큰이 존재합니다.');
+    try {
+      // 토큰 유효성 검증 (Storage에서 읽기 + 만료 시간 확인 + 서버 검증)
+      const isValid = await this.validateToken();
       
-      // 토큰이 있으면 즉시 인증 상태를 true로 설정 (UI 반응성 향상)
-      this.$store.commit('auth/SET_AUTH_TOKENS', {
-        accessToken: token,
-        refreshToken: refreshToken
-      });
-      
-      // 사용자 정보 불러오기
-      this.fetchUser()
-        .then(user => {
-          if (user) {
-            console.log('사용자 정보 로드 성공:', user.name);
-          } else {
-            console.warn('사용자 정보 로드 실패. 토큰 갱신을 시도합니다.');
-            this.tryRefreshToken();
-          }
-        })
-        .catch(error => {
-          console.error("사용자 정보 로딩 실패:", error);
-          this.tryRefreshToken();
-        });
-    } else {
-      console.log('앱 로드: 토큰이 없습니다.');
-      // 토큰이 없으면 명시적으로 인증 상태를 false로 설정
+      if (isValid) {
+        console.log('앱 초기화 완료: 로그인 상태 유지');
+      } else {
+        console.log('앱 초기화 완료: 로그아웃 상태');
+      }
+    } catch (error) {
+      console.error('앱 초기화 중 오류:', error);
+      // 오류 발생 시 안전하게 로그아웃 상태로 초기화
       this.$store.commit('auth/CLEAR_AUTH');
     }
     
@@ -53,37 +46,7 @@ export default {
   },
   
   methods: {
-    ...mapActions('auth', ['fetchUser', 'logout', 'refreshTokenAction']),
-    
-    tryRefreshToken() {
-      const refreshTokenValue = localStorage.getItem('refreshToken');
-      
-      // 리프레시 토큰이 있으면 자동 갱신 시도
-      if (refreshTokenValue) {
-        console.log('토큰 만료 감지: 리프레시 토큰으로 갱신 시도');
-        this.refreshTokenAction()
-          .then(() => {
-            console.log('토큰 갱신 성공');
-            return this.fetchUser(); // 다시 사용자 정보 가져오기
-          })
-          .catch(refreshError => {
-            console.error('토큰 갱신 실패:', refreshError);
-            // 현재 경로가 인증이 필요한 경로인지 확인
-            const currentRoute = this.$router.currentRoute.value;
-            if (currentRoute.meta && currentRoute.meta.requiresAuth) {
-              console.log('인증이 필요한 페이지입니다. 로그인 페이지로 이동합니다.');
-              this.$router.push('/login');
-            }
-          });
-      } else {
-        // 현재 경로가 인증이 필요한 경로인지 확인
-        const currentRoute = this.$router.currentRoute.value;
-        if (currentRoute.meta && currentRoute.meta.requiresAuth) {
-          console.log('인증이 필요한 페이지입니다. 로그인 페이지로 이동합니다.');
-          this.$router.push('/login');
-        }
-      }
-    },
+    ...mapActions('auth', ['validateToken', 'logout']),
     
     suppressChromeExtensionErrors() {
       // 개발 환경에서만 확장 프로그램 오류 필터링

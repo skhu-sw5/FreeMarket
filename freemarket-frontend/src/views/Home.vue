@@ -44,57 +44,63 @@
       <ProductList title="신규 상품" :products="newProducts" :loading="loading" />
       <ProductList title="인기 상품" :products="popularProducts" :loading="loading" />
       
-      <!-- 가입 유도 섹션 (비로그인 사용자) -->
-      <section v-if="!isAuthenticated" class="py-16 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
-        <div class="container mx-auto px-4 text-center">
-          <h2 class="text-3xl font-bold mb-4">지금 바로 시작하세요!</h2>
-          <p class="text-xl mb-8">FreeMarket에서 필요한 물건을 쉽고 안전하게 거래하세요.</p>
-          <!-- 디버그 정보 (개발용) -->
-          <div v-if="$route.query.debug" class="mb-4 text-sm opacity-70">
-            인증상태: {{ isAuthenticated }}, 토큰: {{ token ? '있음' : '없음' }}
+      <!-- 초기화 중일 때는 CTA 섹션 숨김 -->
+      <template v-if="isInitialized">
+        <!-- 가입 유도 섹션 (비로그인 사용자) -->
+        <section v-if="!isAuthenticated" class="py-16 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+          <div class="container mx-auto px-4 text-center">
+            <h2 class="text-3xl font-bold mb-4">지금 바로 시작하세요!</h2>
+            <p class="text-xl mb-8">FreeMarket에서 필요한 물건을 쉽고 안전하게 거래하세요.</p>
+            <!-- 디버그 정보 (개발용) -->
+            <div v-if="$route.query.debug" class="mb-4 text-sm opacity-70">
+              인증상태: {{ isAuthenticated }}, 토큰: {{ token ? '있음' : '없음' }}, 초기화: {{ isInitialized }}
+            </div>
+            <div class="flex justify-center space-x-4">
+              <router-link 
+                to="/register" 
+                class="px-6 py-3 bg-white text-blue-600 font-bold rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                회원가입
+              </router-link>
+              <router-link 
+                to="/products" 
+                class="px-6 py-3 bg-transparent border-2 border-white text-white font-bold rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors"
+              >
+                상품 둘러보기
+              </router-link>
+            </div>
           </div>
-          <div class="flex justify-center space-x-4">
-            <router-link 
-              to="/register" 
-              class="px-6 py-3 bg-white text-blue-600 font-bold rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              회원가입
-            </router-link>
-            <router-link 
-              to="/products" 
-              class="px-6 py-3 bg-transparent border-2 border-white text-white font-bold rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors"
-            >
-              상품 둘러보기
-            </router-link>
+        </section>
+        
+        <!-- 로그인한 사용자 전용 섹션 -->
+        <section v-else class="py-16 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+          <div class="container mx-auto px-4 text-center">
+            <h2 class="text-3xl font-bold mb-4">환영합니다! 🎉</h2>
+            <p class="text-xl mb-8">
+              <span v-if="user && user.name">{{ user.name }}님, </span>
+              지금 바로 상품을 등록하거나 원하는 상품을 찾아보세요.
+            </p>
+            <!-- 디버그 정보 (개발용) -->
+            <div v-if="$route.query.debug" class="mb-4 text-sm opacity-70">
+              인증상태: {{ isAuthenticated }}, 사용자: {{ user ? user.name : '정보없음' }}, 초기화: {{ isInitialized }}
+            </div>
+            <div class="flex justify-center space-x-4">
+              <router-link 
+                to="/products/create" 
+                class="px-6 py-3 bg-white text-blue-600 font-bold rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                상품 등록하기
+              </router-link>
+              <router-link 
+                to="/products" 
+                class="px-6 py-3 bg-transparent border-2 border-white text-white font-bold rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors"
+              >
+                상품 둘러보기
+              </router-link>
+            </div>
           </div>
-        </div>
-      </section>
-      
-      <!-- 로그인한 사용자 전용 섹션 -->
-      <section v-else class="py-16 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
-        <div class="container mx-auto px-4 text-center">
-          <h2 class="text-3xl font-bold mb-4">환영합니다! 🎉</h2>
-          <p class="text-xl mb-8">지금 바로 상품을 등록하거나 원하는 상품을 찾아보세요.</p>
-          <!-- 디버그 정보 (개발용) -->
-          <div v-if="$route.query.debug" class="mb-4 text-sm opacity-70">
-            인증상태: {{ isAuthenticated }}, 사용자: {{ user ? user.name : '정보없음' }}
-          </div>
-          <div class="flex justify-center space-x-4">
-            <router-link 
-              to="/products/create" 
-              class="px-6 py-3 bg-white text-blue-600 font-bold rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              상품 등록하기
-            </router-link>
-            <router-link 
-              to="/products" 
-              class="px-6 py-3 bg-transparent border-2 border-white text-white font-bold rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors"
-            >
-              상품 둘러보기
-            </router-link>
-          </div>
-        </div>
-      </section>
+        </section>
+      </template>
     </main>
     <AppFooter />
   </div>
@@ -128,11 +134,12 @@ export default {
   },
   
   computed: {
-    ...mapState('auth', ['isAuthenticated', 'token', 'user'])
+    ...mapState('auth', ['isAuthenticated', 'isInitialized', 'token', 'user'])
   },
   
   async created() {
     console.log('Home.vue created - 인증 상태:', this.isAuthenticated);
+    console.log('Home.vue created - 초기화 상태:', this.isInitialized);
     console.log('Home.vue created - 토큰:', this.token ? '있음' : '없음');
     console.log('Home.vue created - 사용자:', this.user);
     

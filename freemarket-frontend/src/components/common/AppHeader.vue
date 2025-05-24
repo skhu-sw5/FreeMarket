@@ -26,7 +26,16 @@
         </div>
         
         <div class="flex items-center space-x-4">
-          <template v-if="isAuthenticated">
+          <!-- 초기화 중일 때 로딩 표시 -->
+          <template v-if="!isInitialized">
+            <div class="flex items-center space-x-2">
+              <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              <span class="text-sm text-gray-500">로딩 중...</span>
+            </div>
+          </template>
+          
+          <!-- 초기화 완료 후 인증 상태에 따른 메뉴 -->
+          <template v-else-if="isAuthenticated">
             <router-link to="/wishlist" class="text-gray-700 hover:text-blue-600">
               <i class="far fa-heart"></i>
             </router-link>
@@ -52,6 +61,8 @@
               판매하기
             </router-link>
           </template>
+          
+          <!-- 비로그인 상태 -->
           <template v-else>
             <router-link to="/login" class="button-outline flex items-center space-x-1">
               <i class="fas fa-sign-in-alt"></i>
@@ -83,7 +94,16 @@
         <nav class="flex flex-col space-y-2">
           <router-link to="/categories" class="py-2 hover:text-blue-600">카테고리</router-link>
           <router-link to="/products" class="py-2 hover:text-blue-600">전체 상품</router-link>
-          <template v-if="isAuthenticated">
+          
+          <!-- 초기화 중일 때 -->
+          <template v-if="!isInitialized">
+            <div class="py-2 text-gray-500">
+              <i class="fas fa-spinner fa-spin mr-2"></i>로딩 중...
+            </div>
+          </template>
+          
+          <!-- 로그인 상태 -->
+          <template v-else-if="isAuthenticated">
             <div class="border-t pt-2 mt-2">
               <router-link to="/wishlist" class="block py-2 hover:text-blue-600">
                 <i class="far fa-heart mr-2"></i>관심 상품
@@ -102,6 +122,8 @@
               </router-link>
             </div>
           </template>
+          
+          <!-- 비로그인 상태 -->
           <template v-else>
             <div class="border-t pt-2 mt-2">
               <router-link to="/login" class="block py-2 hover:text-blue-600">
@@ -132,7 +154,7 @@ export default {
   },
   
   computed: {
-    ...mapGetters('auth', ['isAuthenticated', 'currentUser'])
+    ...mapGetters('auth', ['isAuthenticated', 'isInitialized', 'currentUser'])
   },
   
   mounted() {

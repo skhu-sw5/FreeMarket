@@ -24,8 +24,19 @@ export async function apiRequest(url, options = {}, retry = true) {
     ...options.headers
   }
   
-  // 토큰이 있으면 Authorization 헤더 추가
-  if (token) {
+  // 인증이 필요 없는 엔드포인트인지 확인
+  const authNotRequiredEndpoints = [
+    '/api/auth/login',
+    '/api/auth/signup',
+    '/api/auth/refresh',
+    '/api/auth/password/reset-request',
+    '/api/auth/password/reset-verify'
+  ];
+  
+  const needsAuth = !authNotRequiredEndpoints.some(endpoint => url.includes(endpoint));
+  
+  // 토큰이 있고 인증이 필요한 요청인 경우에만 Authorization 헤더 추가
+  if (token && needsAuth && !options.skipAuth) {
     headers['Authorization'] = `Bearer ${token}`
   }
   
@@ -51,9 +62,22 @@ export async function apiRequest(url, options = {}, retry = true) {
         }
       }
       
-      // 401 Unauthorized - 토큰 만료
-      if (response.status === 401 && retry) {
+      // 401 Unauthorized - 토큰 만료 (인증이 필요한 요청에서만)
+      if (response.status === 401 && retry && needsAuth && !options.skipAuth) {
         console.log('API 요청 401 응답: 토큰 갱신 시도')
+        
+        // 현재 리프레시 중인지 확인
+        if (store.state.auth.isRefreshing) {
+          console.log('이미 토큰 리프레시 중입니다. 기존 요청을 기다립니다.');
+          try {
+            await store.state.auth.refreshPromise;
+            // 리프레시 완료 후 재시도
+            return apiRequest(url, options, false);
+          } catch (refreshError) {
+            console.error('토큰 갱신 대기 중 오류:', refreshError);
+            throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
+          }
+        }
         
         try {
           // 토큰 갱신 시도

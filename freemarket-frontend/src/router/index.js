@@ -164,51 +164,53 @@ const router = createRouter({
 
 // 인증 관련 네비게이션 가드
 router.beforeEach(async (to, from, next) => {
-  const token = localStorage.getItem('accessToken')
-  const refreshToken = localStorage.getItem('refreshToken')
   const isAuthenticated = store.getters['auth/isAuthenticated']
+  const isInitialized = store.getters['auth/isInitialized']
+  
+  // 앱이 아직 초기화되지 않았다면 초기화 완료까지 대기
+  if (!isInitialized) {
+    console.log('라우터 가드: 앱 초기화 대기 중...');
+    
+    // 초기화 완료까지 최대 5초 대기
+    let attempts = 0;
+    const maxAttempts = 50; // 5초 (100ms * 50)
+    
+    while (!store.getters['auth/isInitialized'] && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
+    }
+    
+    if (!store.getters['auth/isInitialized']) {
+      console.warn('앱 초기화 시간 초과, 강제 진행');
+      // 타임아웃 시 강제로 초기화 완료로 설정
+      store.commit('auth/SET_INITIALIZED', true);
+    } else {
+      console.log('라우터 가드: 앱 초기화 완료');
+    }
+  }
   
   if (to.matched.some(record => record.meta.requiresAuth)) {
-    // 이미 인증된 상태이면 계속 진행
+    // 인증이 필요한 페이지
     if (isAuthenticated) {
+      console.log('라우터 가드: 인증된 사용자, 계속 진행');
       next()
-      return
-    }
-    
-    // 토큰이 없는 경우 로그인 페이지로 리다이렉트
-    if (!token) {
-      next({ name: 'Login', query: { redirect: to.fullPath } })
-      return
-    }
-    
-    // 토큰은 있지만 인증 상태가 아니면 사용자 정보 확인 시도
-    try {
-      // fetchUser 시도 - 토큰이 유효하면 사용자 정보를 가져옴
-      const user = await store.dispatch('auth/fetchUser')
-      if (user) {
-        next() // 사용자 정보 가져오기 성공, 계속 진행
-      } else {
-        // 토큰이 유효하지 않고 리프레시 토큰이 있으면 갱신 시도
-        if (refreshToken) {
-          try {
-            await store.dispatch('auth/refreshTokenAction')
-            await store.dispatch('auth/fetchUser')
-            next()
-          } catch (refreshError) {
-            console.error('토큰 갱신 실패:', refreshError)
-            next({ name: 'Login', query: { redirect: to.fullPath } })
-          }
-        } else {
-          next({ name: 'Login', query: { redirect: to.fullPath } })
-        }
-      }
-    } catch (error) {
-      console.error('인증 확인 오류:', error)
-      next({ name: 'Login', query: { redirect: to.fullPath } })
+    } else {
+      console.log('라우터 가드: 인증되지 않은 사용자, 로그인 페이지로 리다이렉트');
+      next({ 
+        name: 'Login', 
+        query: { redirect: to.fullPath } 
+      })
     }
   } else {
-    // 인증이 필요하지 않은 페이지는 그냥 진행
-    next()
+    // 인증이 필요하지 않은 페이지
+    
+    // 로그인/회원가입 페이지에 이미 로그인된 사용자가 접근하는 경우
+    if ((to.name === 'Login' || to.name === 'Register') && isAuthenticated) {
+      console.log('라우터 가드: 이미 로그인된 사용자, 홈으로 리다이렉트');
+      next({ name: 'Home' })
+    } else {
+      next()
+    }
   }
 })
 
