@@ -6,14 +6,21 @@ import { API_BASE_URL, NODE_ENV } from '@/config'
  * @param {string} url - 요청 URL
  * @param {Object} options - fetch 옵션
  * @param {boolean} retry - 토큰 갱신 후 재시도 여부 (무한 루프 방지)
+ * @param {boolean} skipViewCount - 조회수 증가를 건너뛸지 여부 (상품 상세 조회 시)
  * @returns {Promise<Object>} - 응답 데이터 
  */
 export async function apiRequest(url, options = {}, retry = true) {
+  // URL에 skipViewIncrement 파라미터 추가 (이미 있으면 그대로 유지)
+  if (options.skipViewIncrement === true && !url.includes('skipViewIncrement=true')) {
+    url += url.includes('?') ? '&skipViewIncrement=true' : '?skipViewIncrement=true';
+    console.log('API 요청에 조회수 증가 건너뛰기 파라미터 추가:', url);
+  }
+
   // 인증 토큰 가져오기
   const token = store.state.auth.token
   
   // URL에 기본 URL 추가 (이미 절대 URL이면 그대로 사용)
-  const fullUrl = url.startsWith('http') 
+  const apiUrl = url.startsWith('http') 
     ? url 
     : `${API_BASE_URL}${url}`
   
@@ -48,7 +55,7 @@ export async function apiRequest(url, options = {}, retry = true) {
   }
   
   try {
-    const response = await fetch(fullUrl, requestOptions)
+    const response = await fetch(apiUrl, requestOptions)
     
     // 응답 처리
     if (!response.ok) {
@@ -125,9 +132,17 @@ async function extractErrorMessage(response) {
 
 /**
  * GET 요청 도우미 함수
+ * @param {string} url - 요청 URL
+ * @param {Object} options - 요청 옵션
+ * @param {boolean} skipViewCount - 조회수 증가를 건너뛸지 여부 (true면 조회수 증가하지 않음)
  */
 export function apiGet(url, options = {}) {
-  return apiRequest(url, { ...options, method: 'GET' })
+  // skipViewIncrement 옵션을 기본 GET 옵션에 추가
+  return apiRequest(url, { 
+    ...options, 
+    method: 'GET',
+    skipViewIncrement: options.skipViewIncrement || store.state.products?.skipViewIncrement
+  });
 }
 
 /**

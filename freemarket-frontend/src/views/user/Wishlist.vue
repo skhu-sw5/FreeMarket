@@ -22,21 +22,13 @@
         
         <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           <ProductCard 
-            v-for="product in wishlist" 
+            v-for="product in formattedWishlist" 
             :key="product.product.id"
             :product="product.product"
             :stats="product.stats"
             @click="goToProduct(product.product.id)"
-          >
-            <template #actions>
-              <button 
-                @click.stop="removeFromWishlist(product.product.id)"
-                class="absolute top-2 right-2 w-8 h-8 bg-white rounded-full shadow flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors"
-              >
-                <i class="fas fa-heart"></i>
-              </button>
-            </template>
-          </ProductCard>
+            @wishlist-toggle="removeFromWishlist(product.product.id)"
+          />
         </div>
       </div>
     </main>
@@ -50,6 +42,7 @@ import AppHeader from '@/components/common/AppHeader.vue'
 import AppFooter from '@/components/common/AppFooter.vue'
 import ProductCard from '@/components/products/ProductCard.vue'
 import { mapState, mapActions } from 'vuex'
+import { apiGet } from '@/utils/api'
 
 export default {
   name: 'WishlistView',
@@ -67,30 +60,50 @@ export default {
   },
   
   computed: {
-    ...mapState('products', ['wishlist'])
+    ...mapState('products', ['wishlist']),
+    
+    // formattedWishlist() 계산된 속성에서는 
+    // 이미 API에서 제공하는 정보를 사용하도록 합니다
+    formattedWishlist() {
+      return this.wishlist.map(item => {
+        // 기존 stats 데이터 유지하면서 기본값 설정
+        const stats = item.stats || {};
+        return {
+          ...item,
+          stats: {
+            viewCount: stats.viewCount || 0,
+            wishlistCount: stats.wishlistCount || 0,
+            isWishlisted: true // 관심 상품 목록이므로 항상 true
+          }
+        };
+      });
+    }
   },
   
   async created() {
     try {
-      await this.fetchWishlist()
+      // 관심 상품 목록을 가져옴 (이 API는 이미 조회수와 관심수를 포함하고 있음)
+      await this.fetchWishlist();
+      // 개별 상품 조회를 하지 않으므로 조회수 증가가 발생하지 않음
     } catch (error) {
-      console.error('관심 상품 목록 로딩 오류:', error)
+      console.error('관심 상품 목록 로딩 오류:', error);
     } finally {
-      this.loading = false
+      this.loading = false;
     }
   },
   
   methods: {
     ...mapActions('products', ['fetchWishlist', 'toggleWishlist']),
     
+
+    
     async removeFromWishlist(productId) {
       try {
-        await this.toggleWishlist(productId)
-        await this.fetchWishlist()
-        this.$toast.success('관심 상품에서 제거되었습니다')
+        // toggleWishlist 액션은 이미 ProductCard에서 실행되었으므로 중복 호출하지 않음
+        // 대신 wishlist 목록을 업데이트하여 제거된 항목을 반영
+        await this.fetchWishlist();
       } catch (error) {
-        console.error('관심 상품 제거 오류:', error)
-        this.$toast.error('관심 상품 제거에 실패했습니다')
+        console.error('관심 상품 목록 업데이트 오류:', error);
       }
     },
     

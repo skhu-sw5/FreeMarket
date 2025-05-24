@@ -14,10 +14,10 @@
       </div>
       <button 
         @click.stop="toggleWishlist"
-        class="absolute top-2 right-2 bg-white p-2 rounded-full shadow-md text-gray-400 hover:text-red-500 transition-colors"
-        :class="{ 'text-red-500': stats.isWishlisted }"
+        class="absolute top-2 right-2 bg-white p-2 rounded-full shadow-md transition-colors"
+        :class="{ 'text-red-500': stats.isWishlisted, 'text-gray-400': !stats.isWishlisted }"
       >
-        <i class="fa" :class="stats.isWishlisted ? 'fa-heart' : 'fa-heart'"></i>
+        <i :class="stats.isWishlisted ? 'fas fa-heart' : 'far fa-heart'"></i>
       </button>
       <div v-if="isNew" class="absolute top-2 left-2 bg-blue-500 text-white px-2 py-1 text-xs rounded-md font-medium">
         NEW
@@ -94,10 +94,33 @@ export default {
       event.preventDefault()
       event.stopPropagation()
       
+      if (!this.$store.state.auth.isAuthenticated) {
+        this.$router.push({ name: 'Login', query: { redirect: this.$route.fullPath } })
+        return
+      }
+      
       try {
-        await this.toggleWishlist(this.product.id)
+        // 현재 상태를 저장
+        const wasWishlisted = this.stats.isWishlisted
+        
+        // API 호출 및 상태 업데이트
+        const result = await this.$store.dispatch('products/toggleWishlist', this.product.id)
+        
+        // 위시리스트 토글 이벤트 발생 (부모 컴포넌트에 알림)
+        this.$emit('wishlist-toggle', this.product.id)
+        
+        // 토스트 메시지 표시 (API 응답의 실제 상태 사용)
+        if (this.$toast) {
+          const message = result.isWishlisted ? '관심 상품에 추가되었습니다.' : '관심 상품에서 제거되었습니다.'
+          this.$toast.success(message)
+        }
       } catch (error) {
         console.error('관심 상품 처리 오류:', error)
+        if (this.$toast) {
+          this.$toast.error('관심 상품 처리 중 오류가 발생했습니다.')
+        } else {
+          alert('관심 상품 처리 중 오류가 발생했습니다.')
+        }
       }
     },
     

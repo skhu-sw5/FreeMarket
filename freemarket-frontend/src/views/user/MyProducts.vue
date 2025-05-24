@@ -128,7 +128,15 @@ export default {
   },
   
   async created() {
-    await this.fetchMyProducts()
+    // 내 상품 목록 조회에서 조회수 증가를 건너뛰도록 설정
+    this.$store.dispatch('products/setSkipViewIncrement', true);
+    
+    try {
+      await this.fetchMyProducts();
+    } finally {
+      // 원래 상태로 복원
+      this.$store.dispatch('products/setSkipViewIncrement', false);
+    }
   },
   
   methods: {
@@ -140,7 +148,9 @@ export default {
       try {
         console.log('내 판매 상품 목록 가져오기 요청 시작...')
         
-        const data = await apiGet('/api/users/profile/selling')
+        const data = await apiGet('/api/users/profile/selling', {
+          skipViewCount: true // 조회수 증가하지 않음
+        })
         console.log('내 판매 상품 목록 응답 데이터:', data)
         
         if (data && data.data) {
@@ -150,7 +160,7 @@ export default {
               product: {
                 ...product,
                 id: product.productId || product.id,
-                status: 'ACTIVE'
+                status: product.status || 'ACTIVE'
               },
               stats: { 
                 viewCount: product.viewCount || 0,
@@ -162,7 +172,7 @@ export default {
               product: {
                 ...product,
                 id: product.productId || product.id,
-                status: 'SOLD_OUT'
+                status: product.status || 'SOLD_OUT'
               },
               stats: { 
                 viewCount: product.viewCount || 0,
@@ -172,15 +182,54 @@ export default {
             
             this.myProducts = [...activeProducts, ...soldProducts]
           } else if (Array.isArray(data.data)) {
-            this.myProducts = data.data
+            // 배열 형태의 응답인 경우
+            this.myProducts = data.data.map(product => {
+              // product 자체가 객체인지 또는 product 속성이 있는 객체인지 확인
+              const productData = product.product || product;
+              const stats = product.stats || {};
+              
+              return {
+                product: {
+                  ...productData,
+                  id: productData.productId || productData.id,
+                  status: productData.status || 'ACTIVE'
+                },
+                stats: {
+                  viewCount: stats.viewCount || 0,
+                  wishlistCount: stats.wishlistCount || 0
+                }
+              };
+            });
           } else if (data.data.content && Array.isArray(data.data.content)) {
-            this.myProducts = data.data.content
+            // 페이징 응답인 경우
+            this.myProducts = data.data.content.map(product => {
+              // product 자체가 객체인지 또는 product 속성이 있는 객체인지 확인
+              const productData = product.product || product;
+              const stats = product.stats || {};
+              
+              return {
+                product: {
+                  ...productData,
+                  id: productData.productId || productData.id,
+                  status: productData.status || 'ACTIVE'
+                },
+                stats: {
+                  viewCount: stats.viewCount || 0,
+                  wishlistCount: stats.wishlistCount || 0
+                }
+              };
+            });
           } else {
             console.warn('예상치 못한 응답 구조:', data)
             this.myProducts = []
           }
         } else {
           this.myProducts = []
+        }
+        
+        // 데이터 구조 확인 로그
+        if (this.myProducts.length > 0) {
+          console.log('처리된 상품 데이터 샘플:', this.myProducts[0]);
         }
       } catch (error) {
         console.error('내 판매 상품 목록 조회 오류:', error)
