@@ -8,6 +8,7 @@ import PasswordResetRequestView from '../views/auth/PasswordResetRequest.vue'
 import PasswordResetView from '../views/auth/PasswordReset.vue'
 import OAuthCallbackView from '../views/auth/OAuthCallback.vue'
 import ProfileView from '../views/user/Profile.vue'
+import ChangePasswordView from '../views/user/ChangePassword.vue'
 import WishlistView from '../views/user/Wishlist.vue'
 import SellProduct from '../views/SellProduct.vue'
 import EditProduct from '../views/EditProduct.vue'
@@ -77,6 +78,12 @@ const routes = [
     path: '/profile',
     name: 'Profile',
     component: ProfileView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/profile/change-password',
+    name: 'ChangePassword',
+    component: ChangePasswordView,
     meta: { requiresAuth: true }
   },
   {
