@@ -1,5 +1,6 @@
-package com.freemarket.freemarket.global.auth.domain.password;
+package com.freemarket.freemarket.global.auth.domain.password.repository;
 
+import com.freemarket.freemarket.global.auth.domain.password.PasswordResetToken;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

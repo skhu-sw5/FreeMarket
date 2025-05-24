@@ -1,5 +1,7 @@
-package com.freemarket.freemarket.product.domain;
+package com.freemarket.freemarket.product.domain.repository;
 
+import com.freemarket.freemarket.product.domain.Product;
+import com.freemarket.freemarket.product.domain.ProductWishlist;
 import com.freemarket.freemarket.user.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;

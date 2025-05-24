@@ -1,16 +1,16 @@
 package com.freemarket.freemarket.review.application;
 
 import com.freemarket.freemarket.product.domain.Product;
-import com.freemarket.freemarket.product.domain.ProductRepository;
+import com.freemarket.freemarket.product.domain.repository.ProductRepository;
 import com.freemarket.freemarket.product.domain.ProductStatus;
 import com.freemarket.freemarket.product.exception.ProductException;
 import com.freemarket.freemarket.review.api.dto.ReviewDto;
 import com.freemarket.freemarket.review.domain.RatingDistribution;
 import com.freemarket.freemarket.review.domain.Review;
-import com.freemarket.freemarket.review.domain.ReviewRepository;
+import com.freemarket.freemarket.review.domain.repository.ReviewRepository;
 import com.freemarket.freemarket.review.exception.ReviewException;
 import com.freemarket.freemarket.user.domain.User;
-import com.freemarket.freemarket.user.domain.UserRepository;
+import com.freemarket.freemarket.user.domain.repository.UserRepository;
 import com.freemarket.freemarket.user.exception.UserException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -157,13 +157,6 @@ public class ReviewService {
                 .totalElements(reviewsPage.getTotalElements())
                 .build();
     }
-
-    // 특정 사용자의 평균 평점 조회
-    public double getUserAverageRating(Long userId) {
-        Double averageRating = reviewRepository.getAverageRatingByUserId(userId);
-        return averageRating != null ? averageRating : 0.0;
-    }
-
 
     // 권한 확인 후 리뷰 조회
     private Review getReviewWithReviewerCheck(Long reviewId, Long reviewerId) {

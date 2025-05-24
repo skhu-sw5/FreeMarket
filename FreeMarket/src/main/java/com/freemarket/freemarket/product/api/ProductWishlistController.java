@@ -63,10 +63,10 @@ public class ProductWishlistController {
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
     })
     @GetMapping("/wishlist")
-    public ResponseEntity<ResponseDTO<List<ProductDto.ProductBaseResponse>>> getUserWishlist(
+    public ResponseEntity<ResponseDTO<List<ProductDto.ProductDetailResponse>>> getUserWishlist(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails) {
 
-        List<ProductDto.ProductBaseResponse> wishlist = wishlistService.getUserWishlistDto(userDetails.getUserId());
+        List<ProductDto.ProductDetailResponse> wishlist = wishlistService.getUserWishlistDetailDto(userDetails.getUserId());
         return ResponseEntity.ok(ResponseDTO.success(wishlist));
     }
 }

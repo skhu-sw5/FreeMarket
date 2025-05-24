@@ -1,7 +1,7 @@
 package com.freemarket.freemarket.global.security;
 
 import com.freemarket.freemarket.user.domain.User;
-import com.freemarket.freemarket.user.domain.UserRepository;
+import com.freemarket.freemarket.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

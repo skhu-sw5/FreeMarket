@@ -5,7 +5,7 @@ import com.freemarket.freemarket.global.auth.domain.refresh.RefreshToken;
 import com.freemarket.freemarket.global.jwt.JwtProvider;
 import com.freemarket.freemarket.global.security.CustomUserDetails;
 import com.freemarket.freemarket.user.domain.User;
-import com.freemarket.freemarket.user.domain.UserRepository;
+import com.freemarket.freemarket.user.domain.repository.UserRepository;
 import com.freemarket.freemarket.user.domain.UserRole;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

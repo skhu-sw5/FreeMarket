@@ -1,9 +1,9 @@
 package com.freemarket.freemarket.product.application;
 
 import com.freemarket.freemarket.product.domain.Product;
-import com.freemarket.freemarket.product.domain.ProductRepository;
+import com.freemarket.freemarket.product.domain.repository.ProductRepository;
 import com.freemarket.freemarket.product.domain.ProductViewCount;
-import com.freemarket.freemarket.product.domain.ProductViewCountRepository;
+import com.freemarket.freemarket.product.domain.repository.ProductViewCountRepository;
 import com.freemarket.freemarket.product.exception.ProductException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

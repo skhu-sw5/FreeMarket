@@ -1,12 +1,13 @@
 package com.freemarket.freemarket.user.application;
 
-import com.freemarket.freemarket.user.exception.UserException;
+import com.freemarket.freemarket.product.domain.ProductStatus;
+import com.freemarket.freemarket.product.domain.repository.ProductRepository;
 import com.freemarket.freemarket.user.api.dto.UserDto;
 import com.freemarket.freemarket.user.domain.User;
-import com.freemarket.freemarket.user.domain.UserRepository;
+import com.freemarket.freemarket.user.domain.repository.UserRepository;
+import com.freemarket.freemarket.user.exception.UserException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,10 +21,38 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    private final ProductRepository productRepository;
+
     public UserDto.UserResponse getUserProfile(Long userId) {
         User user = getUser(userId);
 
-        return UserDto.UserResponse.from(user);
+        // 통계 정보 조회
+        long activeProductCount = productRepository.countBySellerIdAndStatus(userId, ProductStatus.ACTIVE);
+        long soldProductCount = productRepository.countBySellerIdAndStatus(userId, ProductStatus.SOLD_OUT);
+        long purchaseCount = productRepository.countByBuyerId(userId);
+
+
+        return UserDto.UserResponse.from(
+                user,
+                (int) activeProductCount,
+                (int) soldProductCount,
+                (int) purchaseCount);
+    }
+
+    public UserDto.DiffUserResponse getDiffUserProfile(Long userId) {
+        User user = getUser(userId);
+
+        // 통계 정보 조회
+        long activeProductCount = productRepository.countBySellerIdAndStatus(userId, ProductStatus.ACTIVE);
+        long soldProductCount = productRepository.countBySellerIdAndStatus(userId, ProductStatus.SOLD_OUT);
+        long purchaseCount = productRepository.countByBuyerId(userId);
+
+
+        return UserDto.DiffUserResponse.from(
+                user,
+                (int) activeProductCount,
+                (int) soldProductCount,
+                (int) purchaseCount);
     }
 
     @Transactional
@@ -33,7 +62,15 @@ public class UserService {
 
         log.info("사용자 프로필 업데이트 완료: {}", userId);
 
-        return UserDto.UserResponse.from(user);
+        long activeProductCount = productRepository.countBySellerIdAndStatus(userId, ProductStatus.ACTIVE);
+        long soldProductCount = productRepository.countBySellerIdAndStatus(userId, ProductStatus.SOLD_OUT);
+        long purchaseCount = productRepository.countByBuyerId(userId);
+
+        return UserDto.UserResponse.from(
+                user,
+                (int) activeProductCount,
+                (int) soldProductCount,
+                (int) purchaseCount);
     }
 
     @Transactional

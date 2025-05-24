@@ -4,10 +4,13 @@ import com.freemarket.freemarket.global.email.exception.EmailVerificationExcepti
 import com.freemarket.freemarket.global.file.application.FileStorageService;
 import com.freemarket.freemarket.product.api.dto.ProductDto;
 import com.freemarket.freemarket.product.domain.*;
+import com.freemarket.freemarket.product.domain.repository.ProductRepository;
+import com.freemarket.freemarket.product.domain.repository.ProductViewCountRepository;
+import com.freemarket.freemarket.product.domain.repository.ProductWishlistRepository;
 import com.freemarket.freemarket.product.exception.ProductException;
-import com.freemarket.freemarket.review.domain.ReviewRepository;
+import com.freemarket.freemarket.review.domain.repository.ReviewRepository;
 import com.freemarket.freemarket.user.domain.User;
-import com.freemarket.freemarket.user.domain.UserRepository;
+import com.freemarket.freemarket.user.domain.repository.UserRepository;
 import com.freemarket.freemarket.user.exception.UserException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

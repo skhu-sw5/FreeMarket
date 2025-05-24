@@ -1,4 +1,4 @@
-package com.freemarket.freemarket.global.auth.domain.password;
+package com.freemarket.freemarket.global.auth.domain.password.repository;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;

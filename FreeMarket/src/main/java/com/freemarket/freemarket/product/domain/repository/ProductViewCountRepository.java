@@ -1,5 +1,6 @@
-package com.freemarket.freemarket.product.domain;
+package com.freemarket.freemarket.product.domain.repository;
 
+import com.freemarket.freemarket.product.domain.ProductViewCount;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;

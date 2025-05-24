@@ -2,12 +2,12 @@ package com.freemarket.freemarket.product.application;
 
 import com.freemarket.freemarket.product.api.dto.ProductDto;
 import com.freemarket.freemarket.product.domain.Product;
-import com.freemarket.freemarket.product.domain.ProductRepository;
+import com.freemarket.freemarket.product.domain.repository.ProductRepository;
 import com.freemarket.freemarket.product.domain.ProductWishlist;
-import com.freemarket.freemarket.product.domain.ProductWishlistRepository;
+import com.freemarket.freemarket.product.domain.repository.ProductWishlistRepository;
 import com.freemarket.freemarket.product.exception.ProductException;
 import com.freemarket.freemarket.user.domain.User;
-import com.freemarket.freemarket.user.domain.UserRepository;
+import com.freemarket.freemarket.user.domain.repository.UserRepository;
 import com.freemarket.freemarket.user.exception.UserException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,6 +24,7 @@ public class ProductWishlistService {
     private final ProductWishlistRepository productWishlistRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final ProductViewService viewService;
 
     @Transactional
     public boolean toggleWishlist(Long userId, Long productId) {
@@ -50,6 +51,22 @@ public class ProductWishlistService {
         return productWishlistRepository.findAllByUser(user).stream()
                 .map(ProductWishlist::getProduct)
                 .collect(Collectors.toList());
+    }
+
+    public List<ProductDto.ProductDetailResponse> getUserWishlistDetailDto(Long userId) {
+        User user = getUser(userId);
+        return productWishlistRepository.findAllByUser(user).stream()
+                .map(wishlist -> {
+                    Product product = wishlist.getProduct();
+
+                    Long viewCount = viewService.getViewCount(product.getId());
+                    Long wishlistCount = getWishlistCount(product.getId());
+                    // 현재 사용자의 관심 등록 여부
+                    boolean isWishlisted = userId != null ? isWishlisted(userId, product.getId()) : false;
+
+                    return ProductDto.ProductDetailResponse.from(product, viewCount, wishlistCount, isWishlisted);
+                })
+                .toList();
     }
 
     public boolean isWishlisted(Long userId, Long productId) {

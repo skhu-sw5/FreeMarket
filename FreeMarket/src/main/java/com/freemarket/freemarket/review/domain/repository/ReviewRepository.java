@@ -1,6 +1,7 @@
-package com.freemarket.freemarket.review.domain;
+package com.freemarket.freemarket.review.domain.repository;
 
 import com.freemarket.freemarket.product.domain.Product;
+import com.freemarket.freemarket.review.domain.Review;
 import com.freemarket.freemarket.user.domain.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

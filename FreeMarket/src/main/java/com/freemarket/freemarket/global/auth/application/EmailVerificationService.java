@@ -2,10 +2,10 @@ package com.freemarket.freemarket.global.auth.application;
 
 import com.freemarket.freemarket.global.auth.api.dto.EmailVerificationDto;
 import com.freemarket.freemarket.global.auth.domain.email.EmailVerification;
-import com.freemarket.freemarket.global.auth.domain.email.EmailVerificationRepository;
+import com.freemarket.freemarket.global.auth.domain.email.repository.EmailVerificationRepository;
 import com.freemarket.freemarket.global.email.exception.EmailVerificationException;
 import com.freemarket.freemarket.user.domain.User;
-import com.freemarket.freemarket.user.domain.UserRepository;
+import com.freemarket.freemarket.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.coyote.BadRequestException;
 import org.springframework.mail.SimpleMailMessage;
@@ -15,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
 @Service

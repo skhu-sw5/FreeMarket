@@ -2,12 +2,12 @@ package com.freemarket.freemarket.global.auth.application;
 
 import com.freemarket.freemarket.global.auth.api.dto.PasswordDto;
 import com.freemarket.freemarket.global.auth.domain.password.PasswordResetToken;
-import com.freemarket.freemarket.global.auth.domain.password.PasswordResetTokenRepository;
+import com.freemarket.freemarket.global.auth.domain.password.repository.PasswordResetTokenRepository;
 import com.freemarket.freemarket.global.email.EmailService;
 import com.freemarket.freemarket.global.auth.exception.AuthException;
 import com.freemarket.freemarket.user.exception.UserException;
 import com.freemarket.freemarket.user.domain.User;
-import com.freemarket.freemarket.user.domain.UserRepository;
+import com.freemarket.freemarket.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;

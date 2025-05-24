@@ -1,12 +1,13 @@
 package com.freemarket.freemarket.user.application;
 
-import com.freemarket.freemarket.product.domain.Product;
-import com.freemarket.freemarket.product.domain.ProductRepository;
-import com.freemarket.freemarket.product.domain.ProductStatus;
+import com.freemarket.freemarket.product.domain.*;
+import com.freemarket.freemarket.product.domain.repository.ProductRepository;
+import com.freemarket.freemarket.product.domain.repository.ProductViewCountRepository;
+import com.freemarket.freemarket.product.domain.repository.ProductWishlistRepository;
 import com.freemarket.freemarket.review.application.ReviewService;
 import com.freemarket.freemarket.user.api.dto.UserProfileDto;
 import com.freemarket.freemarket.user.domain.User;
-import com.freemarket.freemarket.user.domain.UserRepository;
+import com.freemarket.freemarket.user.domain.repository.UserRepository;
 import com.freemarket.freemarket.user.exception.UserException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,104 +28,62 @@ public class UserProfileService {
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
     private final ReviewService reviewService;
-
-    // 사용자의 프로필 요약 정보를 조회
-    public UserProfileDto.ProfileSummaryResponse getProfileSummary(Long userId) {
-        User user = getUser(userId);
-
-        // 판매 중인 상품 수
-        long activeProductCount = productRepository.countBySellerIdAndStatus(userId, ProductStatus.ACTIVE);
-
-        // 판매 완료된 상품 수
-        long soldProductCount = productRepository.countBySellerIdAndStatus(userId, ProductStatus.SOLD_OUT);
-
-        // 구매한 상품 수
-        long purchaseCount = productRepository.countByBuyerId(userId);
-
-        // 평균 평점 조회
-        double averageRating = reviewService.getUserAverageRating(userId);
-
-        return UserProfileDto.ProfileSummaryResponse.builder()
-                .userId(user.getId())
-                .email(user.getEmail())
-                .name(user.getName())
-                .totalSellingCount((int) activeProductCount)
-                .totalSoldCount((int) soldProductCount)
-                .totalPurchaseCount((int) purchaseCount)
-                .averageRating(averageRating)
-                .joinDate(user.getCreatedDate())
-                .build();
-    }
+    private final ProductViewCountRepository viewCountRepository;
+    private final ProductWishlistRepository wishlistRepository;
 
     // 사용자의 판매 상품 내역을 조회
-    public UserProfileDto.SellingHistoryResponse getSellingHistory(Long userId, Pageable pageable) {
+    public UserProfileDto.SellingHistoryResponse getSellingHistoryDetail(Long userId, Pageable pageable) {
         // 판매중인 상품 조회
         Page<Product> activeProductsPage = productRepository.findBySellerIdAndStatus(userId, ProductStatus.ACTIVE, pageable);
 
         // 판매 완료된 상품 조회
         Page<Product> soldProductsPage = productRepository.findBySellerIdAndStatus(userId, ProductStatus.SOLD_OUT, pageable);
 
-        // DTO 변환
-        List<UserProfileDto.SellingProductResponse> activeProductResponses =
-                activeProductsPage.stream().map(this::mapToSellingProductResponse).collect(Collectors.toList());
+        List<UserProfileDto.ProductSummaryResponse> activeProductResponses =
+                activeProductsPage.stream().map(product -> convertToProductSummaryResponse(product, userId))
+                        .toList();
 
-        List<UserProfileDto.SellingProductResponse> soldProductResponses =
-                soldProductsPage.stream().map(this::mapToSellingProductResponse).collect(Collectors.toList());
+        List<UserProfileDto.ProductSummaryResponse> soldProductResponses =
+                soldProductsPage.stream().map(product -> convertToProductSummaryResponse(product, userId))
+                        .collect(Collectors.toList());
 
         return UserProfileDto.SellingHistoryResponse.builder()
                 .activeProducts(activeProductResponses)
                 .soldProducts(soldProductResponses)
-                .totalProductCount((int) (activeProductsPage.getTotalElements() +
-                        soldProductsPage.getTotalElements()))
+                .totalProductCount((int) (activeProductsPage.getTotalElements() + soldProductsPage.getTotalElements()))
                 .build();
-
     }
 
-    // 사용자의 구매 내역 조회 (Product 엔터티의 buyer 필드 기준)
-    public UserProfileDto.PurchaseHistoryResponse getPurchaseHistory(Long userId, Pageable pageable) {
-        // 사용자가 구매한 상품 목록 조회 (buyer_id 기준)
+    // 구매 내역 조회
+    public UserProfileDto.PurchaseHistoryResponse getPurchaseHistoryDetail(Long userId, Pageable pageable) {
         Page<Product> purchasedProductsPage = productRepository.findByBuyerIdOrderBySoldDateDesc(userId, pageable);
 
-        // DTO 변환
-        List<UserProfileDto.PurchaseItem> purchaseItems = purchasedProductsPage.getContent().stream()
-                .map(this::mapToPurchaseItem)
-                .collect(Collectors.toList());
+        List<UserProfileDto.ProductSummaryResponse> purchaseResponses = purchasedProductsPage.getContent().stream()
+                .map(product -> convertToProductSummaryResponse(product, userId))
+                .toList();
 
         return UserProfileDto.PurchaseHistoryResponse.builder()
-                .purchases(purchaseItems)
+                .purchases(purchaseResponses)
                 .totalPurchaseCount((int) purchasedProductsPage.getTotalElements())
                 .build();
     }
+    private UserProfileDto.ProductSummaryResponse convertToProductSummaryResponse(Product product, Long userId) {
+        // 조회수 정보 가져오기
+        Long viewCount = viewCountRepository.findByProductId(product.getId())
+                .map(ProductViewCount::getCount)
+                .orElse(0L);
 
-    // Product 엔터티를 SellingProductResponse DTO로 변환
-    private UserProfileDto.SellingProductResponse mapToSellingProductResponse(Product product) {
-        String buyerName = product.getBuyer() != null ? product.getBuyer().getName() : null;
-        return UserProfileDto.SellingProductResponse.builder()
-                .productId(product.getId())
-                .name(product.getName())
-                .price(product.getPrice())
-                .category(product.getCategory().getDisplayName())
-                .status(product.getStatus().getDisplayName())
-                .thumbnailUrl(product.getRepresentativeThumbnailUrl())
-                // .viewCount(0) // TODO: 조회수 구현 시 추가
-                // .likeCount(0) // TODO: 찜하기 기능 구현 시 추가
-                .buyerName(buyerName)
-                .soldDate(product.getSoldDate())
-                .createdDate(product.getCreatedDate())
-                .build();
-    }
+        // 관심 등록 수 가져오기
+        Long wishlistCount = wishlistRepository.countByProductId(product.getId());
 
-    // 구매한 상품을 PurchaseHistoryItem DTO로 변환
-    private UserProfileDto.PurchaseItem mapToPurchaseItem(Product product) {
-        return UserProfileDto.PurchaseItem.builder()
-                .productId(product.getId())
-                .productName(product.getName())
-                .price(product.getPrice())
-                .category(product.getCategory().getDisplayName())
-                .thumbnailUrl(product.getRepresentativeThumbnailUrl())
-                .sellerName(product.getSeller().getName())
-                .purchaseDate(product.getSoldDate())
-                .build();
+        // 현재 사용자의 관심 등록 여부 확인
+        boolean isWishlisted = false; // 기본값
+        if (userId != null) {
+            User user = getUser(userId);
+            isWishlisted = wishlistRepository.existsByUserAndProduct(user, product);
+        }
+
+        return UserProfileDto.ProductSummaryResponse.from(product, viewCount, wishlistCount, isWishlisted);
     }
 
     private User getUser(Long userId) {

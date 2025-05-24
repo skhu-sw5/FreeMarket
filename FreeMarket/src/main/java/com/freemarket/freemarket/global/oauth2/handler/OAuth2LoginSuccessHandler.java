@@ -7,7 +7,7 @@ import com.freemarket.freemarket.global.jwt.JwtProvider;
 import com.freemarket.freemarket.global.oauth2.api.dto.OAuthAttributes;
 import com.freemarket.freemarket.global.security.CustomUserDetails;
 import com.freemarket.freemarket.user.domain.User;
-import com.freemarket.freemarket.user.domain.UserRepository;
+import com.freemarket.freemarket.user.domain.repository.UserRepository;
 import com.freemarket.freemarket.user.domain.UserRole;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
