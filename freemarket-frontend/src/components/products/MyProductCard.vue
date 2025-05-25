@@ -3,8 +3,8 @@
     <!-- 상품 이미지 -->
     <div class="relative aspect-square overflow-hidden bg-gray-100">
       <img 
-        v-if="product.thumbnailUrl" 
-        :src="product.thumbnailUrl" 
+        v-if="productImage" 
+        :src="getImageUrl(productImage)" 
         :alt="product.name"
         class="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-300"
         @click="goToProduct"
@@ -159,6 +159,17 @@ export default {
   
   emits: ['edit', 'delete', 'click', 'refresh'],
   
+  data() {
+    return {
+      baseUrl: ''
+    }
+  },
+  
+  created() {
+    // 항상 전체 URL 사용
+    this.baseUrl = 'https://freemarket.duckdns.org';
+  },
+  
   computed: {
     isActive() {
       return this.product.status === 'ACTIVE' || this.product.status === '판매중'
@@ -166,6 +177,25 @@ export default {
     
     isSoldOut() {
       return this.product.status === 'SOLD_OUT' || this.product.status === '판매완료'
+    },
+    
+    productImage() {
+      // 이미지 URL을 가져오는 로직
+      console.log('상품 이미지 정보:', { 
+        thumbnailUrl: this.product.thumbnailUrl, 
+        imageUrls: this.product.imageUrls
+      });
+      
+      // 1. thumbnailUrl이 있으면 사용
+      if (this.product.thumbnailUrl) {
+        return this.product.thumbnailUrl;
+      }
+      // 2. imageUrls 배열이 있고 첫 번째 이미지가 있으면 사용
+      else if (this.product.imageUrls && this.product.imageUrls.length > 0) {
+        return this.product.imageUrls[0];
+      }
+      // 이미지가 없는 경우
+      return null;
     }
   },
   
@@ -182,6 +212,21 @@ export default {
         month: 'short',
         day: 'numeric'
       })
+    },
+    
+    getImageUrl(url) {
+      if (!url) {
+        // 미리 만들어진 placeholder 이미지 사용
+        return 'data:image/svg+xml,%3Csvg width="300" height="200" xmlns="http://www.w3.org/2000/svg"%3E%3Crect width="100%25" height="100%25" fill="%23f3f4f6"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-family="Arial, sans-serif" font-size="14"%3ENo Image%3C/text%3E%3C/svg%3E';
+      }
+      
+      // 이미 전체 URL인 경우 그대로 반환
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        return url;
+      }
+      
+      // 상대 경로인 경우 baseUrl 추가
+      return `${this.baseUrl}${url}`;
     },
     
     getStatusClass(status) {
