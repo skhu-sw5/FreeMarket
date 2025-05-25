@@ -39,6 +39,12 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowedHeaders("*")
                 .allowCredentials(true)
                 .maxAge(3600);
+        registry.addMapping("/reset-password/**")
+                .allowedOrigins("http://localhost:8081", "http://127.0.0.1:8081", "https://freemarket.duckdns.org")
+                .allowedMethods("GET", "POST", "OPTIONS")
+                .allowedHeaders("*")
+                .allowCredentials(true)
+                .maxAge(3600);
     }
 
     @Override

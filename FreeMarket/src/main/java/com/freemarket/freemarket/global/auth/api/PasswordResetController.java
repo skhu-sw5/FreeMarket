@@ -37,14 +37,21 @@ public class PasswordResetController {
             @Parameter(description = "비밀번호 재설정 요청 정보", required = true)
             @Valid @RequestBody PasswordDto.PasswordResetRequest request) {
         log.info("비밀번호 재설정 요청: {}", request.email());
-        passwordResetService.requestPasswordReset(request);
 
+        try {
+            passwordResetService.requestPasswordReset(request);
+        } catch (Exception e) {
+            // 예외가 발생해도 동일한 응답을 제공 (보안상 이유)
+            log.error("비밀번호 재설정 요청 중 오류: {}", e.getMessage(), e);
+        }
+
+        // 이메일 존재 여부와 상관 없이 동일한 성공 응답 반환
         PasswordDto.PasswordResetResponse response = PasswordDto.PasswordResetResponse.builder()
                 .success(true)
-                .message("비밀번호 재설정 이메일이 발송되었습니다.")
+                .message("비밀번호 재설정 이메일이 발송되었습니다. 메일함을 확인해주세요")
                 .build();
 
-        return ResponseEntity.ok(ResponseDTO.success(response, "비밀번호 재설정 이메일이 발송되었습니다."));
+        return ResponseEntity.ok(ResponseDTO.success(response, "비밀번호 재설정 이메일이 발송되었습니다. 메일함을 확인해주세요"));
     }
 
     @Operation(summary = "비밀번호 재설정", description = "토큰과 새 비밀번호를 입력받아 비밀번호를 재설정합니다.")
