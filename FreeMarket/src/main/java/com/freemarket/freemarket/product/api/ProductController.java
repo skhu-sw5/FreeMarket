@@ -8,6 +8,7 @@ import com.freemarket.freemarket.product.application.ProductQueryService;
 import com.freemarket.freemarket.product.application.ProductStatusService;
 import com.freemarket.freemarket.product.application.ProductViewService;
 import com.freemarket.freemarket.product.domain.ProductCategory;
+import com.freemarket.freemarket.product.domain.ProductSort;
 import com.freemarket.freemarket.product.domain.ProductStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -109,52 +110,42 @@ public class ProductController {
         return ResponseEntity.ok(ResponseDTO.success(response));
     }
 
-    @Operation(summary = "상품 목록 조회", description = "상품 목록을 필터링하여 조회합니다. 키워드 검색과 상태 필터링이 가능합니다.")
+    @Operation(summary = "상품 목록 조회", description = "상품 목록을 필터링하여 조회합니다. 키워드 검색, 상태 필터링, 가격 범위, 카테고리,  정렬 기준 지정이 가능합니다." +
+            "예시 -> /api/products?category=BOOKS, /api/products?minPrice=10000&maxPrice=50000, /api/products?category=ELECTRONICS&minPrice=10000&maxPrice=50000")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "상품 목록 조회 성공")
+            @ApiResponse(responseCode = "200", description = "상품 목록 조회 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청 파라미터")
     })
     @GetMapping
     public ResponseEntity<ResponseDTO<Page<ProductDto.ProductDetailResponse>>> getProducts(
+            @Parameter(description = "상품 카테고리 (BOOKS, ELECTRONICS, FASHION 등)")
+            @RequestParam(required = false) ProductCategory category,
+
             @Parameter(description = "검색 키워드 (상품명, 설명에서 검색)")
             @RequestParam(required = false) String keyword,
 
-            @Parameter(description = "상품 상태 (ACTIVE: 판매중, SOLD_OUT: 품절, DISCONTINUED: 판매중단, PENDING: 승인대기)")
+            @Parameter(description = "상품 상태 (ACTIVE: 판매중, SOLD_OUT: 품절, DISCONTINUED: 판매중단)")
             @RequestParam(required = false) ProductStatus status,
+
+            @Parameter(description = "최소 가격")
+            @RequestParam(required = false) Long minPrice,
+
+            @Parameter(description = "최대 가격")
+            @RequestParam(required = false) Long maxPrice,
+
+            @Parameter(description = "정렬 기준 (LATEST: 최신순, PRICE_ASC: 낮은 가격순, PRICE_DESC: 높은 가격순, VIEW_COUNT: 조회수순, WISH_COUNT: 관심수순)")
+            @RequestParam(defaultValue = "LATEST") ProductSort sort,
 
             @Parameter(description = "페이지네이션 정보 (기본값: 페이지 크기 10, 생성일 기준 내림차순 정렬)")
-            @PageableDefault(size = 10, sort = "createdDate") Pageable pageable,
+            @PageableDefault(size = 10) Pageable pageable,
 
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails) {
 
-        log.info("상품 목록 조회 요청: 키워드 {}, 상태 {}", keyword, status);
-        Page<ProductDto.ProductDetailResponse> response = productQueryService.getProducts(keyword, status, pageable, userDetails.getUserId());
+        log.info("상품 목록 조회 요청: 키워드 {}, 상태 {}, 가격 범위 {}-{}, 정렬 기준 {}",
+                keyword, status, minPrice, maxPrice, sort);
 
-        return ResponseEntity.ok(ResponseDTO.success(response));
-    }
-
-    @Operation(summary = "카테고리별 상품 조회", description = "특정 카테고리에 해당하는 상품 목록을 조회합니다.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "카테고리별 상품 조회 성공"),
-            @ApiResponse(responseCode = "400", description = "잘못된 카테고리 요청")
-    })
-    @GetMapping("/category/{category}")
-    public ResponseEntity<ResponseDTO<Page<ProductDto.ProductDetailResponse>>> getProductsByCategory(
-            @Parameter(description = "상품 카테고리 (BOOKS, ELECTRONICS, FASHION 등)", required = true)
-            @PathVariable ProductCategory category,
-
-            @Parameter(description = "검색 키워드 (상품명, 설명에서 검색)")
-            @RequestParam(required = false) String keyword,
-
-            @Parameter(description = "상품 상태 (ACTIVE: 판매중, SOLD_OUT: 품절 등)")
-            @RequestParam(required = false) ProductStatus status,
-
-            @Parameter(description = "페이지네이션 정보")
-            @PageableDefault(size = 10, sort = "createdDate") Pageable pageable,
-
-            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails) {
-
-        log.info("카테고리별 상품 조회 요청: 카테고리 {}, 키워드 {}, 상태 {}", category, keyword, status);
-        Page<ProductDto.ProductDetailResponse> response = productQueryService.getProductsByCategory(category, keyword, status, pageable, userDetails.getUserId());
+        Page<ProductDto.ProductDetailResponse> response = productQueryService.getFilteredProducts(category, keyword, status, minPrice, maxPrice,
+                sort, pageable, userDetails.getUserId());
 
         return ResponseEntity.ok(ResponseDTO.success(response));
     }

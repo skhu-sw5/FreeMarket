@@ -4,6 +4,7 @@ import com.freemarket.freemarket.product.api.dto.ProductDto;
 import com.freemarket.freemarket.product.api.dto.ProductWithStatsDto;
 import com.freemarket.freemarket.product.domain.Product;
 import com.freemarket.freemarket.product.domain.ProductCategory;
+import com.freemarket.freemarket.product.domain.ProductSort;
 import com.freemarket.freemarket.product.domain.repository.ProductRepository;
 import com.freemarket.freemarket.product.domain.ProductStatus;
 import com.freemarket.freemarket.product.exception.ProductException;
@@ -39,17 +40,13 @@ public class ProductQueryService {
     }
 
     // 상품 목록 조회
-    public Page<ProductDto.ProductDetailResponse> getProducts(String keyword, ProductStatus status, Pageable pageable, Long userId) {
-        return productRepository.findAllWithStatsAndWishlist(keyword, status, pageable, userId)
+    public Page<ProductDto.ProductDetailResponse> getFilteredProducts(ProductCategory category, String keyword, ProductStatus status,
+                                                              Long minPrice, Long maxPrice, ProductSort sort,
+                                                              Pageable pageable, Long userId) {
+        return productRepository.findProductsWithFilters(category, keyword, status, minPrice, maxPrice, sort, pageable, userId)
                 .map(ProductWithStatsDto::toProductDetailResponse);
     }
 
-    // 카테고리별 상품 조회
-    public Page<ProductDto.ProductDetailResponse> getProductsByCategory(ProductCategory category, String keyword, ProductStatus status,
-                                                                        Pageable pageable, Long userId) {
-        return productRepository.findByCategoryWithStatsAndWishlist(category, keyword, status, pageable, userId)
-                .map(ProductWithStatsDto::toProductDetailResponse);
-    }
 
     private Product findProduct(Long productId) {
         return productRepository.findById(productId)
