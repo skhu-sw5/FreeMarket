@@ -39,21 +39,6 @@ public class UserService {
                 (int) purchaseCount);
     }
 
-    public UserDto.DiffUserResponse getDiffUserProfile(Long userId) {
-        User user = getUser(userId);
-
-        // 통계 정보 조회
-        long activeProductCount = productRepository.countBySellerIdAndStatus(userId, ProductStatus.ACTIVE);
-        long soldProductCount = productRepository.countBySellerIdAndStatus(userId, ProductStatus.SOLD_OUT);
-        long purchaseCount = productRepository.countByBuyerId(userId);
-
-
-        return UserDto.DiffUserResponse.from(
-                user,
-                (int) activeProductCount,
-                (int) soldProductCount,
-                (int) purchaseCount);
-    }
 
     @Transactional
     public UserDto.UserResponse updateProfile(Long userId, UserDto.ProfileUpdateRequest request) {
@@ -90,6 +75,16 @@ public class UserService {
         // 비밀번호 변경
         user.changePassword(passwordEncoder.encode(request.newPassword()));
         log.info("사용자 비밀번호 변경 완료: {}", userId);
+    }
+
+    // 판매자 기본 정보 조회
+    public UserDto.SellerDetailResponse getSellerInfo(Long sellerId) {
+        User seller = getUser(sellerId);
+
+        int activeCount = (int) productRepository.countBySellerIdAndStatus(sellerId, ProductStatus.ACTIVE);
+        int soldCount = (int) productRepository.countBySellerIdAndStatus(sellerId, ProductStatus.SOLD_OUT);
+
+        return UserDto.SellerDetailResponse.from(seller, activeCount, soldCount);
     }
 
     private User getUser(Long userId) {
