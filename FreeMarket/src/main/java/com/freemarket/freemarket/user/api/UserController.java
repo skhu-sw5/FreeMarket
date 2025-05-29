@@ -2,6 +2,10 @@ package com.freemarket.freemarket.user.api;
 
 import com.freemarket.freemarket.global.common.ResponseDTO;
 import com.freemarket.freemarket.global.security.CustomUserDetails;
+import com.freemarket.freemarket.product.api.dto.ProductDto;
+import com.freemarket.freemarket.product.application.ProductQueryService;
+import com.freemarket.freemarket.product.domain.Product;
+import com.freemarket.freemarket.product.domain.ProductStatus;
 import com.freemarket.freemarket.user.api.dto.UserDto;
 import com.freemarket.freemarket.user.application.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -12,6 +16,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -24,6 +32,7 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService userService;
+    private final ProductQueryService productQueryService;
 
     @Operation(summary = "사용자 프로필 조회", description = "로그인한 사용자의 프로필 정보를 조회합니다.")
     @ApiResponses(value = {
@@ -77,14 +86,37 @@ public class UserController {
         return ResponseEntity.ok(ResponseDTO.success(null, "비밀번호가 성공적으로 변경되었습니다."));
     }
 
-    @Operation(summary = "다른 사용자 프로필 조회", description = "다른 사용자의 프로필 정보를 조회합니다. (제한된 정보만 제공)")
-    @ApiResponse(responseCode = "200", description = "사용자 프로필 조회 성공")
-    @GetMapping("/{userId}")
-    public ResponseEntity<ResponseDTO<UserDto.DiffUserResponse>> getUserProfile(
-            @Parameter(description = "조회할 사용자 ID", required = true) @PathVariable Long userId) {
+    @Operation(summary = "판매자 기본 정보 조회", description = "판매자의 기본 정보와 통계를 조회합니다.")
+    @GetMapping("/{sellerId}/seller-info")
+    public ResponseEntity<ResponseDTO<UserDto.SellerDetailResponse>> getSellerInfo(
+            @Parameter(description = "조회할 사용자 ID", required = true) @PathVariable Long sellerId) {
 
-        log.info("사용자 프로필 조회: 사용자 ID {}", userId);
-        UserDto.DiffUserResponse response = userService.getDiffUserProfile(userId);
+        UserDto.SellerDetailResponse response = userService.getSellerInfo(sellerId);
+        return ResponseEntity.ok(ResponseDTO.success(response));
+    }
+
+    @Operation(
+            summary = "판매자 상품 목록 조회",
+            description = "판매자의 상품 목록을 상태별로 조회합니다. 상태를 지정하지 않으면 모든 상품을 조회합니다." +
+                    "예시 -> GET /api/users/123/products?status=ACTIVE&sort=createdDate,desc"
+    )
+    @GetMapping("/{sellerId}/products")
+    public ResponseEntity<ResponseDTO<Page<ProductDto.ProductDetailResponse>>> getSellerProducts(
+            @Parameter(description = "판매자 ID", required = true)
+            @PathVariable Long sellerId,
+
+            @Parameter(description = "상품 상태 (ACTIVE: 판매중, SOLD_OUT: 판매완료, 미지정시 전체)")
+            @RequestParam(required = false) ProductStatus status,
+
+            @Parameter(description = "페이지 정보 (기본: 10개씩, 최신순)")
+            @PageableDefault(size = 10, sort = "createdDate", direction = Sort.Direction.DESC)
+            Pageable pageable,
+
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        Long currentUserId = userDetails != null ? userDetails.getUserId() : null;
+        Page<ProductDto.ProductDetailResponse> response = productQueryService.getProductsBySeller(
+                sellerId, status, pageable, currentUserId);
 
         return ResponseEntity.ok(ResponseDTO.success(response));
     }
