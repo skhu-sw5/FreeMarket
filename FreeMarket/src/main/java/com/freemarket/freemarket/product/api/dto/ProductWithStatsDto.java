@@ -24,8 +24,8 @@ public record ProductWithStatsDto(
         wishlistCount = wishlistCount != null ? wishlistCount : 0L;
     }
 
-    public ProductDto.ProductDetailResponse toProductDetailResponse() {
-        return ProductDto.ProductDetailResponse.from(
+    public ProductDto.ProductResponse toProductResponse() {
+        return ProductDto.ProductResponse.from(
                 product,
                 viewCount,
                 wishlistCount,

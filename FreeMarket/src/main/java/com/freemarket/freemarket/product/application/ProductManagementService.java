@@ -36,7 +36,7 @@ public class ProductManagementService {
 
     // 상품 등록
     @Transactional
-    public ProductDto.ProductBaseResponse createProduct(Long userId, ProductDto.CreateRequest request, List<MultipartFile> images) throws BadRequestException {
+    public ProductDto.ProductResponse createProduct(Long userId, ProductDto.CreateRequest request, List<MultipartFile> images) throws BadRequestException {
         User seller = getUser(userId);
 
         // 학교 이메일 인증 여부 확인
@@ -71,7 +71,7 @@ public class ProductManagementService {
             }
             Product savedProduct = productRepository.save(product);
             log.info("상품 등록 완료: 상품명 {}, 판매자 ID {}", request.name(), userId);
-            return ProductDto.ProductBaseResponse.from(savedProduct);
+            return ProductDto.ProductResponse.from(savedProduct);
         } catch (Exception e) {
             log.error("상품 등록 중 오류 발생: 사용자 ID {}", userId, e);
             uploadedFiles.forEach(uploadedFile -> {
@@ -85,7 +85,7 @@ public class ProductManagementService {
     // 상품 수정
 
     @Transactional
-    public ProductDto.ProductBaseResponse updateProduct(Long userId, Long productId, ProductDto.UpdateRequest request,
+    public ProductDto.ProductResponse updateProduct(Long userId, Long productId, ProductDto.UpdateRequest request,
                                                         List<MultipartFile> newImages, List<Long> deleteImageIds) {
         Product product = getProductWithSellerCheck(productId, userId);
         product.update(request.name(), request.description(), request.price(), request.stock(), request.category());
@@ -131,7 +131,7 @@ public class ProductManagementService {
             }
 
             log.info("상품 수정 완료: 상품 ID {}, 판매자 ID {}", productId, userId);
-            return ProductDto.ProductBaseResponse.from(product); // 변경 감지로 업데이트됨
+            return ProductDto.ProductResponse.from(product); // 변경 감지로 업데이트됨
         } catch (Exception e) { // 롤백 로직
             log.error("상품 수정 중 오류 발생: 상품 ID {}", productId, e);
             newlyUploadedFiles.forEach(uploadedFile -> {
