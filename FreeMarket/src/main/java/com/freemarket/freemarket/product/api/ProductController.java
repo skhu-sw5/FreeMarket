@@ -56,14 +56,14 @@ public class ProductController {
                     content = @Content(schema = @Schema(implementation = ResponseDTO.class)))
     })
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ResponseDTO<ProductDto.ProductBaseResponse>> createProduct(
+    public ResponseEntity<ResponseDTO<ProductDto.ProductResponse>> createProduct(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
             @Parameter(description = "상품 등록 정보", required = true, content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE))
             @Valid @RequestPart("request") ProductDto.CreateRequest request,
             @Parameter(description = "이미지 파일") @RequestPart(value = "images", required = false)List<MultipartFile> images) throws BadRequestException {
 
         log.info("상품 등록 요청: 사용자 ID {}", userDetails.getUserId());
-        ProductDto.ProductBaseResponse response = productManagementService.createProduct(userDetails.getUserId(), request, images);
+        ProductDto.ProductResponse response = productManagementService.createProduct(userDetails.getUserId(), request, images);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDTO.success(response, "상품이 성공적으로 등록되었습니다."));
     }
@@ -77,7 +77,7 @@ public class ProductController {
             @ApiResponse(responseCode = "404", description = "상품을 찾을 수 없음")
     })
     @PatchMapping(value = "/{productId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ResponseDTO<ProductDto.ProductBaseResponse>> updateProduct(
+    public ResponseEntity<ResponseDTO<ProductDto.ProductResponse>> updateProduct(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
             @Parameter(description = "상품 ID", required = true) @PathVariable Long productId,
             @Parameter(description = "상품 정보 (JSON)", required = true, content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE))
@@ -87,7 +87,7 @@ public class ProductController {
     ) {
 
         log.info("상품 수정 요청: 상품 ID {}, 사용자 ID {}", productId, userDetails.getUserId());
-        ProductDto.ProductBaseResponse response = productManagementService.updateProduct(userDetails.getUserId(), productId, request, newImages, deleteImageIds);
+        ProductDto.ProductResponse response = productManagementService.updateProduct(userDetails.getUserId(), productId, request, newImages, deleteImageIds);
 
         return ResponseEntity.ok(ResponseDTO.success(response, "상품이 성공적으로 수정되었습니다."));
     }
@@ -98,14 +98,14 @@ public class ProductController {
             @ApiResponse(responseCode = "404", description = "상품을 찾을 수 없음")
     })
     @GetMapping("/{productId}")
-    public ResponseEntity<ResponseDTO<ProductDto.ProductDetailResponse>> getProduct(
+    public ResponseEntity<ResponseDTO<ProductDto.ProductResponse>> getProduct(
             @Parameter(description = "상품 ID", required = true) @PathVariable Long productId,
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails) {
 
         // 조회수 증가
         viewService.incrementViewCount(productId);
         log.info("상품 조회 요청: 상품 ID {}", productId);
-        ProductDto.ProductDetailResponse response = productQueryService.getProduct(productId, userDetails.getUserId());
+        ProductDto.ProductResponse response = productQueryService.getProduct(productId, userDetails.getUserId());
 
         return ResponseEntity.ok(ResponseDTO.success(response));
     }
@@ -117,7 +117,7 @@ public class ProductController {
             @ApiResponse(responseCode = "400", description = "잘못된 요청 파라미터")
     })
     @GetMapping
-    public ResponseEntity<ResponseDTO<Page<ProductDto.ProductDetailResponse>>> getProducts(
+    public ResponseEntity<ResponseDTO<Page<ProductDto.ProductResponse>>> getProducts(
             @Parameter(description = "상품 카테고리 (BOOKS, ELECTRONICS, FASHION 등)")
             @RequestParam(required = false) ProductCategory category,
 
@@ -144,7 +144,7 @@ public class ProductController {
         log.info("상품 목록 조회 요청: 키워드 {}, 상태 {}, 가격 범위 {}-{}, 정렬 기준 {}",
                 keyword, status, minPrice, maxPrice, sort);
 
-        Page<ProductDto.ProductDetailResponse> response = productQueryService.getFilteredProducts(category, keyword, status, minPrice, maxPrice,
+        Page<ProductDto.ProductResponse> response = productQueryService.getFilteredProducts(category, keyword, status, minPrice, maxPrice,
                 sort, pageable, userDetails.getUserId());
 
         return ResponseEntity.ok(ResponseDTO.success(response));
@@ -177,7 +177,7 @@ public class ProductController {
             @ApiResponse(responseCode = "404", description = "상품을 찾을 수 없음")
     })
     @PostMapping("/{productId}/sold")
-    public ResponseEntity<ResponseDTO<ProductDto.ProductBaseResponse>> markProductAsSold(
+    public ResponseEntity<ResponseDTO<ProductDto.ProductResponse>> markProductAsSold(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
             @Parameter(description = "상품 ID", required = true) @PathVariable Long productId,
             @Parameter(description = "구매자 ID", required = true) @RequestParam Long buyerId) {
@@ -185,7 +185,7 @@ public class ProductController {
         log.info("상품 판매완료 처리 요청: 상품 ID {}, 판매자 ID {}, 구매자 ID {}",
                 productId, userDetails.getUserId(), buyerId);
 
-        ProductDto.ProductBaseResponse response = productStatusService.markProductAsSold(
+        ProductDto.ProductResponse response = productStatusService.markProductAsSold(
                 userDetails.getUserId(), productId, buyerId);
 
         return ResponseEntity.ok(ResponseDTO.success(response, "상품이 판매완료 처리되었습니다."));
@@ -200,13 +200,13 @@ public class ProductController {
             @ApiResponse(responseCode = "404", description = "상품을 찾을 수 없음")
     })
     @PostMapping("/{productId}/cancel-sold")
-    public ResponseEntity<ResponseDTO<ProductDto.ProductBaseResponse>> cancelProductSold(
+    public ResponseEntity<ResponseDTO<ProductDto.ProductResponse>> cancelProductSold(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
             @Parameter(description = "상품 ID", required = true) @PathVariable Long productId) {
 
         log.info("판매완료 취소 요청: 상품 ID {}, 판매자 ID {}", productId, userDetails.getUserId());
 
-        ProductDto.ProductBaseResponse response = productStatusService.cancelProductSold(
+        ProductDto.ProductResponse response = productStatusService.cancelProductSold(
                 userDetails.getUserId(), productId);
 
         return ResponseEntity.ok(ResponseDTO.success(response, "판매완료가 취소되었습니다."));

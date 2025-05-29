@@ -53,7 +53,7 @@ public class ProductWishlistService {
                 .collect(Collectors.toList());
     }
 
-    public List<ProductDto.ProductDetailResponse> getUserWishlistDetailDto(Long userId) {
+    public List<ProductDto.ProductResponse> getUserWishlistDetailDto(Long userId) {
         User user = getUser(userId);
         return productWishlistRepository.findAllByUser(user).stream()
                 .map(wishlist -> {
@@ -61,10 +61,10 @@ public class ProductWishlistService {
 
                     Long viewCount = viewService.getViewCount(product.getId());
                     Long wishlistCount = getWishlistCount(product.getId());
-                    // 현재 사용자의 관심 등록 여부
-                    boolean isWishlisted = userId != null ? isWishlisted(userId, product.getId()) : false;
+                    // 이미 위시리스트에서 가져온 상품이므로 무조건 true
+                    boolean isWishlisted = true;
 
-                    return ProductDto.ProductDetailResponse.from(product, viewCount, wishlistCount, isWishlisted);
+                    return ProductDto.ProductResponse.from(product, viewCount, wishlistCount, isWishlisted);
                 })
                 .toList();
     }
@@ -84,10 +84,10 @@ public class ProductWishlistService {
         return productWishlistRepository.countByProductId(productId);
     }
 
-    public List<ProductDto.ProductBaseResponse> getUserWishlistDto(Long userId) {
+    public List<ProductDto.ProductResponse> getUserWishlistDto(Long userId) {
         User user = getUser(userId);
         return productWishlistRepository.findAllByUser(user).stream()
-                .map(wishlist -> ProductDto.ProductBaseResponse.from(wishlist.getProduct()))
+                .map(wishlist -> ProductDto.ProductResponse.from(wishlist.getProduct()))
                 .collect(Collectors.toList());
     }
     private Product getProduct(Long productId) {

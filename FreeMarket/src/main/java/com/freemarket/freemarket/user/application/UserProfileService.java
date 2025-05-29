@@ -1,6 +1,9 @@
 package com.freemarket.freemarket.user.application;
 
-import com.freemarket.freemarket.product.domain.*;
+import com.freemarket.freemarket.product.api.dto.ProductDto;
+import com.freemarket.freemarket.product.domain.Product;
+import com.freemarket.freemarket.product.domain.ProductStatus;
+import com.freemarket.freemarket.product.domain.ProductViewCount;
 import com.freemarket.freemarket.product.domain.repository.ProductRepository;
 import com.freemarket.freemarket.product.domain.repository.ProductViewCountRepository;
 import com.freemarket.freemarket.product.domain.repository.ProductWishlistRepository;
@@ -39,12 +42,12 @@ public class UserProfileService {
         // 판매 완료된 상품 조회
         Page<Product> soldProductsPage = productRepository.findBySellerIdAndStatus(userId, ProductStatus.SOLD_OUT, pageable);
 
-        List<UserProfileDto.ProductSummaryResponse> activeProductResponses =
-                activeProductsPage.stream().map(product -> convertToProductSummaryResponse(product, userId))
+        List<ProductDto.ProductResponse> activeProductResponses =
+                activeProductsPage.stream().map(product -> convertToProductResponse(product, userId))
                         .toList();
 
-        List<UserProfileDto.ProductSummaryResponse> soldProductResponses =
-                soldProductsPage.stream().map(product -> convertToProductSummaryResponse(product, userId))
+        List<ProductDto.ProductResponse> soldProductResponses =
+                soldProductsPage.stream().map(product -> convertToProductResponse(product, userId))
                         .collect(Collectors.toList());
 
         return UserProfileDto.SellingHistoryResponse.builder()
@@ -58,8 +61,8 @@ public class UserProfileService {
     public UserProfileDto.PurchaseHistoryResponse getPurchaseHistoryDetail(Long userId, Pageable pageable) {
         Page<Product> purchasedProductsPage = productRepository.findByBuyerIdOrderBySoldDateDesc(userId, pageable);
 
-        List<UserProfileDto.ProductSummaryResponse> purchaseResponses = purchasedProductsPage.getContent().stream()
-                .map(product -> convertToProductSummaryResponse(product, userId))
+        List<ProductDto.ProductResponse> purchaseResponses = purchasedProductsPage.getContent().stream()
+                .map(product -> convertToProductResponse(product, userId))
                 .toList();
 
         return UserProfileDto.PurchaseHistoryResponse.builder()
@@ -67,7 +70,8 @@ public class UserProfileService {
                 .totalPurchaseCount((int) purchasedProductsPage.getTotalElements())
                 .build();
     }
-    private UserProfileDto.ProductSummaryResponse convertToProductSummaryResponse(Product product, Long userId) {
+
+    private ProductDto.ProductResponse convertToProductResponse(Product product, Long userId) {
         // 조회수 정보 가져오기
         Long viewCount = viewCountRepository.findByProductId(product.getId())
                 .map(ProductViewCount::getCount)
@@ -83,7 +87,7 @@ public class UserProfileService {
             isWishlisted = wishlistRepository.existsByUserAndProduct(user, product);
         }
 
-        return UserProfileDto.ProductSummaryResponse.from(product, viewCount, wishlistCount, isWishlisted);
+        return ProductDto.ProductResponse.from(product, viewCount, wishlistCount, isWishlisted);
     }
 
     private User getUser(Long userId) {

@@ -25,7 +25,7 @@ public class ProductStatusService {
 
     // 판매 완료 처리
     @Transactional
-    public ProductDto.ProductBaseResponse markProductAsSold(Long sellerId, Long productId, Long buyerId) {
+    public ProductDto.ProductResponse markProductAsSold(Long sellerId, Long productId, Long buyerId) {
         Product product = productManagementService.getProductWithSellerCheck(productId, sellerId);
 
         if (product.getStatus() == ProductStatus.SOLD_OUT) {
@@ -39,12 +39,12 @@ public class ProductStatusService {
 
         log.info("상품 판매완료 처리: 상품 ID {}, 판매자 ID {}, 구매자 ID {}", productId, sellerId, buyerId);
 
-        return ProductDto.ProductBaseResponse.from(product);
+        return ProductDto.ProductResponse.from(product);
     }
 
     // 판매완료 취소 처리 메서드
     @Transactional
-    public ProductDto.ProductBaseResponse cancelProductSold(Long sellerId, Long productId) {
+    public ProductDto.ProductResponse cancelProductSold(Long sellerId, Long productId) {
         Product product = productManagementService.getProductWithSellerCheck(productId, sellerId);
 
         if (product.getStatus() != ProductStatus.SOLD_OUT) {
@@ -59,6 +59,6 @@ public class ProductStatusService {
 
         product.cancelSold();
         log.info("판매완료 취소 처리: 상품 ID {}, 판매자 ID {}", productId, sellerId);
-        return ProductDto.ProductBaseResponse.from(product);
+        return ProductDto.ProductResponse.from(product);
     }
 }

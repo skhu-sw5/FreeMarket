@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -37,8 +38,7 @@ public class ProductDto {
             @Schema(description = "상품 카테고리", example = "ELECTRONICS")
             @NotNull(message = "카테고리는 필수 입력값입니다.")
             ProductCategory category
-    ) {
-    }
+    ) {}
 
     @Schema(description = "상품 수정 요청")
     public record UpdateRequest(
@@ -65,13 +65,12 @@ public class ProductDto {
 
             @Schema(description = "상품 상태", example = "ACTIVE")
             ProductStatus status
-    ) {
-    }
+    ) {}
 
-    // 기본 상품 정보 (등록, 수정 결과용)
+    // 통합된 상품 응답 DTO - 모든 API에서 사용
     @Builder
-    @Schema(description = "기본 상품 정보 응답")
-    public record ProductBaseResponse(
+    @Schema(description = "상품 응답")
+    public record ProductResponse(
             @Schema(description = "상품 ID", example = "1")
             Long id,
 
@@ -103,10 +102,26 @@ public class ProductDto {
             Long sellerId,
 
             @Schema(description = "판매자 이름", example = "홍길동")
-            String sellerName
+            String sellerName,
+
+            @Schema(description = "상품 등록일", example = "2025-01-15T10:30:00")
+            LocalDateTime createdDate,
+
+            @Schema(description = "상품 수정일", example = "2025-01-16T14:20:00")
+            LocalDateTime updatedDate,
+
+            @Schema(description = "조회수", example = "42")
+            Long viewCount,
+
+            @Schema(description = "관심 등록 수", example = "7")
+            Long wishlistCount,
+
+            @Schema(description = "현재 사용자의 관심 등록 여부", example = "true")
+            boolean isWishlisted
     ) {
-        public static ProductBaseResponse from(Product product) {
-            return ProductBaseResponse.builder()
+        // 완전한 정보로 생성 (상세 조회, 목록 조회용)
+        public static ProductResponse from(Product product, Long viewCount, Long wishlistCount, boolean isWishlisted) {
+            return ProductResponse.builder()
                     .id(product.getId())
                     .name(product.getName())
                     .description(product.getDescription())
@@ -120,44 +135,17 @@ public class ProductDto {
                             .collect(Collectors.toList()))
                     .sellerId(product.getSeller().getId())
                     .sellerName(product.getSeller().getName())
+                    .createdDate(product.getCreatedDate())
+                    .updatedDate(product.getUpdatedDate())
+                    .viewCount(viewCount != null ? viewCount : 0L)
+                    .wishlistCount(wishlistCount != null ? wishlistCount : 0L)
+                    .isWishlisted(isWishlisted)
                     .build();
         }
-    }
 
-    // 상품 조회 응답 (통계 정보 포함)
-    @Builder
-    @Schema(description = "상품 상세 조회 응답")
-    public record ProductDetailResponse(
-            @Schema(description = "상품 기본 정보")
-            ProductBaseResponse product,
-
-            @Schema(description = "상품 통계 정보")
-            ProductStatsResponse stats
-    ) {
-        public static ProductDetailResponse from(
-                Product product,
-                Long viewCount,
-                Long wishlistCount,
-                boolean isWishlisted) {
-
-            return ProductDetailResponse.builder()
-                    .product(ProductBaseResponse.from(product))
-                    .stats(new ProductStatsResponse(viewCount, wishlistCount, isWishlisted))
-                    .build();
+        // 기본 정보만으로 생성 (등록, 수정 결과용 - 통계 정보 없음)
+        public static ProductResponse from(Product product) {
+            return from(product, 0L, 0L, false);
         }
     }
-
-    // 상품 통계 정보
-    @Builder
-    @Schema(description = "상품 통계 정보")
-    public record ProductStatsResponse(
-            @Schema(description = "조회수", example = "42")
-            Long viewCount,
-
-            @Schema(description = "관심 등록 수", example = "7")
-            Long wishlistCount,
-
-            @Schema(description = "현재 사용자의 관심 등록 여부", example = "true")
-            boolean isWishlisted
-    ) {}
 }

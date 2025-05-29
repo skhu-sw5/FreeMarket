@@ -13,10 +13,10 @@ public class UserProfileDto {
     @Schema(description = "판매 내역 페이지 응답")
     public record SellingHistoryResponse(
         @Schema(description = "판매 중인 상품 목록")
-        List<ProductSummaryResponse> activeProducts,
+        List<ProductDto.ProductResponse> activeProducts,
         
         @Schema(description = "판매 완료된 상품 목록")
-        List<ProductSummaryResponse> soldProducts,
+        List<ProductDto.ProductResponse> soldProducts,
         
         @Schema(description = "총 상품 수", example = "10")
         int totalProductCount
@@ -26,70 +26,10 @@ public class UserProfileDto {
     @Schema(description = "구매 내역 페이지 응답")
     public record PurchaseHistoryResponse(
             @Schema(description = "구매 내역 목록")
-            List<ProductSummaryResponse> purchases,
+            List<ProductDto.ProductResponse> purchases,
             
             @Schema(description = "총 구매 수", example = "5")
             int totalPurchaseCount
     ) {}
-
-    @Builder
-    @Schema(description = "사용자 프로필에서 사용하는 상품 요약 정보")
-    public record ProductSummaryResponse(
-            @Schema(description = "상품 ID")
-            Long id,
-            @Schema(description = "상품명")
-            String name,
-            @Schema(description = "상품 설명")
-            String description,
-            @Schema(description = "가격")
-            Long price,
-            @Schema(description = "재고 수량")
-            Integer stock,
-            @Schema(description = "카테고리")
-            String category,
-            @Schema(description = "상태")
-            String status,
-            @Schema(description = "썸네일 URL")
-            String thumbnailUrl,
-            @Schema(description = "이미지 URL 목록")
-            List<String> imageUrls,
-            @Schema(description = "판매자 ID")
-            Long sellerId,
-            @Schema(description = "판매자 이름")
-            String sellerName,
-            @Schema(description = "조회수")
-            Long viewCount,
-            @Schema(description = "관심 등록 수")
-            Long wishlistCount,
-            @Schema(description = "현재 사용자의 관심 등록 여부")
-            boolean isWishlisted
-    ) {
-        // Product 엔티티와 추가 정보로부터 DTO 생성하는 정적 메서드
-        public static ProductSummaryResponse from(
-                com.freemarket.freemarket.product.domain.Product product,
-                Long viewCount,
-                Long wishlistCount,
-                boolean isWishlisted) {
-
-            return ProductSummaryResponse.builder()
-                    .id(product.getId())
-                    .name(product.getName())
-                    .description(product.getDescription())
-                    .price(product.getPrice())
-                    .stock(product.getStock())
-                    .category(product.getCategory().getDisplayName())
-                    .status(product.getStatus().getDisplayName())
-                    .thumbnailUrl(product.getRepresentativeThumbnailUrl())
-                    .imageUrls(product.getImages().stream()
-                            .map(image -> image.getImageUrl())
-                            .collect(java.util.stream.Collectors.toList()))
-                    .sellerId(product.getSeller().getId())
-                    .sellerName(product.getSeller().getName())
-                    .viewCount(viewCount)
-                    .wishlistCount(wishlistCount)
-                    .isWishlisted(isWishlisted)
-                    .build();
-        }
-    }
 
 }

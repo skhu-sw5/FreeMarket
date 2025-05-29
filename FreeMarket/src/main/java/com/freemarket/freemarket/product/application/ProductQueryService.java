@@ -5,8 +5,8 @@ import com.freemarket.freemarket.product.api.dto.ProductWithStatsDto;
 import com.freemarket.freemarket.product.domain.Product;
 import com.freemarket.freemarket.product.domain.ProductCategory;
 import com.freemarket.freemarket.product.domain.ProductSort;
-import com.freemarket.freemarket.product.domain.repository.ProductRepository;
 import com.freemarket.freemarket.product.domain.ProductStatus;
+import com.freemarket.freemarket.product.domain.repository.ProductRepository;
 import com.freemarket.freemarket.product.exception.ProductException;
 import com.freemarket.freemarket.user.domain.repository.UserRepository;
 import com.freemarket.freemarket.user.exception.UserException;
@@ -14,7 +14,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,7 +29,7 @@ public class ProductQueryService {
     private final ProductWishlistService wishlistService;
 
     // 상품 단건 조회
-    public ProductDto.ProductDetailResponse getProduct(Long productId, Long userId) {
+    public ProductDto.ProductResponse getProduct(Long productId, Long userId) {
         Product product = findProduct(productId);
 
         // 조회수
@@ -40,19 +39,19 @@ public class ProductQueryService {
 
         // 현재 사용자의 관심 등록 여부
         boolean isWishlisted = userId != null ? wishlistService.isWishlisted(userId, productId) : false;
-        return ProductDto.ProductDetailResponse.from(product, viewCount, wishlistCount, isWishlisted);
+        return ProductDto.ProductResponse.from(product, viewCount, wishlistCount, isWishlisted);
     }
 
     // 상품 목록 조회
-    public Page<ProductDto.ProductDetailResponse> getFilteredProducts(ProductCategory category, String keyword, ProductStatus status,
-                                                              Long minPrice, Long maxPrice, ProductSort sort,
-                                                              Pageable pageable, Long userId) {
+    public Page<ProductDto.ProductResponse> getFilteredProducts(ProductCategory category, String keyword, ProductStatus status,
+                                                                Long minPrice, Long maxPrice, ProductSort sort,
+                                                                Pageable pageable, Long userId) {
         return productRepository.findProductsWithFilters(category, keyword, status, minPrice, maxPrice, sort, pageable, userId)
-                .map(ProductWithStatsDto::toProductDetailResponse);
+                .map(ProductWithStatsDto::toProductResponse);
     }
 
     // 판매자별 상품 조회
-    public Page<ProductDto.ProductDetailResponse> getProductsBySeller(
+    public Page<ProductDto.ProductResponse> getProductsBySeller(
             Long sellerId,
             ProductStatus status,
             Pageable pageable,
@@ -88,12 +87,12 @@ public class ProductQueryService {
         }
     }
 
-    private ProductDto.ProductDetailResponse convertToDetailResponse(Product product, Long userId) {
+    private ProductDto.ProductResponse convertToDetailResponse(Product product, Long userId) {
         Long viewCount = viewService.getViewCount(product.getId());
         Long wishlistCount = wishlistService.getWishlistCount(product.getId());
         boolean isWishlisted = userId != null && wishlistService.isWishlisted(userId, product.getId());
 
-        return ProductDto.ProductDetailResponse.from(product, viewCount, wishlistCount, isWishlisted);
+        return ProductDto.ProductResponse.from(product, viewCount, wishlistCount, isWishlisted);
     }
 
 

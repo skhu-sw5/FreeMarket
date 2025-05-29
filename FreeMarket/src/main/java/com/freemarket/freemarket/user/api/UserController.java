@@ -4,7 +4,6 @@ import com.freemarket.freemarket.global.common.ResponseDTO;
 import com.freemarket.freemarket.global.security.CustomUserDetails;
 import com.freemarket.freemarket.product.api.dto.ProductDto;
 import com.freemarket.freemarket.product.application.ProductQueryService;
-import com.freemarket.freemarket.product.domain.Product;
 import com.freemarket.freemarket.product.domain.ProductStatus;
 import com.freemarket.freemarket.user.api.dto.UserDto;
 import com.freemarket.freemarket.user.application.UserService;
@@ -101,7 +100,7 @@ public class UserController {
                     "예시 -> GET /api/users/123/products?status=ACTIVE&sort=createdDate,desc"
     )
     @GetMapping("/{sellerId}/products")
-    public ResponseEntity<ResponseDTO<Page<ProductDto.ProductDetailResponse>>> getSellerProducts(
+    public ResponseEntity<ResponseDTO<Page<ProductDto.ProductResponse>>> getSellerProducts(
             @Parameter(description = "판매자 ID", required = true)
             @PathVariable Long sellerId,
 
@@ -115,7 +114,7 @@ public class UserController {
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails) {
 
         Long currentUserId = userDetails != null ? userDetails.getUserId() : null;
-        Page<ProductDto.ProductDetailResponse> response = productQueryService.getProductsBySeller(
+        Page<ProductDto.ProductResponse> response = productQueryService.getProductsBySeller(
                 sellerId, status, pageable, currentUserId);
 
         return ResponseEntity.ok(ResponseDTO.success(response));
