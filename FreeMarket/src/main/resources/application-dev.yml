@@ -34,6 +34,9 @@ spring:
     livereload:
       enabled: true
 
+  websocket:
+    allowed-origins: "http://localhost:8081"
+
 # 개발 환경 로깅 설정
 logging:
   level:
