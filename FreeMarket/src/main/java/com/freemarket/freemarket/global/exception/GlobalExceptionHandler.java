@@ -1,5 +1,6 @@
 package com.freemarket.freemarket.global.exception;
 
+import com.freemarket.freemarket.chat.exception.ChatException;
 import com.freemarket.freemarket.global.common.ResponseDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -123,6 +124,23 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ResponseDTO.error(HttpStatus.BAD_REQUEST.value(), "입력값이 올바르지 않습니다.", errorResponse));
+    }
+
+    // 채팅 관련 예외 처리 추가
+    @ExceptionHandler(ChatException.class)
+    public ResponseEntity<ResponseDTO<ErrorResponse>> handleChatException(ChatException e) {
+        log.error("ChatException: {}", e.getMessage(), e);
+
+        ErrorResponse errorResponse = new ErrorResponse(
+                e.getStatus().value(),
+                e.getMessage(),
+                e.getErrorCode(),
+                LocalDateTime.now(),
+                List.of()
+        );
+
+        return ResponseEntity.status(e.getStatus())
+                .body(ResponseDTO.error(e.getStatus().value(), e.getMessage(), errorResponse));
     }
 
     // 그 외 모든 예외 처리

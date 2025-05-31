@@ -31,6 +31,9 @@ spring:
     livereload:
       enabled: false
 
+  websocket:
+    allowed-origins: "https://freemarket.duckdns.org"
+
 # 운영 환경 로깅 설정
 logging:
   level:

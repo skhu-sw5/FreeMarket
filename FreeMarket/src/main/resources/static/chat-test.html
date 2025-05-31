@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FreeMarket 채팅 테스트</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .chat-container { max-width: 800px; border: 1px solid #ddd; padding: 20px; border-radius: 10px; }
+        .messages { height: 400px; overflow-y: scroll; border: 1px solid #ccc; padding: 15px; margin: 15px 0; background: #fafafa; }
+        .message { margin: 10px 0; padding: 10px; border-radius: 8px; max-width: 70%; }
+        .my-message { background-color: #dcf8c6; margin-left: auto; text-align: right; }
+        .other-message { background-color: #ffffff; border: 1px solid #ddd; }
+        .message-info { font-size: 12px; color: #666; margin-top: 5px; }
+        input, button { margin: 5px; padding: 10px; border-radius: 5px; border: 1px solid #ddd; }
+        input[type="text"] { width: 400px; }
+        button { background: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background: #45a049; }
+        .status { padding: 15px; margin: 10px 0; border-radius: 5px; font-weight: bold; }
+        .connected { background-color: #d4edda; color: #155724; }
+        .disconnected { background-color: #f8d7da; color: #721c24; }
+        .config { background: #e9ecef; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+<div class="chat-container">
+    <h2>🗨️ FreeMarket 실시간 채팅 테스트 (로컬)</h2>
+
+    <!-- 채팅방 정보 -->
+    <div class="config">
+        <h3>📋 채팅방 정보</h3>
+        <p><strong>환경:</strong> localhost:8080</p>
+        <p><strong>상품:</strong> 중고 노트북</p>
+        <p><strong>채팅방 ID:</strong> 1</p>
+    </div>
+
+    <!-- 연결 상태 -->
+    <div id="status" class="status disconnected">🔴 연결 안됨</div>
+
+    <!-- 설정 입력 -->
+    <div class="config">
+        <label><strong>JWT 토큰:</strong></label><br>
+        <input type="text" id="jwtToken"
+               placeholder="Bearer eyJhbGciOi..."
+               style="width: 600px;"><br>
+
+        <label><strong>채팅방 ID:</strong></label>
+        <input type="number" id="chatRoomId" value="1" style="width: 100px;"><br>
+
+        <button onclick="connect()">🔗 연결</button>
+        <button onclick="disconnect()">❌ 연결 해제</button>
+        <button onclick="loadMessages()">📥 이전 메시지 불러오기</button>
+        <button onclick="getNewToken()">🔄 새 토큰 받기</button>
+    </div>
+
+    <!-- 빠른 로그인 -->
+    <div class="config" style="background: #fff3cd;">
+        <h4>🚀 빠른 로그인</h4>
+        <button onclick="loginAsBuyer()">구매자로 로그인</button>
+        <button onclick="loginAsSeller()">판매자로 로그인</button>
+        <div id="loginResult" style="margin-top: 10px; font-size: 12px;"></div>
+    </div>
+
+    <!-- 메시지 목록 -->
+    <div id="messages" class="messages">
+        <div style="text-align: center; color: #666;">
+            💬 연결 후 실시간 채팅을 시작하세요!
+        </div>
+    </div>
+
+    <!-- 메시지 입력 -->
+    <div>
+        <input type="text" id="messageInput" placeholder="메시지를 입력하세요..."
+               onkeypress="if(event.key==='Enter') sendMessage()">
+        <button onclick="sendMessage()">📤 전송</button>
+        <button onclick="markAsRead()">✅ 읽음 처리</button>
+    </div>
+</div>
+
+<script>
+    let stompClient = null;
+    let chatRoomId = 1;
+    let currentUserId = null;
+    const BASE_URL = 'http://localhost:8080';
+
+    // 빠른 로그인 함수들
+    async function loginAsBuyer() {
+        try {
+            const response = await fetch(`${BASE_URL}/api/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: "buyer@office.skhu.ac.kr",
+                    password: "password123"
+                })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                document.getElementById('jwtToken').value = 'Bearer ' + data.data.accessToken;
+                currentUserId = 2; // 구매자 ID
+                document.getElementById('loginResult').innerHTML = '✅ 구매자 로그인 성공';
+                document.getElementById('loginResult').style.color = 'green';
+            } else {
+                document.getElementById('loginResult').innerHTML = '❌ 로그인 실패: ' + data.message;
+                document.getElementById('loginResult').style.color = 'red';
+            }
+        } catch (error) {
+            document.getElementById('loginResult').innerHTML = '❌ 로그인 에러: ' + error;
+            document.getElementById('loginResult').style.color = 'red';
+        }
+    }
+
+    async function loginAsSeller() {
+        try {
+            const response = await fetch(`${BASE_URL}/api/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: "seller@office.skhu.ac.kr",
+                    password: "password123"
+                })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                document.getElementById('jwtToken').value = 'Bearer ' + data.data.accessToken;
+                currentUserId = 1; // 판매자 ID
+                document.getElementById('loginResult').innerHTML = '✅ 판매자 로그인 성공';
+                document.getElementById('loginResult').style.color = 'green';
+            } else {
+                document.getElementById('loginResult').innerHTML = '❌ 로그인 실패: ' + data.message;
+                document.getElementById('loginResult').style.color = 'red';
+            }
+        } catch (error) {
+            document.getElementById('loginResult').innerHTML = '❌ 로그인 에러: ' + error;
+            document.getElementById('loginResult').style.color = 'red';
+        }
+    }
+
+    function connect() {
+        const tokenInput = document.getElementById('jwtToken').value;
+        chatRoomId = document.getElementById('chatRoomId').value;
+
+        if (!tokenInput || !chatRoomId) {
+            alert('JWT 토큰과 채팅방 ID를 입력해주세요.');
+            return;
+        }
+
+        // 토큰 형식 정리
+        let authToken = tokenInput.trim();
+        if (!authToken.startsWith('Bearer ')) {
+            authToken = 'Bearer ' + authToken;
+        }
+
+        console.log('WebSocket 연결 시도 - 토큰 길이:', authToken.length);
+
+        const socket = new SockJS(`${BASE_URL}/ws/chat`);
+        stompClient = Stomp.over(socket);
+
+        // 디버그 모드 활성화
+        stompClient.debug = function(str) {
+            console.log('STOMP: ' + str);
+        };
+
+        stompClient.connect(
+            {
+                'Authorization': authToken,
+                'Accept-Version': '1.0,1.1,2.0',
+                'Heart-beat': '10000,10000'
+            },
+            function(frame) {
+                console.log('✅ WebSocket 연결 성공: ' + frame);
+                setConnected(true);
+
+                // 채팅방 메시지 구독
+                stompClient.subscribe('/topic/chat/' + chatRoomId, function(message) {
+                    const messageData = JSON.parse(message.body);
+                    showMessage(messageData, messageData.senderId === currentUserId);
+                });
+
+                // 에러 구독 추가
+                stompClient.subscribe('/topic/chat/' + chatRoomId + '/error', function(error) {
+                    showSystemMessage('❌ 에러: ' + error.body);
+                });
+
+                // 읽음 상태 구독
+                stompClient.subscribe('/topic/chat/' + chatRoomId + '/read', function(message) {
+                    console.log('읽음 처리:', message.body);
+                    showSystemMessage('📖 상대방이 메시지를 읽었습니다.');
+                    updateReadStatus();
+                });
+
+                showSystemMessage('🎉 채팅방에 연결되었습니다!');
+            },
+            function(error) {
+                console.log('❌ WebSocket 연결 실패: ' + error);
+                setConnected(false);
+                alert('연결 실패: ' + error);
+            }
+        );
+    }
+
+    function disconnect() {
+        if (stompClient !== null) {
+            stompClient.disconnect();
+        }
+        setConnected(false);
+        showSystemMessage('👋 연결이 해제되었습니다.');
+    }
+
+    function sendMessage() {
+        const messageInput = document.getElementById('messageInput');
+        const content = messageInput.value.trim();
+
+        if (content && stompClient) {
+            stompClient.send('/app/chat/' + chatRoomId + '/send', {}, JSON.stringify({
+                'content': content,
+                'messageType': 'TEXT'
+            }));
+
+            messageInput.value = '';
+        }
+    }
+
+    function markAsRead() {
+        if (stompClient) {
+            stompClient.send('/app/chat/' + chatRoomId + '/read', {}, '{}');
+        }
+    }
+
+    async function loadMessages() {
+        try {
+            const response = await fetch(`${BASE_URL}/api/chat/rooms/${chatRoomId}/messages`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': document.getElementById('jwtToken').value,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                const messages = document.getElementById('messages');
+                messages.innerHTML = '';
+
+                data.data.messages.reverse().forEach(msg => {
+                    showMessage(msg, msg.senderId === currentUserId);
+                });
+
+                showSystemMessage(`📥 ${data.data.messages.length}개의 이전 메시지를 불러왔습니다.`);
+            } else {
+                showSystemMessage('❌ 메시지 로딩 실패: ' + data.message);
+            }
+        } catch (error) {
+            showSystemMessage('❌ 메시지 로딩 실패: ' + error);
+        }
+    }
+
+    function setConnected(connected) {
+        const status = document.getElementById('status');
+        if (connected) {
+            status.innerHTML = '🟢 연결됨 - 채팅방 ' + chatRoomId;
+            status.className = 'status connected';
+        } else {
+            status.innerHTML = '🔴 연결 안됨';
+            status.className = 'status disconnected';
+        }
+    }
+
+    function showMessage(messageData, isMine) {
+        const messages = document.getElementById('messages');
+        const messageElement = document.createElement('div');
+        messageElement.className = isMine ? 'message my-message' : 'message other-message';
+
+        const time = new Date(messageData.sentTime).toLocaleTimeString();
+        const readStatus = messageData.isRead ? '✓✓' : '✓';
+
+        messageElement.innerHTML = `
+                <div><strong>${messageData.senderName}</strong></div>
+                <div style="font-size: 16px; margin: 5px 0;">${messageData.content}</div>
+                <div class="message-info">${time} ${isMine ? readStatus : ''}</div>
+            `;
+
+        messages.appendChild(messageElement);
+        messages.scrollTop = messages.scrollHeight;
+    }
+
+    function showSystemMessage(message) {
+        const messages = document.getElementById('messages');
+        const messageElement = document.createElement('div');
+        messageElement.style.textAlign = 'center';
+        messageElement.style.color = '#666';
+        messageElement.style.fontSize = '14px';
+        messageElement.style.margin = '10px 0';
+        messageElement.style.padding = '8px';
+        messageElement.style.background = '#f0f0f0';
+        messageElement.style.borderRadius = '15px';
+        messageElement.textContent = message;
+
+        messages.appendChild(messageElement);
+        messages.scrollTop = messages.scrollHeight;
+    }
+
+    function updateReadStatus() {
+        const myMessages = document.querySelectorAll('.my-message .message-info');
+        myMessages.forEach(info => {
+            if (info.textContent.includes('✓') && !info.textContent.includes('✓✓')) {
+                info.textContent = info.textContent.replace('✓', '✓✓');
+            }
+        });
+    }
+</script>
+</body>
+</html>
