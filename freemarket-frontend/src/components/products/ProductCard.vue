@@ -28,6 +28,9 @@
         <h3 class="font-medium text-gray-900 line-clamp-2 min-h-[2.5rem]">{{ product.name }}</h3>
       </div>
       <p class="mt-2 text-lg font-bold text-blue-600">{{ formatPrice(product.price) }}원</p>
+      <p class="text-xs text-gray-500">
+        등록일: {{ product.createdAt ? formatDate(product.createdAt) : '정보 없음' }}
+      </p>
       <div class="mt-2 flex items-center justify-between">
         <span class="text-sm text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{{ getCategoryName(product.category) }}</span>
         <div class="flex items-center text-sm text-gray-500">
@@ -141,6 +144,20 @@ export default {
     
     formatPrice(price) {
       return new Intl.NumberFormat('ko-KR').format(price)
+    },
+    
+    formatDate(dateString) {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      // YYYY년 MM월 DD일 HH:MM 형식으로 포맷
+      return date.toLocaleString('ko-KR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      }).replace(/\./g, '/').replace(/\s+/g, ' ');
     },
     
     getCategoryName(categoryId) {
