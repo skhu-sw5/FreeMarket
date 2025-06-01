@@ -139,7 +139,7 @@ export default {
       this.loading = true
       
       try {
-        const response = await fetch('/api/auth/password/reset-verify', {
+        const response = await fetch('/api/auth/password/reset', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

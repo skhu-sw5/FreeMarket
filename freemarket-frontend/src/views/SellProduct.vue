@@ -279,10 +279,12 @@ export default {
         // FormData 객체 생성
         const productData = {
           name: this.product.name,
-          price: parseInt(this.product.price),
-          stock: parseInt(this.product.stock),
+          price: Number(this.product.price),
+          stock: Number(this.product.stock),
           category: this.product.category,
-          description: this.product.description
+          status: 'ACTIVE',
+          description: this.product.description,
+          sellerName: this.user?.name || this.user?.username || ''
         }
         
         // 이미지 파일 추출
@@ -291,7 +293,7 @@ export default {
         const response = await this.createProduct({ productData, images })
         
         // 성공 시 상품 상세 페이지로 이동
-        this.$router.push({ name: 'ProductDetail', params: { id: response.id } })
+        this.$router.push({ name: 'ProductDetail', params: { id: response.product.id } })
       } catch (error) {
         console.error('상품 등록 오류:', error)
         

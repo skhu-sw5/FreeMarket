@@ -163,7 +163,7 @@ export default {
             page: 0,
             size: 4,
             status: 'ACTIVE',
-            sort: 'createdDate,desc'  // 최신순 정렬
+            sort: 'LATEST'  // 최신순 정렬 (백엔드 ENUM 값에 맞게 수정)
           });
           this.newProducts = newProductsResponse.content || [];
         } catch (error) {
@@ -177,7 +177,7 @@ export default {
             page: 0,
             size: 4,
             status: 'ACTIVE',
-            sort: 'createdDate,desc'  // 현재 백엔드에서 wishlistCount 정렬 미지원으로 최신순 사용
+            sort: 'LATEST'  // 최신순 정렬 (백엔드 ENUM 값에 맞게 수정)
           });
           this.popularProducts = popularProductsResponse.content || [];
         } catch (error) {

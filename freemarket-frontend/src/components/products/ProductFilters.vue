@@ -43,9 +43,9 @@
         
         <div class="flex space-x-2">
           <select v-model="sortOption" @change="applySortOption" class="border px-2 py-1 rounded">
-            <option value="createdAt,desc">최신순</option>
-            <option value="price,asc">낮은 가격순</option>
-            <option value="price,desc">높은 가격순</option>
+            <option value="LATEST">최신순</option>
+            <option value="PRICE_ASC">낮은 가격순</option>
+            <option value="PRICE_DESC">높은 가격순</option>
           </select>
         </div>
       </div>
@@ -159,7 +159,7 @@ export default {
         max: this.filters.priceRange?.max || '' 
       },
       selectedStatus: this.filters.status || 'ACTIVE',
-      sortOption: 'createdAt,desc' // 기본값 최신순
+      sortOption: 'LATEST' // 기본값 최신순
     }
   },
   
@@ -179,7 +179,7 @@ export default {
     reset() {
       this.priceRange = { min: '', max: '' };
       this.selectedStatus = 'ACTIVE';
-      this.sortOption = 'createdAt,desc';
+      this.sortOption = 'LATEST';
       this.$emit('reset');
     }
   }

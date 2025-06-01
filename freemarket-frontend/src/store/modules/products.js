@@ -84,21 +84,17 @@ export default {
       commit('SET_SKIP_VIEW_INCREMENT', skip);
     },
     
-    async fetchProducts({ commit, rootState }, { page = 0, size = 12, category = null, keyword = null, status = null, minPrice = null, maxPrice = null, sort = 'createdAt,desc', seller = null }) {
+    async fetchProducts({ commit, rootState }, { page = 0, size = 12, category = null, keyword = null, status = 'ACTIVE', minPrice = null, maxPrice = null, sort = 'createdAt,desc', seller = null }) {
       commit('SET_LOADING', true)
       
       try {
-        // URL 구성 - 상대 URL 사용 (프록시 활용)
-        let apiUrl = '';
-        if (category) {
-          // 카테고리별 상품 조회 API 사용
-          apiUrl = `/api/products/category/${category}`;
-        } else {
-          // 일반 상품 조회 API 사용
-          apiUrl = '/api/products';
-        }
+        // URL 구성 - 항상 /api/products 사용
+        let apiUrl = '/api/products';
         
+        // status가 항상 ACTIVE로 들어가도록 보장
+        status = status || 'ACTIVE';
         const url = `${apiUrl}?page=${page}&size=${size}` + 
+                  (category ? `&category=${category}` : '') +
                   (keyword ? `&keyword=${encodeURIComponent(keyword)}` : '') +
                   (status ? `&status=${status}` : '') +
                   (minPrice ? `&minPrice=${minPrice}` : '') +
@@ -142,24 +138,23 @@ export default {
         if (data && data.data) {
           console.log('API 응답 데이터 구조:', JSON.stringify(data.data, null, 2).substring(0, 200) + '...');
           
-          const products = data.data.content || [];
-          console.log(`총 ${products.length}개 상품 데이터 로드됨`);
-          
-          // 각 상품에 대해 구조 확인
-          if (products.length > 0) {
-            console.log('첫 번째 상품 구조:', JSON.stringify(products[0], null, 2));
-          }
-          
+          let products = data.data.content || [];
+          // 스웨거 명세에 맞게 변환
+          products = products.map(item => ({ product: item, stats: {} }));
+          const pageInfo = data.data.page || {};
           commit('SET_PRODUCTS', {
             products: products,
-            totalPages: data.data.totalPages || 0,
-            totalElements: data.data.totalElements || 0
-          })
-          
-          commit('SET_LOADING', false)
-          return data.data
+            totalPages: pageInfo.totalPages || 0,
+            totalElements: pageInfo.totalElements || 0
+          });
+          commit('SET_LOADING', false);
+          return {
+            content: products,
+            totalPages: pageInfo.totalPages || 0,
+            totalElements: pageInfo.totalElements || 0
+          };
         } else {
-          throw new Error('API 응답 형식이 올바르지 않습니다.')
+          throw new Error('API 응답 형식이 올바르지 않습니다.');
         }
       } catch (error) {
         console.error('상품 목록 조회 오류:', error)
@@ -181,35 +176,18 @@ export default {
       console.log('조회수 증가 스킵 여부:', state.skipViewIncrement);
       
       try {
-        const headers = {}
-        if (rootState.auth.token) {
-          headers['Authorization'] = `Bearer ${rootState.auth.token}`
-        }
-        
-        // 조회수 증가 스킵 여부 확인 (상품 상세 페이지가 아닐 경우 스킵)
-        // 쿼리 파라미터로 조회수 증가 스킵 여부 전달
         let url = `/api/products/${productId}`;
-        
-        // skipViewIncrement가 true이면 조회수 증가를 건너뛰는 파라미터 추가
         if (state.skipViewIncrement) {
           url += '?skipViewIncrement=true';
-          console.log('조회수 증가를 건너뛰는 파라미터 추가:', url);
         }
-        
-        // 상품 정보 조회
-        console.log('API 요청 URL:', url);
-        console.log('API 요청 헤더:', headers);
-        
         const response = await fetch(url, {
-          headers,
-          credentials: 'include' // 쿠키와 인증 정보 포함
+          headers: rootState.auth.token ? { 'Authorization': `Bearer ${rootState.auth.token}` } : {},
+          credentials: 'include'
         });
         
         console.log('API 응답 상태:', response.status, response.statusText);
         
         if (!response.ok) {
-          const errorText = await response.text();
-          console.error('API 응답 오류:', errorText);
           throw new Error(`상품 정보를 불러오는데 실패했습니다. 상태 코드: ${response.status}`);
         }
         
@@ -218,8 +196,13 @@ export default {
         
         // 상태 업데이트
         if (data && data.data) {
-          commit('SET_PRODUCT', data.data);
-          console.log('상품 상세 데이터 저장 완료:', data.data);
+          let detail = data.data;
+          // 상세도 { product, stats } 구조로 변환
+          if (!detail.product) {
+            detail = { product: detail, stats: {} };
+          }
+          commit('SET_PRODUCT', detail);
+          console.log('상품 상세 데이터 저장 완료:', detail);
           
           if (state.skipViewIncrement) {
             console.log('조회수 증가 건너뜀 (프로필 또는 위시리스트 페이지)');
@@ -299,8 +282,12 @@ export default {
         const data = await response.json();
         console.log('상품 등록 성공 응답:', data);
         
+        let created = data.data;
+        if (!created.product) {
+          created = { product: created, stats: {} };
+        }
         commit('SET_LOADING', false);
-        return data.data;
+        return created;
       } catch (error) {
         console.error('상품 등록 오류:', error);
         commit('SET_ERROR', error.message);
@@ -516,10 +503,14 @@ export default {
         const data = await response.json();
         console.log('상품 수정 성공 응답:', data);
         
+        let updated = data.data;
+        if (!updated.product) {
+          updated = { product: updated, stats: {} };
+        }
         // 성공 시 해당 상품 정보 업데이트
-        commit('SET_PRODUCT', data.data);
+        commit('SET_PRODUCT', updated);
         commit('SET_LOADING', false);
-        return data.data;
+        return updated;
       } catch (error) {
         console.error('상품 수정 오류:', error);
         commit('SET_ERROR', error.message);

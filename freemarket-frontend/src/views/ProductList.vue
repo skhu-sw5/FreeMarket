@@ -100,7 +100,7 @@ export default {
         { id: 'OTHERS', name: '기타' },
       ],
       searchKeyword: '',
-      sortOption: 'createdAt,desc',
+      sortOption: 'LATEST',
       totalItems: 0
     }
   },
@@ -114,6 +114,13 @@ export default {
     }
   },
   created() {
+    // p 쿼리 파라미터가 있으면 page로 변환 후 즉시 return
+    if (this.$route.query.p) {
+      const query = { ...this.$route.query, page: this.$route.query.p };
+      delete query.p;
+      this.$router.replace({ ...this.$route, query });
+      return;
+    }
     if (this.searchQuery) {
       this.searchKeyword = this.searchQuery
     }
@@ -121,7 +128,6 @@ export default {
     if (category) {
       this.activeCategory = category
     }
-    
     // 컴포넌트 생성 시 즉시 데이터 로드
     this.fetchProductsWithFilters()
   },
@@ -154,17 +160,18 @@ export default {
         // 로딩 상태로 변경
         this.loading = true;
         
-        const response = await this.fetchProducts({
-          page: this.currentPage - 1,
-          size: 12, // 페이지당 상품 수 명시
-          category: this.activeCategory,
-          keyword: this.searchKeyword || this.searchQuery,
-          seller: this.seller,
-          status,
-          minPrice: priceRange.min || undefined,
-          maxPrice: priceRange.max || undefined,
-          sort: this.sortOption
-        })
+        const fetchParams = {
+          page: Math.max(0, this.currentPage - 1), // 0 이상 보장
+          size: 12
+        };
+        if (this.activeCategory) fetchParams.category = this.activeCategory;
+        if (this.searchKeyword || this.searchQuery) fetchParams.keyword = this.searchKeyword || this.searchQuery;
+        if (this.sortOption) fetchParams.sort = this.sortOption;
+        if (this.seller) fetchParams.sellerName = this.seller;
+        if (priceRange.min) fetchParams.minPrice = priceRange.min;
+        if (priceRange.max) fetchParams.maxPrice = priceRange.max;
+        if (this.filters.status) fetchParams.status = this.filters.status;
+        const response = await this.fetchProducts(fetchParams)
         
         this.totalItems = response.totalElements || 0
         console.log('페이지 정보:', {
@@ -233,7 +240,7 @@ export default {
         status: 'ACTIVE'
       }
       this.searchKeyword = ''
-      this.sortOption = 'createdAt,desc'
+      this.sortOption = 'LATEST'
       this.$router.replace({ query: {} })
       this.fetchProductsWithFilters()
     },
