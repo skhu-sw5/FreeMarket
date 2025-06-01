@@ -70,6 +70,17 @@ public class ProductException extends BaseException {
         }
     }
 
+    public static class BuyerNotFoundException extends ProductException {
+        public BuyerNotFoundException() {
+            super("구매자 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND, "BUYER_NOT_FOUND");
+        }
+    }
+
+    public static class ProductMismatchException extends ProductException {
+        public ProductMismatchException() {
+            super("채팅방의 상품과 판매하려는 상품이 일치하지 않습니다.", HttpStatus.BAD_REQUEST, "PRODUCT_MISMATCH");
+        }
+    }
 
     public ProductException(String message, HttpStatus status, String errorCode) {
         super(message, status, errorCode);

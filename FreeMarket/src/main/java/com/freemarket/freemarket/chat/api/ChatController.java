@@ -163,4 +163,22 @@ public class ChatController {
 
         return ResponseEntity.ok(ResponseDTO.success(null, "채팅방 상태가 변경되었습니다."));
     }
+
+    @Operation(summary = "상품별 채팅방 목록 조회", description = "특정 상품에 대한 모든 채팅방 목록을 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "채팅방 목록 조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "접근 권한 없음"),
+            @ApiResponse(responseCode = "404", description = "상품을 찾을 수 없음")
+    })
+    @GetMapping("/products/{productId}/chat-rooms")
+    public ResponseEntity<ResponseDTO<ChatResponseDto.ChatRoomListResponse>> getProductChatRooms(
+            @Parameter(description = "상품 ID", required = true) @PathVariable Long productId,
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        log.info("상품별 채팅방 목록 조회 요청: 상품 ID {}, 사용자 ID {}", productId, userDetails.getUserId());
+        ChatResponseDto.ChatRoomListResponse response = chatRoomService.getProductChatRooms(productId, userDetails.getUserId());
+
+        return ResponseEntity.ok(ResponseDTO.success(response, "상품 채팅방 목록을 성공적으로 조회했습니다."));
+    }
 }

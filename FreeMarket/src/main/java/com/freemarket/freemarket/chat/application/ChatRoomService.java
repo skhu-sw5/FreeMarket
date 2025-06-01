@@ -19,6 +19,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -83,6 +85,25 @@ public class ChatRoomService {
         log.info("채팅방 상태 변경: 채팅방 ID {}, 새 상태 {}", chatRoomId, status);
     }
 
+    public ChatResponseDto.ChatRoomListResponse getProductChatRooms(Long productId, Long sellerId) {
+        // 상품 존재 여부 확인
+        Product product = getProduct(productId);
+
+        // 판매자 권한 확인
+        if (!product.getSeller().getId().equals(sellerId)) {
+            throw new ProductException.ProductAccessDeniedException();
+        }
+
+        // 해당 상품의 모든 채팅방 조회
+        List<ChatRoom> chatRooms = chatRoomRepository.findByProductId(productId);
+
+        return ChatResponseDto.ChatRoomListResponse.builder()
+                .chatRooms(chatRooms.stream()
+                        .map(ChatResponseDto.ChatRoomResponse::from)
+                        .toList())
+                .totalCount(chatRooms.size())
+                .build();
+    }
     // 채팅방 접근 권한 확인 후 조회
     ChatRoom getChatRoomWithAccessCheck(Long chatRoomId, Long userId) {
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
