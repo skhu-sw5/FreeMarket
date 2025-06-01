@@ -7,6 +7,7 @@ import com.freemarket.freemarket.global.security.CustomUserDetails;
 import com.freemarket.freemarket.user.domain.User;
 import com.freemarket.freemarket.user.domain.repository.UserRepository;
 import com.freemarket.freemarket.user.domain.UserRole;
+import com.freemarket.freemarket.user.exception.UserException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -33,7 +34,7 @@ public class AuthService {
     public void signup(AuthDto.SignupRequest request) {
         // 이메일 중복 확인
         if (userRepository.existsByEmail(request.email())) {
-            throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
+            throw new UserException.EmailAlreadyExistsException();
         }
 
         // 사용자 생성

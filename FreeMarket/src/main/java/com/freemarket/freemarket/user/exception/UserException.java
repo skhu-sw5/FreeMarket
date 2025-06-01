@@ -22,6 +22,12 @@ public class UserException extends BaseException {
         }
     }
 
+    public static class EmailAlreadyExistsException extends UserException {
+        public EmailAlreadyExistsException() {
+            super("이미 사용 중인 이메일입니다.", HttpStatus.CONFLICT, "EMAIL_ALREADY_EXISTS");
+        }
+    }
+
     public static class PasswordMismatchException extends UserException {
         public PasswordMismatchException() {
             super("현재 비밀번호가 일치하지 않습니다.", HttpStatus.BAD_REQUEST, "PASSWORD_MISMATCH");
