@@ -60,7 +60,7 @@ public class ProductController {
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
             @Parameter(description = "상품 등록 정보", required = true, content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE))
             @Valid @RequestPart("request") ProductDto.CreateRequest request,
-            @Parameter(description = "이미지 파일") @RequestPart(value = "images", required = false)List<MultipartFile> images) throws BadRequestException {
+            @Parameter(description = "이미지 파일") @RequestPart(value = "images", required = false) List<MultipartFile> images) throws BadRequestException {
 
         log.info("상품 등록 요청: 사용자 ID {}", userDetails.getUserId());
         ProductDto.ProductResponse response = productManagementService.createProduct(userDetails.getUserId(), request, images);
@@ -168,7 +168,7 @@ public class ProductController {
         return ResponseEntity.ok(ResponseDTO.success(null, "상품이 성공적으로 삭제되었습니다."));
     }
 
-    @Operation(summary = "상품 판매완료 처리", description = "상품을 판매완료 상태로 변경하고 구매자를 지정합니다.")
+    @Operation(summary = "상품 판매완료 처리", description = "채팅방에서 구매자를 정한 뒤 상품을 판매 완료 처리합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "판매완료 처리 성공"),
             @ApiResponse(responseCode = "400", description = "잘못된 요청"),
@@ -180,13 +180,15 @@ public class ProductController {
     public ResponseEntity<ResponseDTO<ProductDto.ProductResponse>> markProductAsSold(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
             @Parameter(description = "상품 ID", required = true) @PathVariable Long productId,
-            @Parameter(description = "구매자 ID", required = true) @RequestParam Long buyerId) {
+            @Parameter(description = "판매 완료 정보", required = true)
+            @Valid @RequestBody ProductDto.SaleCompleteRequest request
+    ) {
 
-        log.info("상품 판매완료 처리 요청: 상품 ID {}, 판매자 ID {}, 구매자 ID {}",
-                productId, userDetails.getUserId(), buyerId);
+        log.info("상품 판매완료 처리 요청: 상품 ID {}, 판매자 ID {}, 구매자 ID {}, 채팅방 ID {}",
+                productId, userDetails.getUserId(), request.buyerId(), request.chatRoomId());
 
         ProductDto.ProductResponse response = productStatusService.markProductAsSold(
-                userDetails.getUserId(), productId, buyerId);
+                userDetails.getUserId(), productId, request.buyerId(), request.chatRoomId());
 
         return ResponseEntity.ok(ResponseDTO.success(response, "상품이 판매완료 처리되었습니다."));
     }

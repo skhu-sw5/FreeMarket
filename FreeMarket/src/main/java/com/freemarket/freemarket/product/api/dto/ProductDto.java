@@ -67,6 +67,17 @@ public class ProductDto {
             ProductStatus status
     ) {}
 
+    @Schema(description = "판매 완료 처리 요청")
+    public record SaleCompleteRequest(
+            @Schema(description = "구매자 ID", example = "2")
+            @NotNull(message = "구매자 ID는 필수입니다.")
+            Long buyerId,
+
+            @Schema(description = "채팅방 ID", example = "1")
+            @NotNull(message = "채팅방 ID는 필수입니다.")
+            Long chatRoomId
+    ) {}
+
     // 통합된 상품 응답 DTO - 모든 API에서 사용
     @Builder
     @Schema(description = "상품 응답")
