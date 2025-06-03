@@ -16,7 +16,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate # 첫 시작은 create
+      ddl-auto: update # 첫 시작은 create
 #      ddl-auto: validate  # 운영 환경에서는 validate 사용
     properties:
       hibernate:
