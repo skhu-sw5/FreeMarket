@@ -40,22 +40,22 @@ public class ReviewService {
         User reviewer = getUser(reviewerId);
         Product product = getProduct(request.productId());
 
-        // 판매자가 리뷰 작성자와 같으면 예외 발생
-        if (product.getSeller().getId().equals(reviewerId)) {
-            throw new ReviewException.SelfReviewException();
-        }
-
-        // 상품이 판매완료 상태가 아니면 예외 발생
+        // 1. 상품이 판매완료 상태가 아니면 예외 발생 (가장 먼저 체크)
         if (product.getStatus() != ProductStatus.SOLD_OUT) {
             throw new ReviewException.ProductNotSoldException();
         }
 
-        // 구매자가 리뷰 작성자와 같은지 확인
+        // 2. 구매자가 아닌 사람이 리뷰 작성 시도 (구매자 체크를 먼저)
         if (product.getBuyer() == null || !product.getBuyer().getId().equals(reviewerId)) {
             throw new ReviewException.NotBuyerException();
         }
 
-        // 이미 리뷰가 있는지 확인
+        // 3. 판매자가 리뷰 작성 시도 (이론적으로 도달하지 않지만 안전장치)
+        if (product.getSeller().getId().equals(reviewerId)) {
+            throw new ReviewException.SelfReviewException();
+        }
+
+        // 4. 이미 리뷰가 있는지 확인
         if (reviewRepository.findByProduct(product).isPresent()) {
             throw new ReviewException.ReviewAlreadyExistsException();
         }
