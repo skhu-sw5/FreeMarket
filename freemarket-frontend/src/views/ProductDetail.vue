@@ -83,6 +83,10 @@
                       <h3 class="text-sm text-gray-500">재고</h3>
                       <p>{{ product.product.stock }}개</p>
                     </div>
+                    <div>
+                      <h3 class="text-sm text-gray-500">등록일</h3>
+                      <p>{{ product.product && product.product.createdAt ? formatDate(product.product.createdAt) : (product.createdAt ? formatDate(product.createdAt) : '날짜 정보 없음') }}</p>
+                    </div>
                   </div>
                 </div>
                 
@@ -264,16 +268,18 @@ export default {
   
   data() {
     return {
-      sellerProfile: null
+      sellerProfile: null,
+      currentTime: new Date()  // 현재 시간을 저장할 데이터 추가
     }
   },
   
   methods: {
     // 상품 데이터 로드 메서드 추가
     async loadProductData() {
+      this.$data.loading = true;  // data 속성에 직접 접근하도록 수정
       try {
         const productId = this.$route.params.id;
-        console.log('상품 데이터 로드 시작:', productId);
+        console.log('상품 ID:', productId);
         
         if (!productId) {
           console.error('상품 ID가 없습니다');
@@ -281,13 +287,52 @@ export default {
         }
         
         // 상품 상세 페이지에서는 조회수 증가를 명시적으로 허용
-        // 이 페이지에서만 조회수가 증가되도록 skipViewIncrement 플래그를 false로 설정
         this.$store.dispatch('products/setSkipViewIncrement', false);
         
-        await this.fetchProduct(productId);
-        console.log('상품 데이터 로드 완료:', this.product);
+        const response = await this.fetchProduct(productId);
+        console.log('상품 응답 데이터:', response);
+        
+        // 응답 데이터가 예상과 다른 경우를 대비해 유연하게 처리
+        if (response) {
+          // product 객체가 있는지 확인하고 없으면 response 자체를 product로 사용
+          this.product = response.product ? response : { product: response };
+          
+          // 디버깅을 위한 로그 추가
+          console.log('처리된 상품 데이터:', this.product);
+          console.log('상품 객체 키들:', Object.keys(this.product));
+          
+          if (this.product.product) {
+            console.log('상품 내부 객체 키들:', Object.keys(this.product.product));
+            
+            // createdAt이 없는 경우 로컬 스토리지에서 가져오거나 저장
+            if (!this.product.product.createdAt) {
+              const storedDate = localStorage.getItem(`product_${productId}_createdAt`);
+              
+              if (storedDate) {
+                // 로컬 스토리지에 저장된 날짜가 있으면 사용
+                console.log('로컬 스토리지에서 등록일 가져옴:', storedDate);
+                this.product.product.createdAt = storedDate;
+              } else {
+                // 없으면 현재 시간을 저장 (최초 1회만)
+                const now = new Date().toISOString();
+                localStorage.setItem(`product_${productId}_createdAt`, now);
+                console.log('등록일 로컬 스토리지에 저장:', now);
+                this.product.product.createdAt = now;
+              }
+            }
+            
+            console.log('최종 상품 생성일:', this.product.product.createdAt);
+          }
+        }
       } catch (error) {
-        console.error('상품 데이터 로드 오류:', error);
+        console.error('상품 로드 오류:', error);
+        if (this.$toast) {
+          this.$toast.error('상품 정보를 불러오는 중 오류가 발생했습니다.');
+        } else {
+          alert('상품 정보를 불러오는 중 오류가 발생했습니다.');
+        }
+      } finally {
+        this.$data.loading = false;  // data 속성에 직접 접근하도록 수정
       }
     },
     
@@ -295,7 +340,31 @@ export default {
     ...mapActions('products', ['fetchProduct', 'deleteProduct']),
     
     formatPrice(price) {
-      return new Intl.NumberFormat('ko-KR').format(price)
+      return new Intl.NumberFormat('ko-KR').format(price);
+    },
+    
+    formatDate(dateString) {
+      if (!dateString) return '날짜 정보 없음';
+      
+      try {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) {
+          console.error('유효하지 않은 날짜:', dateString);
+          return '날짜 형식 오류';
+        }
+        
+        // YYYY년 MM월 DD일 HH:MM 형식으로 포맷
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        
+        return `${year}년 ${month}월 ${day}일 ${hours}:${minutes}`;
+      } catch (error) {
+        console.error('날짜 포맷팅 오류:', error, '원본 값:', dateString);
+        return '날짜 표시 오류';
+      }
     },
     
     // 상품 구매 메서드 추가
@@ -305,33 +374,33 @@ export default {
       }
       
       try {
-        // 자신의 상품을 구매하려는 경우 에러 메시지 표시
+        //自己的商品を購入しようとする場合エラーメッセージを表示
         if (this.isProductOwner) {
-          alert('자신의 상품은 구매할 수 없습니다.');
+          alert('自己的商品は購入できません。');
           return;
         }
         
-        // 현재 로그인한 사용자가 해당 상품의 판매자가 아니므로 직접 구매 완료 처리할 수 없습니다.
-        // 대신 판매자에게 연락하여 거래를 진행하도록 안내합니다.
-        const confirmMessage = '현재 시스템에서는 판매자가 구매 완료 처리를 해야 합니다.\n\n판매자에게 연락하시겠습니까?';
+        //現在ログインしているユーザーが該当商品の販売者ではないため直接購入完了処理を行うことはできません。
+        //その代わりに販売者に連絡して取引を進めさせるように案内します。
+        const confirmMessage = '現在システムでは販売者が購入完了処理を行う必要があります。\n\n販売者に連絡しますか?';
         
         if (confirm(confirmMessage)) {
-          // 판매자에게 연락하기 기능 호출
+          //販売者に連絡する機能を呼び出す
           this.contactSeller();
           
-          // 성공 메시지 표시
+          //成功メッセージを表示
           if (this.$toast) {
-            this.$toast.success('판매자에게 연락 요청이 전송되었습니다. 판매자의 응답을 기다려주세요.');
+            this.$toast.success('販売者に連絡のリクエストが送信されました。販売者の応答を待ってください。');
           } else {
-            alert('판매자에게 연락 요청이 전송되었습니다. 판매자의 응답을 기다려주세요.');
+            alert('販売者に連絡のリクエストが送信されました。販売者の応答を待ってください。');
           }
         }
       } catch (error) {
-        console.error('상품 구매 오류:', error)
+        console.error('商品購入エラー:', error)
         if (this.$toast) {
-          this.$toast.error(error.message || '상품 구매 중 오류가 발생했습니다.')
+          this.$toast.error(error.message || '商品購入中にエラーが発生しました。')
         } else {
-          alert(error.message || '상품 구매 중 오류가 발생했습니다.')
+          alert(error.message || '商品購入中にエラーが発生しました。')
         }
       }
     },

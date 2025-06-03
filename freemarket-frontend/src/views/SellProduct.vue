@@ -284,13 +284,18 @@ export default {
           category: this.product.category,
           status: 'ACTIVE',
           description: this.product.description,
-          sellerName: this.user?.name || this.user?.username || ''
+          sellerName: this.user?.name || this.user?.username || '',
+          createdAt: new Date().toISOString() // 현재 시간을 ISO 형식으로 추가
         }
+        
+        // 로그 추가
+        console.log('등록할 상품 데이터:', productData);
         
         // 이미지 파일 추출
         const images = this.previewImages.map(item => item.file)
         
         const response = await this.createProduct({ productData, images })
+        console.log('등록된 상품 응답:', response);
         
         // 성공 시 상품 상세 페이지로 이동
         this.$router.push({ name: 'ProductDetail', params: { id: response.product.id } })
