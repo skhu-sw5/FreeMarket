@@ -83,6 +83,10 @@
                       <h3 class="text-sm text-gray-500">재고</h3>
                       <p>{{ product.product.stock }}개</p>
                     </div>
+                    <div>
+                      <h3 class="text-sm text-gray-500">상품 등록일</h3>
+                      <p>{{ formatDate(product.product.createdDate) }}</p>
+                    </div>
                   </div>
                 </div>
                 
@@ -298,6 +302,21 @@ export default {
       return new Intl.NumberFormat('ko-KR').format(price)
     },
     
+    formatDate(dateString) {
+      if (!dateString) return '-';
+      
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return '-';
+      
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      
+      return `${year}-${month}-${day} ${hours}:${minutes}`;
+    },
+    
     // 상품 구매 메서드 추가
     async buyProduct() {
       if (!this.isAuthenticated) {
@@ -305,33 +324,33 @@ export default {
       }
       
       try {
-        // 자신의 상품을 구매하려는 경우 에러 메시지 표시
+        //自己的商品を購入しようとする場合エラーメッセージを表示
         if (this.isProductOwner) {
-          alert('자신의 상품은 구매할 수 없습니다.');
+          alert('自分の商品は購入できません。');
           return;
         }
         
-        // 현재 로그인한 사용자가 해당 상품의 판매자가 아니므로 직접 구매 완료 처리할 수 없습니다.
-        // 대신 판매자에게 연락하여 거래를 진행하도록 안내합니다.
-        const confirmMessage = '현재 시스템에서는 판매자가 구매 완료 처리를 해야 합니다.\n\n판매자에게 연락하시겠습니까?';
+        //現在ログインしているユーザーが該当商品の販売者ではないため直接購入完了処理を行うことはできません。
+        //その代わりに販売者に連絡して取引を進めさせるように案内します。
+        const confirmMessage = '現在システムでは販売者が購入完了処理を行う必要があります。\n\n販売者に連絡しますか?';
         
         if (confirm(confirmMessage)) {
-          // 판매자에게 연락하기 기능 호출
+          //販売者に連絡する機能を呼び出す
           this.contactSeller();
           
-          // 성공 메시지 표시
+          //成功メッセージを表示
           if (this.$toast) {
-            this.$toast.success('판매자에게 연락 요청이 전송되었습니다. 판매자의 응답을 기다려주세요.');
+            this.$toast.success('販売者に連絡のリクエストが送信されました。販売者の応答を待ってください。');
           } else {
-            alert('판매자에게 연락 요청이 전송되었습니다. 판매자의 응답을 기다려주세요.');
+            alert('販売者に連絡のリクエストが送信されました。販売者の応答を待ってください。');
           }
         }
       } catch (error) {
-        console.error('상품 구매 오류:', error)
+        console.error('商品購入エラー:', error)
         if (this.$toast) {
-          this.$toast.error(error.message || '상품 구매 중 오류가 발생했습니다.')
+          this.$toast.error(error.message || '商品購入中にエラーが発生しました。')
         } else {
-          alert(error.message || '상품 구매 중 오류가 발생했습니다.')
+          alert(error.message || '商品購入中にエラーが発生しました。')
         }
       }
     },
