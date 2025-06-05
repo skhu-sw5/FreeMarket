@@ -1,204 +1,215 @@
 <template>
-  <div class="min-h-screen bg-gray-50 flex flex-col">
+  <div class="min-h-screen bg-gray-50">
     <AppHeader />
     
-    <main class="py-6 flex-grow">
+    <main class="py-6">
       <div class="container mx-auto px-4">
-        <h1 class="text-2xl font-bold mb-6">내 프로필</h1>
+        <h1 class="text-2xl font-bold text-gray-900 mb-6">내 프로필</h1>
         
-        <div v-if="loading" class="animate-pulse">
-          <div class="bg-white p-6 rounded-lg shadow-sm mb-6">
+        <!-- 로딩 상태 -->
+        <div v-if="loading" class="bg-white rounded-lg shadow-sm p-6">
+          <div class="animate-pulse">
             <div class="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
             <div class="h-6 bg-gray-200 rounded w-1/2 mb-4"></div>
             <div class="h-6 bg-gray-200 rounded w-3/4"></div>
           </div>
         </div>
         
-        <div v-else-if="!user" class="bg-white p-6 rounded-lg shadow-sm mb-6 text-center">
+        <!-- 에러 상태 -->
+        <div v-else-if="!user" class="bg-white rounded-lg shadow-sm p-6 text-center">
           <p class="text-red-500 mb-4">사용자 정보를 불러올 수 없습니다.</p>
           <div class="flex space-x-4 justify-center">
             <button 
               @click="reloadPage" 
-              class="px-4 py-2 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 transition-colors"
+              class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
             >
               새로고침
             </button>
             <button 
               @click="logout" 
-              class="px-4 py-2 bg-gray-200 text-gray-800 rounded font-medium hover:bg-gray-300 transition-colors"
+              class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition-colors"
             >
-              로그아웃 후 다시 로그인
+              로그아웃
             </button>
           </div>
         </div>
         
-        <div v-else>
-          <div class="bg-white p-6 rounded-lg shadow-sm mb-6">
-            <div class="flex flex-col md:flex-row">
-              <div class="md:w-64 flex flex-col items-center md:border-r md:pr-6">
-                <div class="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center mb-4">
-                  <i class="fas fa-user text-gray-400 text-4xl"></i>
-                </div>
-                <h2 class="text-xl font-bold">{{ user?.name }}</h2>
-              </div>
-              
-              <div class="md:flex-1 md:pl-6 mt-6 md:mt-0">
-                <div class="space-y-4">
-                  <div>
-                    <h3 class="text-sm font-medium text-gray-500">이메일</h3>
-                    <p>{{ user?.email }}</p>
+        <div v-else class="space-y-6">
+          <!-- 프로필 정보 카드 -->
+          <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div class="p-6">
+              <div class="flex flex-col md:flex-row">
+                <!-- 프로필 이미지 -->
+                <div class="md:w-64 flex flex-col items-center md:border-r md:pr-6">
+                  <div class="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                    <i class="fas fa-user text-gray-400 text-4xl"></i>
                   </div>
-                  <div>
-                    <h3 class="text-sm font-medium text-gray-500">연락처</h3>
-                    <p>{{ user?.phone || '미등록' }}</p>
-                  </div>
-                  <div>
-                    <h3 class="text-sm font-medium text-gray-500">학교 이메일 인증</h3>
-                    <div class="flex items-center">
-                      <span v-if="isEmailVerified" class="text-green-600 font-medium flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                        </svg>
-                        인증 완료
-                      </span>
-                      <span v-else class="text-red-600 font-medium flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                        </svg>
-                        인증 필요
-                      </span>
-                      <button 
-                        v-if="!isEmailVerified" 
-                        @click="goToEmailVerification" 
-                        class="ml-3 px-2 py-1 bg-blue-600 text-white text-sm rounded font-medium hover:bg-blue-700 transition-colors"
-                      >
-                        인증하기
-                      </button>
-                    </div>
-                  </div>
+                  <h2 class="text-xl font-bold text-gray-900">{{ user?.name }}</h2>
                 </div>
                 
-                <div class="mt-6">
-                  <button 
-                    @click="isEditMode = true" 
-                    class="px-4 py-2 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 transition-colors mr-2"
-                    v-if="!isEditMode"
-                  >
-                    프로필 수정
-                  </button>
-                  <router-link 
-                    to="/profile/change-password" 
-                    class="px-4 py-2 bg-gray-200 text-gray-800 rounded font-medium hover:bg-gray-300 transition-colors"
-                    v-if="!isEditMode"
-                  >
-                    비밀번호 변경
-                  </router-link>
-                </div>
-                
-                <form v-if="isEditMode" class="mt-6" @submit.prevent="updateProfile">
+                <!-- 프로필 정보 -->
+                <div class="md:flex-1 md:pl-6 mt-6 md:mt-0">
                   <div class="space-y-4">
                     <div>
-                      <label class="block text-sm font-medium text-gray-700" for="name">이름</label>
-                      <input 
-                        type="text" 
-                        id="name" 
-                        v-model="form.name" 
-                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        required
-                      />
+                      <h3 class="text-sm font-medium text-gray-500">이메일</h3>
+                      <p class="text-gray-900">{{ user?.email }}</p>
                     </div>
-                    
                     <div>
-                      <label class="block text-sm font-medium text-gray-700" for="phone">연락처</label>
-                      <input 
-                        type="tel" 
-                        id="phone" 
-                        v-model="form.phone" 
-                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      />
+                      <h3 class="text-sm font-medium text-gray-500">연락처</h3>
+                      <p class="text-gray-900">{{ user?.phone || '미등록' }}</p>
                     </div>
-                    
-                    <div class="flex space-x-4">
-                      <button 
-                        type="submit" 
-                        class="px-4 py-2 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 transition-colors"
-                      >
-                        저장
-                      </button>
-                      <button 
-                        type="button" 
-                        @click="cancelEdit"
-                        class="px-4 py-2 bg-gray-200 text-gray-800 rounded font-medium hover:bg-gray-300 transition-colors"
-                      >
-                        취소
-                      </button>
+                    <div>
+                      <h3 class="text-sm font-medium text-gray-500">학교 이메일 인증</h3>
+                      <div class="flex items-center">
+                        <span v-if="isEmailVerified" class="text-green-600 font-medium flex items-center">
+                          <i class="fas fa-check-circle mr-1"></i>
+                          인증 완료
+                        </span>
+                        <span v-else class="text-red-600 font-medium flex items-center">
+                          <i class="fas fa-exclamation-circle mr-1"></i>
+                          인증 필요
+                        </span>
+                        <button 
+                          v-if="!isEmailVerified" 
+                          @click="goToEmailVerification" 
+                          class="ml-3 px-3 py-1 bg-blue-600 text-white text-sm rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                        >
+                          인증하기
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </form>
-              </div>
-            </div>
-          </div>
-          
-          <div class="bg-white p-6 rounded-lg shadow-sm">
-            <div class="flex justify-between items-center mb-4">
-              <h2 class="text-xl font-bold">내 판매 상품</h2>
-              <router-link 
-                to="/user/products" 
-                class="text-blue-600 hover:text-blue-800 text-sm font-medium"
-              >
-                전체 관리 <i class="fas fa-arrow-right ml-1"></i>
-              </router-link>
-            </div>
-            
-            <div v-if="myProducts.length === 0" class="text-center py-8">
-              <p class="text-gray-500 mb-4">등록한 상품이 없습니다.</p>
-              <router-link 
-                to="/sell" 
-                class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors inline-block"
-              >
-                상품 등록하기
-              </router-link>
-            </div>
-            
-            <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <!-- 디버깅용 정보 표시 (개발 시에만 사용) -->
-              <div v-if="$NODE_ENV === 'development'" class="text-xs text-gray-500 col-span-full mb-4">
-                디버깅: {{ myProducts.length }}개 제품, 
-                첫번째 제품 ID: {{ myProducts[0]?.product?.id }}
+                  
+                  <!-- 프로필 액션 버튼 -->
+                  <div class="mt-6 flex space-x-3">
+                    <button 
+                      v-if="!isEditMode"
+                      @click="isEditMode = true" 
+                      class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center"
+                    >
+                      <i class="fas fa-edit mr-2"></i>
+                      프로필 수정
+                    </button>
+                    <router-link 
+                      to="/profile/change-password" 
+                      class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition-colors flex items-center"
+                      v-if="!isEditMode"
+                    >
+                      <i class="fas fa-key mr-2"></i>
+                      비밀번호 변경
+                    </router-link>
+                  </div>
+                </div>
               </div>
               
-              <ProductCard 
-                v-for="product in myProducts" 
-                :key="product.product.id || 'unknown'"
-                :product="product.product"
-                :stats="product.stats"
-                @click="goToProduct(product.product.id)"
-                @wishlist-toggle="handleWishlistToggle"
-              />
+              <!-- 프로필 수정 폼 -->
+              <form v-if="isEditMode" class="mt-6 pt-6 border-t" @submit.prevent="updateProfile">
+                <div class="space-y-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" for="name">이름</label>
+                    <input 
+                      type="text" 
+                      id="name" 
+                      v-model="form.name" 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" for="phone">연락처</label>
+                    <input 
+                      type="tel" 
+                      id="phone" 
+                      v-model="form.phone" 
+                      placeholder="010-1234-5678"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  
+                  <div class="flex space-x-3 pt-2">
+                    <button 
+                      type="submit" 
+                      class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center"
+                    >
+                      <i class="fas fa-save mr-2"></i>
+                      저장
+                    </button>
+                    <button 
+                      type="button" 
+                      @click="cancelEdit"
+                      class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                    >
+                      취소
+                    </button>
+                  </div>
+                </div>
+              </form>
             </div>
           </div>
           
-          <div class="bg-white p-6 rounded-lg shadow-sm mt-6">
-            <div class="flex justify-between items-center mb-4">
-              <h2 class="text-xl font-bold">내가 작성한 리뷰</h2>
-              <router-link 
-                to="/user/reviews" 
-                class="text-blue-600 hover:text-blue-800"
-              >
-                모두 보기 <i class="fas fa-arrow-right ml-1"></i>
-              </router-link>
+          <!-- 내 판매 상품 -->
+          <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div class="p-6">
+              <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-gray-900">내 판매 상품</h2>
+                <router-link 
+                  to="/user/products" 
+                  class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center"
+                >
+                  전체 관리 <i class="fas fa-arrow-right ml-1 text-xs"></i>
+                </router-link>
+              </div>
+              
+              <div v-if="myProducts.length === 0" class="text-center py-8">
+                <p class="text-gray-500 mb-4">등록한 상품이 없습니다.</p>
+                <router-link 
+                  to="/sell" 
+                  class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors inline-flex items-center"
+                >
+                  <i class="fas fa-plus mr-2"></i>
+                  상품 등록하기
+                </router-link>
+              </div>
+              
+              <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <ProductCard 
+                  v-for="product in myProducts" 
+                  :key="product.product.id || 'unknown'"
+                  :product="product.product"
+                  :stats="product.stats"
+                  @click="goToProduct(product.product.id)"
+                  @wishlist-toggle="handleWishlistToggle"
+                />
+              </div>
             </div>
-            
-            <div class="text-center py-8">
-              <p class="text-gray-500 mb-4">
-                내가 작성한 리뷰를 관리하고 수정할 수 있습니다.
-              </p>
-              <router-link 
-                to="/user/reviews" 
-                class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors inline-block"
-              >
-                리뷰 관리하기
-              </router-link>
+          </div>
+          
+          <!-- 내가 작성한 리뷰 -->
+          <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div class="p-6">
+              <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-gray-900">내가 작성한 리뷰</h2>
+                <router-link 
+                  to="/user/reviews" 
+                  class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center"
+                >
+                  모두 보기 <i class="fas fa-arrow-right ml-1 text-xs"></i>
+                </router-link>
+              </div>
+              
+              <div class="text-center py-8">
+                <p class="text-gray-500 mb-4">
+                  내가 작성한 리뷰를 관리하고 수정할 수 있습니다.
+                </p>
+                <router-link 
+                  to="/user/reviews" 
+                  class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors inline-flex items-center"
+                >
+                  <i class="fas fa-comment-alt mr-2"></i>
+                  리뷰 관리하기
+                </router-link>
+              </div>
             </div>
           </div>
         </div>
@@ -530,71 +541,6 @@ export default {
       }
     },
     
-    reloadPage() {
-      this.loading = true
-      
-      // 토큰 확인
-      const token = this.$store.state.auth.token;
-      console.log('새로고침 중... 현재 토큰이 있나요?', !!token);
-      
-      if (!token) {
-        // 토큰이 없으면 로그인 페이지로 리다이렉트
-        console.log('토큰이 없습니다. 로그인 페이지로 이동합니다.');
-        this.loading = false;
-        this.$router.push('/login');
-        return;
-      }
-      
-      // 사용자 정보 다시 가져오기 - 캐시 우회 옵션 추가
-      console.log('사용자 정보를 강제 새로고침합니다...');
-      
-      // 먼저 현재 사용자 정보의 이메일 인증 상태 기록
-      const prevEmailVerified = this.user?.emailVerified;
-      console.log('이전 이메일 인증 상태:', prevEmailVerified);
-      
-      this.fetchUser()
-        .then((userData) => {
-          console.log('사용자 정보 새로고침 결과:', userData ? '성공' : '실패');
-          
-          if (userData) {
-            // 이메일 인증 상태 변경 로그
-            console.log('새로고침 후 이메일 인증 상태:', userData.emailVerified);
-            console.log('이메일 인증 상태 변경 여부:', prevEmailVerified !== userData.emailVerified);
-            
-            this.initForm()
-            return this.fetchMyProducts()
-          } else {
-            console.error('사용자 정보를 불러오지 못했습니다. 다시 로그인이 필요할 수 있습니다.');
-            alert('사용자 정보를 불러올 수 없습니다. 다시 로그인해주세요.');
-            this.$router.push('/login');
-          }
-        })
-        .catch(error => {
-          console.error('프로필 새로고침 오류:', error)
-          alert('사용자 정보를 불러오는데 실패했습니다. 다시 시도해주세요.')
-        })
-        .finally(() => {
-          this.loading = false
-        })
-    },
-    
-    logout() {
-      this.loading = true;
-      this.$store.dispatch('auth/logout')
-        .then(() => {
-          console.log('로그아웃 성공, 메인 페이지로 이동합니다.');
-          this.$router.push('/'); // 로그인 페이지 대신 메인 페이지로 이동
-        })
-        .catch(error => {
-          console.error('로그아웃 처리 중 오류:', error);
-          // 오류가 발생해도 메인 페이지로 이동
-          this.$router.push('/');
-        })
-        .finally(() => {
-          this.loading = false;
-        });
-    },
-    
     // 위시리스트 토글 이벤트 핸들러
     handleWishlistToggle(productId) {
       console.log('프로필 페이지에서 위시리스트 토글 이벤트 수신:', productId);
@@ -615,6 +561,9 @@ export default {
             isWishlisted: storeProduct.stats.isWishlisted,
             wishlistCount: storeProduct.stats.wishlistCount
           });
+          
+          // Vue의 반응성을 위해 배열 요소 강제 업데이트
+          this.$set(this.myProducts, productIndex, { ...this.myProducts[productIndex] });
         } else {
           // 스토어에 없는 경우 현재 상태 토글
           this.myProducts[productIndex].stats.isWishlisted = !this.myProducts[productIndex].stats.isWishlisted;
