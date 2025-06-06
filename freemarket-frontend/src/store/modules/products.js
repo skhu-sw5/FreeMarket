@@ -136,19 +136,41 @@ export default {
         
         // 상태 업데이트
         if (data && data.data) {
-          console.log('API 응답 데이터 구조:', JSON.stringify(data.data, null, 2).substring(0, 200) + '...');
+          console.log('API 응답 데이터 구조:', JSON.stringify(data.data, null, 2).substring(0, 400) + '...');
           
           let products = data.data.content || [];
-          // 스웨거 명세에 맞게 변환하면서 stats 데이터 추가
-          products = products.map(item => ({
-            product: item,
-            stats: {
+
+          console.log('API에서 받아온 상품 데이터 샘플:', products.length > 0 ? JSON.stringify(products[0], null, 2) : 'No products');
+          
+          // 스웨거 명세에 맞게 변환 및 통계 데이터 추출
+          products = products.map(item => {
+            // API 응답 구조에 따른 처리
+            // 대부분의 API는 상품 정보와 함께 stats를 별도로 포함하지 않을 수 있으므로
+            // 상품 자체에 viewCount, wishlistCount, isWishlisted 필드가 있다고 가정
+            const product = {
+              id: item.id,
+              name: item.name,
+              price: item.price,
+              description: item.description,
+              category: item.category,
+              status: item.status,
+              thumbnailUrl: item.thumbnailUrl,
+              imageUrls: item.imageUrls || [],
+              sellerName: item.sellerName,
+              sellerId: item.sellerId,
+              createdDate: item.createdDate || item.createdAt,
+              updatedDate: item.updatedDate || item.updatedAt
+            };
+            
+            // 통계 데이터 추출
+            const stats = {
               viewCount: item.viewCount || 0,
               wishlistCount: item.wishlistCount || 0,
               isWishlisted: item.isWishlisted || false
-            }
-          }));
-          
+            };
+            
+            return { product, stats };
+          });
           const pageInfo = data.data.page || {};
           commit('SET_PRODUCTS', {
             products: products,
@@ -205,10 +227,31 @@ export default {
         // 상태 업데이트
         if (data && data.data) {
           let detail = data.data;
+          
           // 상세도 { product, stats } 구조로 변환
           if (!detail.product) {
-            detail = { product: detail, stats: {} };
+            detail = { 
+              product: detail, 
+              stats: {
+                viewCount: detail.viewCount || 0,
+                wishlistCount: detail.wishlistCount || 0,
+                isWishlisted: detail.isWishlisted || false
+              }
+            };
           }
+          
+          // 위시리스트 상태 확인 - state.wishlist에서 해당 상품이 있는지 확인
+          const isProductInWishlist = state.wishlist.some(item => 
+            (item.id === productId) || 
+            (item.product && item.product.id === productId)
+          );
+          
+          // 위시리스트에 있다면 isWishlisted를 true로 설정
+          if (isProductInWishlist) {
+            console.log('상품이 위시리스트에 있음, isWishlisted를 true로 설정');
+            detail.stats.isWishlisted = true;
+          }
+          
           commit('SET_PRODUCT', detail);
           console.log('상품 상세 데이터 저장 완료:', detail);
           
@@ -582,7 +625,11 @@ export default {
     },
     
     isWishlisted: (state) => (id) => {
-      return state.wishlist.some(item => item.id === id)
+      // 위시리스트에서 id 또는 product.id가 일치하는 항목 찾기
+      return state.wishlist.some(item => 
+        (item.id === id) || 
+        (item.product && item.product.id === id)
+      );
     }
   }
 }

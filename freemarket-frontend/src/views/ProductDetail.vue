@@ -307,6 +307,12 @@ export default {
         
         this.$store.dispatch('products/setSkipViewIncrement', false);
         
+        // 상품 데이터를 가져오기 전에 위시리스트 상태를 먼저 확인
+        // 로그인한 경우에만 위시리스트 데이터 로드
+        if (this.isAuthenticated) {
+          await this.$store.dispatch('products/fetchWishlist');
+        }
+        
         await this.fetchProduct(productId);
         console.log('상품 데이터 로드 완료:', this.product);
       } catch (error) {
@@ -377,7 +383,14 @@ export default {
         
         const wasWishlisted = this.product.stats.isWishlisted
         
-        await this.$store.dispatch('products/toggleWishlist', productId)
+        // Vuex action을 통해 API 호출
+        const result = await this.$store.dispatch('products/toggleWishlist', productId)
+        
+        // API 응답에 따라 상품 상태 직접 업데이트 (추가적인 보장)
+        if (this.product && this.product.stats) {
+          this.product.stats.isWishlisted = result.isWishlisted;
+          this.product.stats.wishlistCount = result.count;
+        }
         
         if (this.$toast) {
           this.$toast.success(wasWishlisted ? '관심 상품에서 제거되었습니다.' : '관심 상품에 추가되었습니다.')

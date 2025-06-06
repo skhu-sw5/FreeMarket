@@ -15,9 +15,9 @@
       <button 
         @click.stop="toggleWishlist"
         class="absolute top-2 right-2 bg-white p-2 rounded-full shadow-md transition-colors"
-        :class="{ 'text-red-500': stats.isWishlisted, 'text-gray-400': !stats.isWishlisted }"
+        :class="{ 'text-red-500': stats?.isWishlisted, 'text-gray-400': !stats?.isWishlisted }"
       >
-        <i :class="stats.isWishlisted ? 'fas fa-heart' : 'far fa-heart'"></i>
+        <i :class="stats?.isWishlisted ? 'fas fa-heart' : 'far fa-heart'"></i>
       </button>
       <div v-if="isNew" class="absolute top-2 left-2 bg-blue-500 text-white px-2 py-1 text-xs rounded-md font-medium">
         NEW
@@ -32,9 +32,9 @@
         <span class="text-sm text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{{ getCategoryName(product.category) }}</span>
         <div class="flex items-center text-sm text-gray-500">
           <i class="far fa-eye mr-1"></i>
-          <span>{{ stats.viewCount }}</span>
+          <span>{{ stats?.viewCount || 0 }}</span>
           <i class="far fa-heart mx-1 ml-2"></i>
-          <span>{{ stats.wishlistCount }}</span>
+          <span>{{ stats?.wishlistCount || 0 }}</span>
         </div>
       </div>
     </div>
