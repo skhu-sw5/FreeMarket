@@ -95,6 +95,10 @@
                       <h3 class="text-sm text-gray-500 mb-1">상품 등록일</h3>
                       <p class="text-gray-900">{{ formatDate(product.product.createdDate) }}</p>
                     </div>
+                    <div class="col-span-2">
+                      <h3 class="text-sm text-gray-500 mb-1">마지막 수정일</h3>
+                      <p class="text-gray-900">{{ formatDate(product.product.updatedDate) }}</p>
+                    </div>
                   </div>
                 </div>
                 
