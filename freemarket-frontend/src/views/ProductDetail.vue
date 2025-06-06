@@ -4,41 +4,45 @@
     
     <main class="py-6">
       <div class="container mx-auto px-4">
-        <nav class="mb-4 flex items-center text-sm">
-          <router-link to="/" class="text-gray-500 hover:text-blue-600">홈</router-link>
-          <span class="mx-2 text-gray-400">/</span>
-          <router-link to="/products" class="text-gray-500 hover:text-blue-600">상품</router-link>
-          <span v-if="product" class="mx-2 text-gray-400">/</span>
-          <span v-if="product" class="text-gray-700">{{ product.product.name }}</span>
+        <!-- 네비게이션 브레드크럼 -->
+        <nav class="mb-6 flex items-center text-sm text-gray-600">
+          <router-link to="/" class="text-blue-600 hover:text-blue-800">홈</router-link>
+          <i class="fas fa-chevron-right mx-2 text-gray-400 text-xs"></i>
+          <router-link to="/products" class="text-blue-600 hover:text-blue-800">상품</router-link>
+          <i v-if="product" class="fas fa-chevron-right mx-2 text-gray-400 text-xs"></i>
+          <span v-if="product" class="text-gray-500 truncate max-w-xs">{{ product.product.name }}</span>
         </nav>
         
-        <div v-if="loading" class="bg-white rounded-lg p-6">
+        <!-- 로딩 상태 -->
+        <div v-if="loading" class="bg-white rounded-lg shadow-sm p-6">
           <div class="animate-pulse">
             <div class="flex flex-col md:flex-row">
               <div class="md:w-1/2 h-80 bg-gray-200 rounded-lg"></div>
               <div class="md:w-1/2 md:pl-8 mt-6 md:mt-0">
-                <div class="h-8 bg-gray-200 rounded mb-4"></div>
+                <div class="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
                 <div class="h-6 bg-gray-200 rounded w-1/4 mb-6"></div>
-                <div class="h-4 bg-gray-200 rounded mb-2"></div>
-                <div class="h-4 bg-gray-200 rounded mb-2"></div>
-                <div class="h-4 bg-gray-200 rounded mb-6 w-3/4"></div>
-                <div class="h-12 bg-gray-200 rounded"></div>
+                <div class="h-4 bg-gray-200 rounded w-full mb-2"></div>
+                <div class="h-4 bg-gray-200 rounded w-2/3 mb-6"></div>
+                <div class="h-12 bg-gray-200 rounded w-full"></div>
               </div>
             </div>
           </div>
         </div>
         
-        <div v-else-if="!product" class="bg-white rounded-lg p-8 text-center">
+        <!-- 상품 없음 상태 -->
+        <div v-else-if="!product" class="bg-white rounded-lg shadow-sm p-8 text-center">
           <p class="text-gray-500 mb-4">상품을 찾을 수 없습니다.</p>
           <router-link 
             to="/products" 
-            class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors inline-block"
+            class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors inline-flex items-center"
           >
+            <i class="fas fa-arrow-left mr-2"></i>
             상품 목록으로 돌아가기
           </router-link>
         </div>
         
-        <div v-else>
+        <!-- 상품 상세 정보 -->
+        <div v-else class="space-y-6">
           <div class="bg-white rounded-lg shadow-sm overflow-hidden">
             <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
               <!-- 상품 이미지 -->
@@ -48,87 +52,93 @@
               
               <!-- 상품 정보 -->
               <div>
-                <h1 class="text-2xl font-bold text-gray-900">{{ product.product.name }}</h1>
-                <p class="text-3xl font-bold mt-3">{{ formatPrice(product.product.price) }}원</p>
+                <div class="flex justify-between items-start">
+                  <h1 class="text-2xl font-bold text-gray-900">{{ product.product.name }}</h1>
+                  <span v-if="product.product.status === 'SOLD_OUT'" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                    <i class="fas fa-tag mr-1"></i>
+                    판매 완료
+                  </span>
+                </div>
                 
-                <div class="flex items-center mt-4 space-x-4">
-                  <div class="flex items-center text-sm">
-                    <i class="far fa-eye text-gray-400 mr-1"></i>
+                <p class="text-3xl font-bold text-gray-900 mt-3">{{ formatPrice(product.product.price) }}<span class="text-lg">원</span></p>
+                
+                <div class="flex items-center mt-4 space-x-6 text-gray-500 text-sm">
+                  <div class="flex items-center">
+                    <i class="far fa-eye mr-1"></i>
                     <span>{{ product.stats.viewCount }} 조회</span>
                   </div>
-                  <div class="flex items-center text-sm">
-                    <i class="far fa-heart text-gray-400 mr-1"></i>
+                  <div class="flex items-center">
+                    <i class="far fa-heart mr-1"></i>
                     <span>{{ product.stats.wishlistCount }} 관심</span>
                   </div>
                 </div>
                 
-                <div class="mt-6 border-t border-b py-4">
+                <div class="mt-6 border-t border-b border-gray-100 py-4">
                   <div class="grid grid-cols-2 gap-4">
                     <div>
-                      <h3 class="text-sm text-gray-500">카테고리</h3>
-                      <p>{{ product.product.category }}</p>
+                      <h3 class="text-sm text-gray-500 mb-1">카테고리</h3>
+                      <p class="text-gray-900">{{ product.product.category || '-' }}</p>
                     </div>
                     <div>
-                      <h3 class="text-sm text-gray-500">상태</h3>
-                      <p v-if="product.product.status === 'SOLD_OUT'" class="flex items-center">
-                        <span class="text-red-500 font-medium">상품 판매 완료</span>
-                      </p>
-                      <p v-else>{{ product.product.status === 'ACTIVE' ? '판매중' : product.product.status }}</p>
+                      <h3 class="text-sm text-gray-500 mb-1">상태</h3>
+                      <p class="text-gray-900">{{ product.product.status === 'ACTIVE' ? '판매중' : '판매 완료' }}</p>
                     </div>
                     <div>
-                      <h3 class="text-sm text-gray-500">판매자</h3>
-                      <p>{{ product.product.sellerName }}</p>
+                      <h3 class="text-sm text-gray-500 mb-1">판매자</h3>
+                      <p class="text-gray-900">{{ product.product.sellerName }}</p>
                     </div>
                     <div>
-                      <h3 class="text-sm text-gray-500">재고</h3>
-                      <p>{{ product.product.stock }}개</p>
+                      <h3 class="text-sm text-gray-500 mb-1">재고</h3>
+                      <p class="text-gray-900">{{ product.product.stock }}개</p>
                     </div>
-                    <div>
-                      <h3 class="text-sm text-gray-500">상품 등록일</h3>
-                      <p>{{ formatDate(product.product.createdDate) }}</p>
+                    <div class="col-span-2">
+                      <h3 class="text-sm text-gray-500 mb-1">상품 등록일</h3>
+                      <p class="text-gray-900">{{ formatDate(product.product.createdDate) }}</p>
                     </div>
                   </div>
                 </div>
                 
-                <div class="mt-6 space-y-4">
+                <div class="mt-6 space-y-3">
                   <button 
                     @click="toggleWishlistItem"
-                    class="w-full px-4 py-3 border rounded-lg font-medium flex items-center justify-center space-x-2"
-                    :class="product.stats.isWishlisted ? 'bg-red-50 border-red-400 text-red-500' : 'border-gray-300 hover:bg-gray-50 text-gray-500'"
+                    class="w-full px-4 py-3 border rounded-lg font-medium flex items-center justify-center space-x-2 transition-colors"
+                    :class="product.stats.isWishlisted ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100' : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
+                    :disabled="product.product.status === 'SOLD_OUT'"
                   >
                     <i :class="product.stats.isWishlisted ? 'fas fa-heart' : 'far fa-heart'"></i>
                     <span>{{ product.stats.isWishlisted ? '관심 상품에서 제거' : '관심 상품에 추가' }}</span>
                   </button>
                   
                   <button 
-                    class="w-full px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 flex items-center justify-center space-x-2"
+                    class="w-full px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
                     @click="buyProduct"
                     :disabled="product.product.stock <= 0 || product.product.status === 'SOLD_OUT'"
+                    :class="{'opacity-50 cursor-not-allowed': product.product.stock <= 0 || product.product.status === 'SOLD_OUT'}"
                   >
                     <i class="fas fa-shopping-cart"></i>
-                    <span>{{ product.product.stock <= 0 || product.product.status === 'SOLD_OUT' ? '품절' : '구매하기' }}</span>
+                    <span>{{ product.product.stock <= 0 || product.product.status === 'SOLD_OUT' ? '구매 불가' : '구매하기' }}</span>
                   </button>
                   
                   <button 
-                    class="w-full px-4 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 flex items-center justify-center space-x-2"
+                    class="w-full px-4 py-3 bg-gray-100 text-gray-800 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center justify-center space-x-2"
                     @click="contactSeller"
                   >
                     <i class="fas fa-comment-dots"></i>
                     <span>판매자에게 문의하기</span>
                   </button>
                   
-                  <!-- 판매자만 볼 수 있는 상품 관리 버튼 -->
-                  <div v-if="isProductOwner" class="mt-4 grid grid-cols-2 gap-3">
+                  <!-- 판매자 전용 버튼 그룹 -->
+                  <div v-if="isProductOwner" class="grid grid-cols-2 gap-3 pt-2">
                     <router-link 
                       :to="{ name: 'EditProduct', params: { id: product.product.id } }"
-                      class="px-4 py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 flex items-center justify-center space-x-2"
+                      class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
                     >
                       <i class="fas fa-edit"></i>
                       <span>상품 수정</span>
                     </router-link>
                     
                     <button 
-                      class="px-4 py-3 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 flex items-center justify-center space-x-2"
+                      class="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center justify-center space-x-2"
                       @click="confirmDeleteProduct"
                     >
                       <i class="fas fa-trash-alt"></i>
@@ -140,59 +150,74 @@
             </div>
             
             <!-- 상품 설명 -->
-            <div class="p-6 border-t">
-              <h2 class="text-xl font-bold mb-4">상품 정보</h2>
-              <p class="whitespace-pre-line">{{ product.product.description || '상품 설명이 없습니다.' }}</p>
+            <div class="p-6 border-t border-gray-100">
+              <h2 class="text-xl font-bold text-gray-900 mb-4">상품 정보</h2>
+              <div class="prose max-w-none">
+                <p class="whitespace-pre-line text-gray-700">{{ product.product.description || '등록된 상품 설명이 없습니다.' }}</p>
+              </div>
             </div>
           </div>
           
           <!-- 판매자 정보 -->
-          <div class="mt-6 bg-white rounded-lg shadow-sm p-6">
-            <h2 class="text-xl font-bold mb-4">판매자 정보</h2>
-            <div class="flex items-center">
-              <div class="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                <i class="fas fa-user text-gray-400 text-xl"></i>
-              </div>
-              <div class="ml-4 flex items-center">
-                <h3 class="font-medium">{{ product.product.sellerName }}</h3>
+          <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div class="p-6">
+              <h2 class="text-xl font-bold text-gray-900 mb-4">판매자 정보</h2>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-user text-gray-400 text-xl"></i>
+                  </div>
+                  <div class="ml-4">
+                    <h3 class="font-medium text-gray-900">{{ product.product.sellerName }}</h3>
+                    <p class="text-sm text-gray-500">판매자</p>
+                  </div>
+                </div>
                 <button 
                   @click="viewSellerProfile"
-                  class="ml-4 px-3 py-1 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors"
+                  class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center"
                 >
-                  프로필 조회
+                  <i class="fas fa-user-circle mr-2"></i>
+                  판매자 프로필 보기
                 </button>
               </div>
-            </div>
-            
-            <!-- 판매자 프로필 상세 정보 (조회 시 표시) -->
-            <div v-if="sellerProfile" class="mt-4 border-t pt-4">
-              <h4 class="font-medium mb-2">판매자 상세 정보</h4>
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <p class="text-sm text-gray-500">이름</p>
-                  <p>{{ sellerProfile.name }}</p>
-                </div>
-                <div>
-                  <p class="text-sm text-gray-500">연락처</p>
-                  <p>{{ sellerProfile.phone || '미등록' }}</p>
-                </div>
-                <div>
-                  <p class="text-sm text-gray-500">이메일</p>
-                  <p>{{ sellerProfile.email || '미등록' }}</p>
-                </div>
-                <div>
-                  <p class="text-sm text-gray-500">회원 등급</p>
-                  <p>{{ sellerProfile.grade || '일반' }}</p>
+              
+              <!-- 판매자 상세 정보 -->
+              <div v-if="sellerProfile" class="mt-6 pt-6 border-t border-gray-100">
+                <h4 class="font-medium text-gray-900 mb-4">판매자 상세 정보</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p class="text-sm text-gray-500 mb-1">이름</p>
+                    <p class="text-gray-900">{{ sellerProfile.name || '-' }}</p>
+                  </div>
+                  <div>
+                    <p class="text-sm text-gray-500 mb-1">연락처</p>
+                    <p class="text-gray-900">{{ sellerProfile.phone || '미등록' }}</p>
+                  </div>
+                  <div>
+                    <p class="text-sm text-gray-500 mb-1">이메일</p>
+                    <p class="text-gray-900">{{ sellerProfile.email || '미등록' }}</p>
+                  </div>
+                  <div>
+                    <p class="text-sm text-gray-500 mb-1">회원 등급</p>
+                    <p class="text-gray-900">{{ sellerProfile.grade || '일반' }}</p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-            <!-- 리뷰 섹션 추가 -->
-            <div class="mt-6 bg-white rounded-lg shadow-sm p-6">
-            <h2 class="text-xl font-bold mb-4">상품 리뷰</h2>
-            <ReviewList v-if="product && product.product" :productId="String(product.product.id)" />
-            <div v-else class="text-center py-4 text-gray-500">
-              리뷰를 불러오는 중입니다...
+          
+          <!-- 리뷰 섹션 -->
+          <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div class="p-6">
+              <h2 class="text-xl font-bold text-gray-900 mb-6">상품 리뷰</h2>
+              <ReviewList 
+                v-if="product && product.product" 
+                :productId="String(product.product.id)" 
+              />
+              <div v-else class="text-center py-8 text-gray-500">
+                <i class="fas fa-spinner fa-spin mr-2"></i>
+                리뷰를 불러오는 중입니다...
+              </div>
             </div>
           </div>
         </div>
@@ -218,7 +243,6 @@ export default {
     ReviewList
   },
 
-  // computed 부분은 그대로 유지
   computed: {
     ...mapState('products', ['product', 'loading']),
     ...mapState('auth', ['user']),
@@ -232,7 +256,6 @@ export default {
       }))
     },
     
-    // 인증 상태와 토큰을 가져오는 computed 속성 추가
     isAuthenticated() {
       return this.$store.state.auth.isAuthenticated
     },
@@ -241,12 +264,10 @@ export default {
       return this.$store.state.auth.token
     },
     
-    // 현재 로그인한 사용자 정보 가져오기
     currentUser() {
       return this.$store.state.auth.user
     },
     
-    // 현재 사용자가 상품 소유자인지 확인
     isProductOwner() {
       return this.isAuthenticated && 
              this.user && 
@@ -258,9 +279,6 @@ export default {
     }
   },
   
-  // created 훅은 그대로 유지
-  
-  // 마운트 시 상품 정보 로드
   created() {
     console.log('ProductDetail created - 상품 ID:', this.$route.params.id);
     this.loadProductData();
@@ -273,7 +291,6 @@ export default {
   },
   
   methods: {
-    // 상품 데이터 로드 메서드 추가
     async loadProductData() {
       try {
         const productId = this.$route.params.id;
@@ -284,8 +301,6 @@ export default {
           return;
         }
         
-        // 상품 상세 페이지에서는 조회수 증가를 명시적으로 허용
-        // 이 페이지에서만 조회수가 증가되도록 skipViewIncrement 플래그를 false로 설정
         this.$store.dispatch('products/setSkipViewIncrement', false);
         
         await this.fetchProduct(productId);
@@ -295,7 +310,6 @@ export default {
       }
     },
     
-    // toggleWishlist 액션 제거하고 fetchProduct만 유지
     ...mapActions('products', ['fetchProduct', 'deleteProduct']),
     
     formatPrice(price) {
@@ -317,45 +331,38 @@ export default {
       return `${year}-${month}-${day} ${hours}:${minutes}`;
     },
     
-    // 상품 구매 메서드 추가
     async buyProduct() {
       if (!this.isAuthenticated) {
         return this.$router.push({ name: 'Login', query: { redirect: this.$route.fullPath } })
       }
       
       try {
-        //自己的商品を購入しようとする場合エラーメッセージを表示
         if (this.isProductOwner) {
-          alert('自分の商品は購入できません。');
+          alert('자신의 상품은 구매할 수 없습니다.');
           return;
         }
         
-        //現在ログインしているユーザーが該当商品の販売者ではないため直接購入完了処理を行うことはできません。
-        //その代わりに販売者に連絡して取引を進めさせるように案内します。
-        const confirmMessage = '現在システムでは販売者が購入完了処理を行う必要があります。\n\n販売者に連絡しますか?';
+        const confirmMessage = '현재 시스템에서는 판매자가 구매 완료 처리를 진행해야 합니다.\n\n판매자에게 문의하시겠습니까?';
         
         if (confirm(confirmMessage)) {
-          //販売者に連絡する機能を呼び出す
           this.contactSeller();
           
-          //成功メッセージを表示
           if (this.$toast) {
-            this.$toast.success('販売者に連絡のリクエストが送信されました。販売者の応答を待ってください。');
+            this.$toast.success('판매자에게 문의 요청이 전송되었습니다. 판매자의 응답을 기다려주세요.');
           } else {
-            alert('販売者に連絡のリクエストが送信されました。販売者の応答を待ってください。');
+            alert('판매자에게 문의 요청이 전송되었습니다. 판매자의 응답을 기다려주세요.');
           }
         }
       } catch (error) {
-        console.error('商品購入エラー:', error)
+        console.error('상품 구매 오류:', error)
         if (this.$toast) {
-          this.$toast.error(error.message || '商品購入中にエラーが発生しました。')
+          this.$toast.error(error.message || '상품 구매 중 오류가 발생했습니다.')
         } else {
-          alert(error.message || '商品購入中にエラーが発生しました。')
+          alert(error.message || '상품 구매 중 오류가 발생했습니다.')
         }
       }
     },
     
-    // 상품 상세 페이지의 관심상품 토글 기능
     async toggleWishlistItem() {
       if (!this.isAuthenticated) {
         return this.$router.push({ name: 'Login', query: { redirect: this.$route.fullPath } })
@@ -364,13 +371,10 @@ export default {
       try {
         const productId = this.product.product.id
         
-        // 현재 상태를 저장
         const wasWishlisted = this.product.stats.isWishlisted
         
-        // Vuex action을 통해 API 호출
         await this.$store.dispatch('products/toggleWishlist', productId)
         
-        // 토스트 메시지 표시 (상태가 변경된 후)
         if (this.$toast) {
           this.$toast.success(wasWishlisted ? '관심 상품에서 제거되었습니다.' : '관심 상품에 추가되었습니다.')
         }
@@ -384,7 +388,6 @@ export default {
       }
     },
     
-    // 판매자 프로필 조회 메서드 추가
     async viewSellerProfile() {
       try {
         if (!this.product || !this.product.product || !this.product.product.sellerId) {
@@ -398,13 +401,11 @@ export default {
         
         const sellerId = this.product.product.sellerId
         
-        // 이미 프로필을 불러온 경우 토글
         if (this.sellerProfile) {
           this.sellerProfile = null
           return
         }
         
-        // 토큰 가져오기
         const token = this.$store.state.auth.token
         if (!token) {
           if (this.$toast) {
@@ -415,7 +416,6 @@ export default {
           return
         }
         
-        // API 호출 (스웨거 문서에 맞는 정확한 경로로 수정)
         const response = await fetch(`/api/users/profile/${sellerId}`, {
           method: 'GET',
           headers: {
@@ -449,88 +449,26 @@ export default {
       }
     },
     
-    // 나머지 메서드들은 그대로 유지
     contactSeller() {
-      // 판매자 문의 기능 - 채팅 기능이 있다면 구현
       alert('판매자에게 문의하기 기능은 아직 구현되지 않았습니다.')
     },
     
-    goToProduct(id) {
-      if (id === this.id) return
-      this.$router.push({ name: 'ProductDetail', params: { id } })
-    },
-    
-    goToSellerProducts() {
-      // 판매자의 상품 목록 페이지로 이동
-      if (this.product && this.product.product.sellerName) {
-        this.$router.push({ 
-          name: 'ProductList', 
-          query: { seller: this.product.product.sellerName } 
-        })
-      }
-    },
-    
-    async fetchSellerProducts() {
-      try {
-        if (!this.product || !this.product.product.sellerName) return
-        
-        const response = await fetch(`https://freemarket.duckdns.org/api/products?sellerName=${encodeURIComponent(this.product.product.sellerName)}&size=4&status=ACTIVE`)
-        
-        if (!response.ok) {
-          throw new Error('판매자 상품 목록을 불러오는데 실패했습니다.')
-        }
-        
-        const data = await response.json()
-        // 현재 상품을 제외한 다른 상품만 표시
-        this.sellerProducts = data.data.content.filter(
-          item => item.product.id !== this.product.product.id
-        )
-      } catch (error) {
-        console.error('판매자 상품 목록 조회 오류:', error)
-      }
-    },
-    
-    async fetchRelatedProducts() {
-      try {
-        if (!this.product) return
-        
-        // 같은 카테고리의 상품 가져오기
-        const response = await fetch(`https://freemarket.duckdns.org/api/products?category=${this.product.product.category}&size=4&status=ACTIVE`)
-        
-        if (!response.ok) {
-          throw new Error('관련 상품 목록을 불러오는데 실패했습니다.')
-        }
-        
-        const data = await response.json()
-        // 현재 상품을 제외한 다른 상품만 표시
-        this.relatedProducts = data.data.content.filter(
-          item => item.product.id !== this.product.product.id
-        )
-      } catch (error) {
-        console.error('관련 상품 목록 조회 오류:', error)
-      }
-    },
-    
-    // 상품 삭제 확인 메서드 추가
     confirmDeleteProduct() {
       if (confirm('정말로 이 상품을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
         this.deleteProductItem()
       }
     },
     
-    // 상품 삭제 메서드 추가
     async deleteProductItem() {
       try {
         await this.deleteProduct(this.product.product.id)
         
-        // 성공 메시지 표시
         if (this.$toast) {
           this.$toast.success('상품이 성공적으로 삭제되었습니다.')
         } else {
           alert('상품이 성공적으로 삭제되었습니다.')
         }
         
-        // 상품 목록 페이지로 이동
         this.$router.push({ name: 'ProductList' })
       } catch (error) {
         console.error('상품 삭제 오류:', error)

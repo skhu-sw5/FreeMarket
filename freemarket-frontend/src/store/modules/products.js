@@ -139,8 +139,16 @@ export default {
           console.log('API 응답 데이터 구조:', JSON.stringify(data.data, null, 2).substring(0, 200) + '...');
           
           let products = data.data.content || [];
-          // 스웨거 명세에 맞게 변환
-          products = products.map(item => ({ product: item, stats: {} }));
+          // 스웨거 명세에 맞게 변환하면서 stats 데이터 추가
+          products = products.map(item => ({
+            product: item,
+            stats: {
+              viewCount: item.viewCount || 0,
+              wishlistCount: item.wishlistCount || 0,
+              isWishlisted: item.isWishlisted || false
+            }
+          }));
+          
           const pageInfo = data.data.page || {};
           commit('SET_PRODUCTS', {
             products: products,
