@@ -9,15 +9,24 @@
     </div>
     
     <!-- 초기화 완료 후 메인 컨텐츠 -->
-    <router-view v-else class="flex-1" />
+    <div v-else class="flex flex-col min-h-screen">
+      <div class="flex-1">
+        <router-view />
+      </div>
+      <AppFooter />
+    </div>
   </div>
 </template>
 
 <script>
 import { mapActions, mapState } from 'vuex'
+import AppFooter from '@/components/common/AppFooter.vue';
 
 export default {
   name: 'App',
+  components: {
+    AppFooter
+  },
   
   computed: {
     ...mapState('auth', ['isAuthenticated', 'isInitialized', 'token', 'refreshToken'])
@@ -134,33 +143,134 @@ export default {
 
 body {
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
-/* 트랜지션 효과 */
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* 스크롤바 스타일링 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* 전역 애니메이션 */
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.3s;
+  transition: opacity 0.3s ease;
 }
-.fade-enter,
+
+.fade-enter-from,
 .fade-leave-to {
   opacity: 0;
 }
 
-.scale-enter-active,
-.scale-leave-active {
-  transition: transform 0.3s, opacity 0.3s;
-}
-.scale-enter,
-.scale-leave-to {
-  transform: scale(0.95);
-  opacity: 0;
+/* 버튼 전환 효과 */
+.btn-transition {
+  transition: all 0.2s ease-in-out;
 }
 
-/* 접근성 향상 */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    transition-duration: 0.01s !important;
-    animation-duration: 0.01s !important;
+/* 반응형 이미지 */
+.img-responsive {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* 로딩 애니메이션 */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* 접근성을 위한 스크린 리더 전용 텍스트 */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* 인풋 포커스 스타일 */
+input:focus,
+select:focus,
+textarea:focus,
+button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+  transition: box-shadow 0.2s ease-in-out;
+}
+
+/* 다크 모드 대응을 위한 기본 색상 설정 */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --primary-color: #60A5FA;
+    --secondary-color: #818CF8;
+    --danger-color: #F87171;
+    --success-color: #34D399;
   }
+  
+  body {
+    background-color: #111827;
+    color: #F3F4F6;
+  }
+  
+  /* 다크 모드에서의 스크롤바 스타일 */
+  ::-webkit-scrollbar-track {
+    background: #1F2937;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #4B5563;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: #6B7280;
+  }
+}
+
+/* 푸터 고정 */
+#app > div:last-child {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+#app > div:last-child > div:first-child {
+  flex: 1;
+}
+
+#app > div:last-child > div:last-child {
+  margin-top: auto;
 }
 </style>
