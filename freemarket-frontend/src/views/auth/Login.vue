@@ -120,11 +120,10 @@
 
 <script>
 import { mapActions, mapState } from 'vuex'
-import { isAutoLoginEnabled } from '@/utils/auth'
 
 export default {
   name: 'LoginView',
-  
+
   data() {
     return {
       email: '',
@@ -133,40 +132,28 @@ export default {
       error: null
     }
   },
-  
+
   computed: {
     ...mapState('auth', ['loading']),
-    
+
     redirect() {
       return this.$route.query.redirect || '/'
     }
   },
 
-  created() {
-    // 기존 자동 로그인 설정이 있으면 체크박스 활성화
-    this.rememberMe = isAutoLoginEnabled();
-  },
-  
   methods: {
     ...mapActions('auth', ['login']),
-    
+
     async handleLogin() {
       try {
-        console.log('로그인 시도...', this.rememberMe ? '(자동 로그인 활성화)' : '(세션 로그인)');
+        console.log('로그인 시도...');
         const result = await this.login({
           email: this.email,
           password: this.password,
           rememberMe: this.rememberMe
         });
-        
+
         console.log('로그인 성공!', result);
-        
-        // 자동 로그인 상태 확인 및 표시
-        if (this.rememberMe) {
-          console.log('✅ 자동 로그인이 활성화되었습니다. 다음 방문 시 자동으로 로그인됩니다.');
-        } else {
-          console.log('ℹ️ 세션 로그인으로 로그인되었습니다. 브라우저를 닫으면 로그아웃됩니다.');
-        }
         
         // LocalStorage에 토큰이 저장되었는지 확인
         try {
