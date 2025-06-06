@@ -52,6 +52,20 @@ if (process.env.NODE_ENV === 'development') {
   };
 }
 
-app.use(router)
-  .use(store)
-  .mount('#app')
+// 앱 초기화 함수
+const initApp = async () => {
+  try {
+    // 스토어 초기화 및 토큰 유효성 검증
+    await store.dispatch('auth/validateToken');
+  } catch (error) {
+    console.error('앱 초기화 중 오류 발생:', error);
+  } finally {
+    // 앱 마운트
+    app.use(router)
+      .use(store)
+      .mount('#app');
+  }
+};
+
+// 앱 초기화 시작
+initApp();
