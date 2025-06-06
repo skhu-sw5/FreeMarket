@@ -171,54 +171,74 @@ const router = createRouter({
 
 // 인증 관련 네비게이션 가드
 router.beforeEach(async (to, from, next) => {
-  const isAuthenticated = store.getters['auth/isAuthenticated']
-  const isInitialized = store.getters['auth/isInitialized']
+  console.log(`🧭 라우터 네비게이션: ${from.name || 'null'} → ${to.name}`);
+  
+  const isAuthenticated = store.getters['auth/isAuthenticated'];
+  const isInitialized = store.getters['auth/isInitialized'];
   
   // 앱이 아직 초기화되지 않았다면 초기화 완료까지 대기
   if (!isInitialized) {
-    console.log('라우터 가드: 앱 초기화 대기 중...');
+    console.log('⏳ 라우터 가드: 앱 초기화 대기 중...');
     
-    // 초기화 완료까지 최대 5초 대기
-    let attempts = 0;
-    const maxAttempts = 50; // 5초 (100ms * 50)
+    const waitForInitialization = async () => {
+      let attempts = 0;
+      const maxAttempts = 100; // 10초 대기 (100ms * 100)
+      
+      while (!store.getters['auth/isInitialized'] && attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+        
+        // 매 1초마다 로그 출력
+        if (attempts % 10 === 0) {
+          console.log(`⏳ 초기화 대기 중... (${attempts/10}초)`);
+        }
+      }
+      
+      if (!store.getters['auth/isInitialized']) {
+        console.warn('⚠️ 앱 초기화 시간 초과, 강제 진행');
+        store.commit('auth/SET_INITIALIZED', true);
+      } else {
+        console.log('✅ 라우터 가드: 앱 초기화 완료');
+      }
+    };
     
-    while (!store.getters['auth/isInitialized'] && attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      attempts++;
-    }
-    
-    if (!store.getters['auth/isInitialized']) {
-      console.warn('앱 초기화 시간 초과, 강제 진행');
-      // 타임아웃 시 강제로 초기화 완료로 설정
-      store.commit('auth/SET_INITIALIZED', true);
-    } else {
-      console.log('라우터 가드: 앱 초기화 완료');
-    }
+    await waitForInitialization();
   }
+  
+  // 최신 인증 상태 다시 확인
+  const currentIsAuthenticated = store.getters['auth/isAuthenticated'];
   
   if (to.matched.some(record => record.meta.requiresAuth)) {
     // 인증이 필요한 페이지
-    if (isAuthenticated) {
-      console.log('라우터 가드: 인증된 사용자, 계속 진행');
-      next()
+    if (currentIsAuthenticated) {
+      console.log(`✅ 인증 필요 페이지 접근 허용: ${to.name}`);
+      next();
     } else {
-      console.log('라우터 가드: 인증되지 않은 사용자, 로그인 페이지로 리다이렉트');
+      console.log(`🔒 인증 필요 페이지 접근 차단: ${to.name} → Login`);
       next({ 
         name: 'Login', 
         query: { redirect: to.fullPath } 
-      })
+      });
     }
   } else {
     // 인증이 필요하지 않은 페이지
     
     // 로그인/회원가입 페이지에 이미 로그인된 사용자가 접근하는 경우
-    if ((to.name === 'Login' || to.name === 'Register') && isAuthenticated) {
-      console.log('라우터 가드: 이미 로그인된 사용자, 홈으로 리다이렉트');
-      next({ name: 'Home' })
+    if ((to.name === 'Login' || to.name === 'Register') && currentIsAuthenticated) {
+      console.log(`🏠 이미 로그인된 사용자 홈으로 리다이렉트: ${to.name} → Home`);
+      
+      // redirect 쿼리가 있으면 해당 페이지로, 없으면 홈으로
+      const redirectPath = to.query.redirect || '/';
+      if (redirectPath !== '/' && redirectPath !== '/login' && redirectPath !== '/register') {
+        next(redirectPath);
+      } else {
+        next({ name: 'Home' });
+      }
     } else {
-      next()
+      console.log(`✅ 자유 접근 페이지: ${to.name}`);
+      next();
     }
   }
-})
+});
 
 export default router

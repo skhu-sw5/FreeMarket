@@ -37,9 +37,14 @@
               id="remember-me"
               v-model="rememberMe"
               type="checkbox"
-              class="h-4 w-4 text-blue-600 border-gray-300 rounded"
+              class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
             />
-            <label for="remember-me" class="ml-2 block text-sm text-gray-900">자동 로그인</label>
+            <label for="remember-me" class="ml-2 block text-sm text-gray-900">
+              자동 로그인
+              <span class="text-xs text-gray-500 block">
+                다음에 자동으로 로그인됩니다
+              </span>
+            </label>
           </div>
           
           <div class="text-sm">
@@ -115,6 +120,7 @@
 
 <script>
 import { mapActions, mapState } from 'vuex'
+import { isAutoLoginEnabled } from '@/utils/auth'
 
 export default {
   name: 'LoginView',
@@ -135,13 +141,18 @@ export default {
       return this.$route.query.redirect || '/'
     }
   },
+
+  created() {
+    // 기존 자동 로그인 설정이 있으면 체크박스 활성화
+    this.rememberMe = isAutoLoginEnabled();
+  },
   
   methods: {
     ...mapActions('auth', ['login']),
     
     async handleLogin() {
       try {
-        console.log('로그인 시도...');
+        console.log('로그인 시도...', this.rememberMe ? '(자동 로그인 활성화)' : '(세션 로그인)');
         const result = await this.login({
           email: this.email,
           password: this.password,
@@ -149,6 +160,13 @@ export default {
         });
         
         console.log('로그인 성공!', result);
+        
+        // 자동 로그인 상태 확인 및 표시
+        if (this.rememberMe) {
+          console.log('✅ 자동 로그인이 활성화되었습니다. 다음 방문 시 자동으로 로그인됩니다.');
+        } else {
+          console.log('ℹ️ 세션 로그인으로 로그인되었습니다. 브라우저를 닫으면 로그아웃됩니다.');
+        }
         
         // LocalStorage에 토큰이 저장되었는지 확인
         try {

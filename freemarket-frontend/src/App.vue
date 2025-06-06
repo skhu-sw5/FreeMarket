@@ -24,29 +24,64 @@ export default {
   },
   
   async created() {
-    console.log('App.vue created - 초기화 시작');
+    console.log('🚀 App.vue 초기화 시작');
     
     try {
-      // 토큰 유효성 검증 (Storage에서 읽기 + 만료 시간 확인 + 서버 검증)
+      const startTime = Date.now();
+      
+      // 토큰 유효성 검증 및 자동 로그인 시도
       const isValid = await this.validateToken();
       
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+      
       if (isValid) {
-        console.log('앱 초기화 완료: 로그인 상태 유지');
+        console.log(`✅ 앱 초기화 완료: 자동 로그인 성공 (${duration}ms)`);
       } else {
-        console.log('앱 초기화 완료: 로그아웃 상태');
+        console.log(`✅ 앱 초기화 완료: 로그아웃 상태 (${duration}ms)`);
       }
+      
+      // 네트워크 상태 모니터링 설정
+      this.setupNetworkMonitoring();
+      
     } catch (error) {
-      console.error('앱 초기화 중 오류:', error);
+      console.error('❌ 앱 초기화 중 오류:', error);
       // 오류 발생 시 안전하게 로그아웃 상태로 초기화
       this.$store.commit('auth/CLEAR_AUTH');
     }
     
-    // runtime.lastError 경고 숨기기
+    // runtime.lastError 경고 숨기기 (개발 환경)
     this.suppressChromeExtensionErrors();
   },
   
   methods: {
     ...mapActions('auth', ['validateToken', 'logout']),
+    
+    // 네트워크 상태 모니터링 설정
+    setupNetworkMonitoring() {
+      // 온라인/오프라인 상태 감지
+      const handleOnline = () => {
+        console.log('🌐 네트워크 연결됨');
+        // 연결 복구 시 토큰 상태 재검증
+        if (this.token && !this.isAuthenticated) {
+          console.log('🔄 네트워크 복구 후 토큰 재검증');
+          this.validateToken();
+        }
+      };
+      
+      const handleOffline = () => {
+        console.log('📡 네트워크 연결 끊어짐');
+      };
+      
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+      
+      // 컴포넌트 언마운트 시 이벤트 리스너 제거
+      this.$options.beforeUnmount = () => {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+      };
+    },
     
     suppressChromeExtensionErrors() {
       // 개발 환경에서만 확장 프로그램 오류 필터링

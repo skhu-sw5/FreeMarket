@@ -4,7 +4,8 @@ import {
   isTokenExpired, 
   getTokenFromStorage, 
   setTokenToStorage, 
-  removeTokenFromStorage 
+  removeTokenFromStorage,
+  decodeToken
 } from '@/utils/auth'
 
 export default {
@@ -301,70 +302,102 @@ export default {
     
     // 토큰 유효성 검증 액션 (앱 초기화 시 사용)
     async validateToken({ commit, state, dispatch }) {
-      console.log('토큰 유효성 검증 시작');
+      console.log('🔐 토큰 유효성 검증 시작');
       
-      if (!state.token) {
-        console.log('토큰이 없습니다.');
-        commit('SET_AUTHENTICATED', false);
-        commit('SET_INITIALIZED', true);
-        return false;
-      }
-      
-      // 토큰 만료 시간 확인
-      if (isTokenExpired(state.token)) {
-        console.log('액세스 토큰이 만료되었습니다. 리프레시 토큰으로 갱신을 시도합니다.');
+      try {
+        // 토큰이 없으면 바로 초기화 완료
+        if (!state.token) {
+          console.log('📝 토큰이 없습니다. 로그아웃 상태로 초기화');
+          commit('SET_AUTHENTICATED', false);
+          commit('SET_INITIALIZED', true);
+          return false;
+        }
         
-        // 리프레시 토큰이 있으면 갱신 시도
-        if (state.refreshToken && !isTokenExpired(state.refreshToken)) {
-          try {
-            await dispatch('refreshTokenAction');
-            console.log('토큰 갱신 성공');
-            // 갱신 후 사용자 정보 가져오기
-            const user = await dispatch('fetchUser');
-            return !!user;
-          } catch (error) {
-            console.error('토큰 갱신 실패:', error);
+        console.log('🔍 액세스 토큰 존재 확인됨');
+        
+        // 토큰 만료 시간 확인 (더 자세한 로깅)
+        const tokenDecoded = decodeToken(state.token);
+        if (tokenDecoded && tokenDecoded.exp) {
+          const expiryTime = new Date(tokenDecoded.exp * 1000);
+          const currentTime = new Date();
+          const remainingMinutes = Math.floor((expiryTime - currentTime) / 1000 / 60);
+          
+          console.log(`⏰ 토큰 만료 시간: ${expiryTime.toLocaleString()}`);
+          console.log(`⏰ 현재 시간: ${currentTime.toLocaleString()}`);
+          console.log(`⏰ 남은 시간: ${remainingMinutes}분`);
+        }
+        
+        // 토큰 만료 확인
+        if (isTokenExpired(state.token)) {
+          console.log('⚠️ 액세스 토큰이 만료되었습니다.');
+          
+          // 리프레시 토큰으로 갱신 시도
+          if (state.refreshToken && !isTokenExpired(state.refreshToken)) {
+            console.log('🔄 리프레시 토큰으로 갱신 시도');
+            try {
+              await dispatch('refreshTokenAction');
+              console.log('✅ 토큰 갱신 성공');
+              
+              // 갱신 후 사용자 정보 가져오기
+              const user = await dispatch('fetchUser');
+              if (user) {
+                console.log(`✅ 자동 로그인 성공: ${user.name || user.email}`);
+                return true;
+              } else {
+                console.log('❌ 사용자 정보 로딩 실패');
+                commit('CLEAR_AUTH');
+                return false;
+              }
+            } catch (error) {
+              console.error('❌ 토큰 갱신 실패:', error.message);
+              commit('CLEAR_AUTH');
+              return false;
+            }
+          } else {
+            console.log('❌ 리프레시 토큰이 없거나 만료됨');
             commit('CLEAR_AUTH');
             return false;
           }
-        } else {
-          console.log('리프레시 토큰이 없거나 만료되었습니다.');
+        }
+        
+        // 토큰이 아직 유효하면 사용자 정보로 최종 검증
+        console.log('✅ 액세스 토큰이 유효함. 사용자 정보로 최종 검증');
+        try {
+          const user = await dispatch('fetchUser');
+          
+          if (user) {
+            console.log(`✅ 자동 로그인 성공: ${user.name || user.email}`);
+            return true;
+          } else {
+            console.log('❌ 사용자 정보 없음');
+            commit('CLEAR_AUTH');
+            return false;
+          }
+        } catch (error) {
+          console.error('❌ 사용자 정보 로딩 오류:', error.message);
+          
+          // 401 오류인 경우 리프레시 토큰으로 재시도
+          if (error.message.includes('401') && state.refreshToken && !isTokenExpired(state.refreshToken)) {
+            console.log('🔄 401 오류로 인한 리프레시 토큰 재시도');
+            try {
+              await dispatch('refreshTokenAction');
+              const user = await dispatch('fetchUser');
+              
+              if (user) {
+                console.log(`✅ 재시도 후 자동 로그인 성공: ${user.name || user.email}`);
+                return true;
+              }
+            } catch (refreshError) {
+              console.error('❌ 재시도 실패:', refreshError.message);
+            }
+          }
+          
+          // 모든 시도 실패
           commit('CLEAR_AUTH');
           return false;
         }
-      }
-      
-      try {
-        // 사용자 정보 가져오기로 토큰 유효성 확인
-        const user = await dispatch('fetchUser');
-        
-        if (user) {
-          console.log('토큰 검증 성공 - 사용자:', user.name);
-          return true;
-        } else {
-          console.log('토큰 검증 실패 - 사용자 정보 없음');
-          return false;
-        }
       } catch (error) {
-        console.error('토큰 검증 오류:', error);
-        
-        // 리프레시 토큰으로 재시도
-        if (state.refreshToken && !isTokenExpired(state.refreshToken)) {
-          try {
-            console.log('리프레시 토큰으로 재시도');
-            await dispatch('refreshTokenAction');
-            const user = await dispatch('fetchUser');
-            
-            if (user) {
-              console.log('리프레시 후 토큰 검증 성공');
-              return true;
-            }
-          } catch (refreshError) {
-            console.error('리프레시 토큰으로 재시도 실패:', refreshError);
-          }
-        }
-        
-        // 모든 시도 실패 시 로그아웃
+        console.error('❌ 토큰 검증 중 예외 발생:', error);
         commit('CLEAR_AUTH');
         return false;
       }
