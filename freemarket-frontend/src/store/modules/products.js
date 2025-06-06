@@ -139,6 +139,7 @@ export default {
           console.log('API 응답 데이터 구조:', JSON.stringify(data.data, null, 2).substring(0, 400) + '...');
           
           let products = data.data.content || [];
+
           console.log('API에서 받아온 상품 데이터 샘플:', products.length > 0 ? JSON.stringify(products[0], null, 2) : 'No products');
           
           // 스웨거 명세에 맞게 변환 및 통계 데이터 추출
