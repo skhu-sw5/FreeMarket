@@ -116,14 +116,11 @@
         </div>
       </div>
     </main>
-
-    <AppFooter />
   </div>
 </template>
 
 <script>
 import AppHeader from '@/components/common/AppHeader.vue'
-import AppFooter from '@/components/common/AppFooter.vue'
 import ProductFilters from '@/components/products/ProductFilters.vue'
 import AppPagination from '@/components/common/AppPagination.vue'
 import { mapState, mapActions } from 'vuex'
@@ -132,7 +129,6 @@ export default {
   name: 'ProductList',
   components: {
     AppHeader,
-    AppFooter,
     ProductFilters,
     AppPagination
   },

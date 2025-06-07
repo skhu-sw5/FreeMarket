@@ -227,14 +227,11 @@
         </div>
       </div>
     </main>
-    
-    <AppFooter />
   </div>
 </template>
 
 <script>
 import AppHeader from '@/components/common/AppHeader.vue'
-import AppFooter from '@/components/common/AppFooter.vue'
 import ProductGallery from '@/components/products/ProductGallery.vue'
 import ReviewList from '@/components/reviews/ReviewList.vue'
 import { mapState, mapActions } from 'vuex'
@@ -242,7 +239,6 @@ import { mapState, mapActions } from 'vuex'
 export default {
   components: {
     AppHeader,
-    AppFooter,
     ProductGallery,
     ReviewList
   },

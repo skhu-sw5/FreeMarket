@@ -173,22 +173,18 @@
         </form>
       </div>
     </main>
-    
-    <AppFooter />
   </div>
 </template>
 
 <script>
 import AppHeader from '@/components/common/AppHeader.vue'
-import AppFooter from '@/components/common/AppFooter.vue'
 import { mapState, mapActions } from 'vuex'
 
 export default {
   name: 'SellProduct',
   
   components: {
-    AppHeader,
-    AppFooter
+    AppHeader
   },
   
   data() {

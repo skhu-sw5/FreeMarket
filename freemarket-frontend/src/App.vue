@@ -13,7 +13,7 @@
       <div class="flex-1">
         <router-view />
       </div>
-      <AppFooter />
+      <AppFooter class="mt-auto" />
     </div>
   </div>
 </template>
