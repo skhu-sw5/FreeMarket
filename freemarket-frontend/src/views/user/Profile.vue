@@ -85,18 +85,18 @@
                     <button 
                       v-if="!isEditMode"
                       @click="isEditMode = true" 
-                      class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center"
+                      class="w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
                     >
-                      <i class="fas fa-edit mr-2"></i>
-                      프로필 수정
+                      <i class="fas fa-edit"></i>
+                      <span>프로필 수정</span>
                     </button>
                     <router-link 
                       to="/profile/change-password" 
-                      class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition-colors flex items-center"
+                      class="w-full px-4 py-2.5 bg-gray-100 text-gray-800 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center justify-center space-x-2"
                       v-if="!isEditMode"
                     >
-                      <i class="fas fa-key mr-2"></i>
-                      비밀번호 변경
+                      <i class="fas fa-key"></i>
+                      <span>비밀번호 변경</span>
                     </router-link>
                   </div>
                 </div>
@@ -130,15 +130,15 @@
                   <div class="flex space-x-3 pt-2">
                     <button 
                       type="submit" 
-                      class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center"
+                      class="w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
                     >
-                      <i class="fas fa-save mr-2"></i>
-                      저장
+                      <i class="fas fa-save"></i>
+                      <span>저장</span>
                     </button>
                     <button 
                       type="button" 
                       @click="cancelEdit"
-                      class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                      class="w-full px-4 py-2.5 bg-gray-100 text-gray-800 rounded-lg font-medium hover:bg-gray-200 transition-colors"
                     >
                       취소
                     </button>
