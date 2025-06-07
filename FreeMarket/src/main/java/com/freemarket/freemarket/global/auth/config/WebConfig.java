@@ -45,6 +45,14 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowedHeaders("*")
                 .allowCredentials(true)
                 .maxAge(3600);
+        // WebSocket 연결 엔드포인트
+        registry.addMapping("/ws/**")
+                .allowedOrigins("http://localhost:8081", "https://freemarket.duckdns.org")
+                .allowedMethods("GET", "POST", "OPTIONS")
+                .allowedHeaders("*")
+                .allowCredentials(true)
+                .maxAge(3600);
+
     }
 
     @Override
