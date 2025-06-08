@@ -31,8 +31,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         // WebSocket 연결 엔드포인트
-        registry.addEndpoint("/ws/chat")
-                .setAllowedOriginPatterns("*")
+        registry.addEndpoint("/ws")
+                .setAllowedOriginPatterns("http://localhost:8081", "http://127.0.0.1:8081", "https://freemarket.duckdns.org") // 허용할 출처
                 .withSockJS();
     }
 
