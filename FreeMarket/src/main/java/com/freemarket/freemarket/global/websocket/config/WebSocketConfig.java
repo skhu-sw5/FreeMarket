@@ -32,13 +32,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         // WebSocket 연결 엔드포인트 - 채팅용
         registry.addEndpoint("/ws/chat")
-                .setAllowedOriginPatterns("http://localhost:8081", "http://127.0.0.1:8081", "https://freemarket.duckdns.org,", "http://localhost:8080")
+                .setAllowedOriginPatterns("http://localhost:8081", "http://127.0.0.1:8081", "https://freemarket.duckdns.org", "http://localhost:8080")
                 .withSockJS()
                 .setSessionCookieNeeded(false); // CORS 문제 방지
-
-        // 일반 WebSocket 엔드포인트 (SockJS 없이)
-        registry.addEndpoint("/ws/chat")
-                .setAllowedOriginPatterns("http://localhost:8081", "http://127.0.0.1:8081", "https://freemarket.duckdns.org", "http://localhost:8080");
     }
 
     @Override
