@@ -15,7 +15,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**") // /api/** 경로에 대해 CORS 적용
-                .allowedOrigins("http://localhost:8081", "http://127.0.0.1:8081", "https://freemarket.duckdns.org") // 허용할 출처 (Vue 개발 서버 주소)
+                .allowedOrigins("http://localhost:8080", "http://localhost:8081", "http://127.0.0.1:8081", "https://freemarket.duckdns.org") // 허용할 출처
                 .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS") // 허용할 HTTP 메서드
                 .allowedHeaders("*") // 모든 헤더 허용
                 .allowCredentials(true) // 인증 정보(쿠키, JWT 등) 허용
@@ -28,26 +28,26 @@ public class WebConfig implements WebMvcConfigurer {
                 .maxAge(3600);
         // 필요시 다른 경로 추가 (예: /oauth2/**)
         registry.addMapping("/oauth2/**")
-                .allowedOrigins("http://localhost:8081", "http://127.0.0.1:8081", "https://freemarket.duckdns.org")
+                .allowedOrigins("http://localhost:8080", "http://localhost:8081", "http://127.0.0.1:8081", "https://freemarket.duckdns.org")
                 .allowedMethods("GET", "POST", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true)
                 .maxAge(3600);
         registry.addMapping("/login/oauth2/code/**")
-                .allowedOrigins("http://localhost:8081", "http://127.0.0.1:8081", "https://freemarket.duckdns.org")
+                .allowedOrigins("http://localhost:8080", "http://localhost:8081", "http://127.0.0.1:8081", "https://freemarket.duckdns.org")
                 .allowedMethods("GET", "POST", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true)
                 .maxAge(3600);
         registry.addMapping("/reset-password/**")
-                .allowedOrigins("http://localhost:8081", "http://127.0.0.1:8081", "https://freemarket.duckdns.org")
+                .allowedOrigins("http://localhost:8080", "http://localhost:8081", "http://127.0.0.1:8081", "https://freemarket.duckdns.org")
                 .allowedMethods("GET", "POST", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true)
                 .maxAge(3600);
         // WebSocket 연결 엔드포인트
         registry.addMapping("/ws/**")
-                .allowedOrigins("http://localhost:8081", "https://freemarket.duckdns.org")
+                .allowedOrigins("http://localhost:8080", "http://localhost:8081", "https://freemarket.duckdns.org")
                 .allowedMethods("GET", "POST", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true)

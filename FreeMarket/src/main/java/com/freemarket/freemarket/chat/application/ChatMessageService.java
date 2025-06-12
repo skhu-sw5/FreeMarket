@@ -7,6 +7,7 @@ import com.freemarket.freemarket.chat.domain.ChatRoom;
 import com.freemarket.freemarket.chat.domain.ChatRoomStatus;
 import com.freemarket.freemarket.chat.domain.MessageType;
 import com.freemarket.freemarket.chat.domain.repository.ChatMessageRepository;
+import com.freemarket.freemarket.chat.domain.repository.ChatRoomRepository;
 import com.freemarket.freemarket.chat.exception.ChatException;
 import com.freemarket.freemarket.user.domain.User;
 import com.freemarket.freemarket.user.domain.repository.UserRepository;
@@ -27,12 +28,13 @@ import java.time.LocalDateTime;
 public class ChatMessageService {
 
     private final ChatMessageRepository chatMessageRepository;
+    private final ChatRoomRepository chatRoomRepository;
     private final UserRepository userRepository;
-    private final ChatRoomService chatRoomService;
 
     @Transactional
     public ChatResponseDto.MessageResponse sendMessage(Long chatRoomId, Long senderId, ChatRequestDto.MessageSendRequest request) {
-        ChatRoom chatRoom = chatRoomService.getChatRoomWithAccessCheck(chatRoomId, senderId);
+        // 채팅방 접근 권한 확인
+        ChatRoom chatRoom = getChatRoomWithAccessCheck(chatRoomId, senderId);
 
         // 채팅방이 활성 상태인지 확인
         if (chatRoom.getStatus() != ChatRoomStatus.ACTIVE) {
@@ -61,7 +63,8 @@ public class ChatMessageService {
     }
 
     public ChatResponseDto.MessageListResponse getChatMessages(Long chatRoomId, Long userId, Pageable pageable) {
-        ChatRoom chatRoom = chatRoomService.getChatRoomWithAccessCheck(chatRoomId, userId);
+        // 채팅방 접근 권한 확인
+        ChatRoom chatRoom = getChatRoomWithAccessCheck(chatRoomId, userId);
 
         Page<ChatMessage> messagesPage = chatMessageRepository.findByChatRoomOrderByCreatedDateDesc(chatRoom, pageable);
 
@@ -76,7 +79,8 @@ public class ChatMessageService {
 
     @Transactional
     public void markMessagesAsRead(Long chatRoomId, Long userId) {
-        chatRoomService.getChatRoomWithAccessCheck(chatRoomId, userId);
+        // 채팅방 접근 권한 확인
+        getChatRoomWithAccessCheck(chatRoomId, userId);
 
         int updatedCount = chatMessageRepository.markMessagesAsRead(chatRoomId, userId);
         log.info("메시지 읽음 처리 완료: 채팅방 ID {}, 사용자 ID {}, 처리된 메시지 수 {}",
@@ -84,8 +88,22 @@ public class ChatMessageService {
     }
 
     public long getUnreadMessageCount(Long chatRoomId, Long userId) {
-        chatRoomService.getChatRoomWithAccessCheck(chatRoomId, userId);
+        // 채팅방 접근 권한 확인
+        getChatRoomWithAccessCheck(chatRoomId, userId);
+        
         return chatMessageRepository.countUnreadMessages(chatRoomId, userId);
+    }
+
+    // 채팅방 접근 권한 확인
+    private ChatRoom getChatRoomWithAccessCheck(Long chatRoomId, Long userId) {
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new ChatException.ChatRoomNotFoundException(chatRoomId));
+
+        if (!chatRoom.isParticipant(userId)) {
+            throw new ChatException.ChatRoomAccessDeniedException();
+        }
+
+        return chatRoom;
     }
 
     private User getUser(Long userId) {

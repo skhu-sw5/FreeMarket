@@ -151,4 +151,64 @@ public class ChatResponseDto {
             @Schema(description = "총 개수", example = "50")
             long totalCount
     ) {}
+
+    @Builder
+    @Schema(description = "상품별 채팅 요약 응답")
+    public record ProductChatSummaryResponse(
+            @Schema(description = "상품 ID", example = "1")
+            Long productId,
+
+            @Schema(description = "상품명", example = "중고 노트북")
+            String productName,
+
+            @Schema(description = "총 채팅방 수", example = "3")
+            int totalChatRooms,
+
+            @Schema(description = "읽지 않은 메시지가 있는 채팅방 수", example = "2")
+            int unreadChatRooms,
+
+            @Schema(description = "총 읽지 않은 메시지 수", example = "5")
+            long totalUnreadMessages,
+
+            @Schema(description = "채팅방 목록")
+            List<ChatRoomSummary> chatRooms
+    ) {}
+
+    @Builder
+    @Schema(description = "채팅방 요약 정보")
+    public record ChatRoomSummary(
+            @Schema(description = "채팅방 ID", example = "1")
+            Long chatRoomId,
+
+            @Schema(description = "구매자 이름", example = "김구매")
+            String buyerName,
+
+            @Schema(description = "마지막 메시지", example = "언제 거래 가능한가요?")
+            String lastMessage,
+
+            @Schema(description = "마지막 메시지 시간")
+            LocalDateTime lastMessageTime,
+
+            @Schema(description = "읽지 않은 메시지 수", example = "2")
+            long unreadCount
+    ) {}
+
+    @Builder
+    @Schema(description = "채팅 알림")
+    public record ChatNotificationDto(
+            @Schema(description = "알림 타입", example = "NEW_CHAT_ROOM")
+            String type,
+
+            @Schema(description = "채팅방 ID", example = "1")
+            Long chatRoomId,
+
+            @Schema(description = "상품명", example = "중고 노트북")
+            String productName,
+
+            @Schema(description = "구매자 이름", example = "김구매")
+            String buyerName,
+
+            @Schema(description = "알림 메시지", example = "김구매님이 '중고 노트북' 상품에 관심을 보이며 채팅을 시작했습니다.")
+            String message
+    ) {}
 }

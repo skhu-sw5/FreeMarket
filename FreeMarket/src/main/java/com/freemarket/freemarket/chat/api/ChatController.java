@@ -17,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -32,25 +31,27 @@ public class ChatController {
     private final ChatRoomService chatRoomService;
     private final ChatMessageService chatMessageService;
 
-    @Operation(summary = "채팅방 생성", description = "상품에 대한 새로운 채팅방을 생성합니다.")
+    @Operation(summary = "채팅방 생성 또는 조회", 
+               description = "상품에 대한 채팅방을 처리합니다.\n" +
+                            "- 구매자: 기존 채팅방 조회 또는 새 채팅방 생성\n" +
+                            "- 판매자: 해당 상품의 기존 채팅방 조회 (생성 불가)")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "채팅방 생성 성공"),
+            @ApiResponse(responseCode = "200", description = "채팅방 조회/생성 성공"),  
             @ApiResponse(responseCode = "400", description = "잘못된 요청"),
             @ApiResponse(responseCode = "401", description = "인증 실패"),
-            @ApiResponse(responseCode = "404", description = "상품을 찾을 수 없음"),
-            @ApiResponse(responseCode = "409", description = "이미 채팅방이 존재함")
+            @ApiResponse(responseCode = "404", description = "상품 또는 채팅방을 찾을 수 없음")
     })
     @PostMapping("/rooms")
-    public ResponseEntity<ResponseDTO<ChatResponseDto.ChatRoomResponse>> createChatRoom(
+    public ResponseEntity<ResponseDTO<ChatResponseDto.ChatRoomResponse>> createOrGetChatRoom(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
             @Parameter(description = "채팅방 생성 정보", required = true)
             @Valid @RequestBody ChatRequestDto.ChatRoomCreateRequest request) {
 
-        log.info("채팅방 생성 요청: 사용자 ID {}, 상품 ID {}", userDetails.getUserId(), request.productId());
-        ChatResponseDto.ChatRoomResponse response = chatRoomService.createChatRoom(userDetails.getUserId(), request);
-
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ResponseDTO.success(response, "채팅방이 성공적으로 생성되었습니다."));
+        log.info("채팅방 생성/조회 요청: 사용자 ID {}, 상품 ID {}", userDetails.getUserId(), request.productId());
+        
+        ChatResponseDto.ChatRoomResponse response = chatRoomService.createOrGetChatRoom(userDetails.getUserId(), request);
+        
+        return ResponseEntity.ok(ResponseDTO.success(response, "채팅방 준비 완료"));
     }
 
     @Operation(summary = "채팅방 조회", description = "특정 채팅방의 정보를 조회합니다.")
@@ -180,5 +181,24 @@ public class ChatController {
         ChatResponseDto.ChatRoomListResponse response = chatRoomService.getProductChatRooms(productId, userDetails.getUserId());
 
         return ResponseEntity.ok(ResponseDTO.success(response, "상품 채팅방 목록을 성공적으로 조회했습니다."));
+    }
+
+    @Operation(summary = "판매자 상품별 채팅방 요약 조회", 
+               description = "판매자가 자신의 특정 상품에 대한 모든 채팅방과 읽지 않은 메시지 수를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "채팅방 요약 조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "접근 권한 없음"),
+            @ApiResponse(responseCode = "404", description = "상품을 찾을 수 없음")
+    })
+    @GetMapping("/products/{productId}/chat-summary")
+    public ResponseEntity<ResponseDTO<ChatResponseDto.ProductChatSummaryResponse>> getProductChatSummary(
+            @Parameter(description = "상품 ID", required = true) @PathVariable Long productId,
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        log.info("상품별 채팅 요약 조회 요청: 상품 ID {}, 사용자 ID {}", productId, userDetails.getUserId());
+        ChatResponseDto.ProductChatSummaryResponse response = chatRoomService.getProductChatSummary(productId, userDetails.getUserId());
+
+        return ResponseEntity.ok(ResponseDTO.success(response, "상품 채팅 요약을 성공적으로 조회했습니다."));
     }
 }

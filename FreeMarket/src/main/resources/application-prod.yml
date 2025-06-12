@@ -38,7 +38,10 @@ spring:
 logging:
   level:
     root: INFO
-    com.example.shop: INFO
+    com.freemarket.freemarket: DEBUG
+    org.springframework.web.socket: DEBUG
+    org.springframework.messaging: DEBUG
+    org.springframework.security: DEBUG
 
 # 인스턴스 파일 업로드 경로 설정
 file:
