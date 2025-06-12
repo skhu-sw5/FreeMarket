@@ -116,33 +116,64 @@ export default {
       this.loading = true
       
       try {
-        // 실제 API 호출 시에는 아래 주석을 해제하고 사용
-        // const [newProductsRes, popularProductsRes] = await Promise.all([
-        //   this.fetchProducts({ sort: 'newest', limit: 8 }),
-        //   this.fetchProducts({ sort: 'popular', limit: 8 })
-        // ])
+        // 실제 API 호출
+        const [newProductsRes, popularProductsRes] = await Promise.all([
+          this.$store.dispatch('products/fetchProducts', { 
+            sort: 'LATEST', 
+            size: 8,
+            page: 0,
+            status: 'ACTIVE'
+          }),
+          this.$store.dispatch('products/fetchProducts', { 
+            sort: 'VIEW_COUNT', 
+            size: 8,
+            page: 0,
+            status: 'ACTIVE'
+          })
+        ])
         
-        // this.newProducts = newProductsRes.data.products
-        // this.popularProducts = popularProductsRes.data.products
+        // API 응답에서 content 배열을 추출하고 올바른 형식으로 변환
+        if (newProductsRes && newProductsRes.content) {
+          this.newProducts = newProductsRes.content.map(product => ({
+            product: product.product || product,
+            stats: product.stats || {
+              viewCount: product.viewCount || 0,
+              wishlistCount: product.wishlistCount || 0,
+              isWishlisted: product.isWishlisted || false
+            }
+          }))
+        } else {
+          this.newProducts = []
+        }
         
-        // 임시로 mock 데이터 사용
-        this.newProducts = this.getMockProducts(8)
-        this.popularProducts = this.getMockProducts(8, true)
+        if (popularProductsRes && popularProductsRes.content) {
+          this.popularProducts = popularProductsRes.content.map(product => ({
+            product: product.product || product,
+            stats: product.stats || {
+              viewCount: product.viewCount || 0,
+              wishlistCount: product.wishlistCount || 0,
+              isWishlisted: product.isWishlisted || false
+            }
+          }))
+        } else {
+          this.popularProducts = []
+        }
         
       } catch (error) {
         console.error('상품을 불러오는 중 오류가 발생했습니다:', error)
-        // 오류 발생 시 빈 배열로 설정
-        this.newProducts = []
-        this.popularProducts = []
+        // 오류 발생 시 mock 데이터 사용
+        console.log('API 오류로 인해 mock 데이터를 사용합니다.')
+        this.newProducts = this.getMockProducts(8)
+        this.popularProducts = this.getMockProducts(8, true)
       } finally {
         this.loading = false
       }
     },
     
-    // 모의 데이터 생성 (임시용)
+    // 모의 데이터 생성 (임시용) - ProductList와 ProductCard가 기대하는 구조로 생성
     getMockProducts(count, isPopular = false) {
       const mockProducts = []
-      const categories = ['전자기기', '의류', '가구', '도서', '기타']
+      const categories = ['ELECTRONICS', 'FASHION', 'BOOKS', 'BEAUTY', 'SPORTS', 'HOUSEHOLD', 'HOBBY', 'OTHERS']
       
       for (let i = 1; i <= count; i++) {
         const basePrice = Math.floor(Math.random() * 100) * 1000 + 10000
@@ -150,20 +181,25 @@ export default {
         const price = basePrice - Math.floor(basePrice * (discount / 100))
         
         mockProducts.push({
-          id: i,
-          title: `${isPopular ? '인기 ' : ''}중고 상품 ${i}`,
-          price: price,
-          originalPrice: isPopular ? basePrice : null,
-          discount: isPopular ? discount : 0,
-          image: `https://picsum.photos/300/200?random=${i}`,
-          category: categories[Math.floor(Math.random() * categories.length)],
-          isLiked: Math.random() > 0.7,
-          isNew: !isPopular && Math.random() > 0.5,
-          isHot: isPopular,
-          seller: `판매자${i}`,
-          location: '서울시 성북구',
-          createdAt: new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000).toISOString(),
-          viewCount: Math.floor(Math.random() * 1000)
+          product: {
+            id: i,
+            name: `${isPopular ? '인기 ' : ''}중고 상품 ${i}`,
+            price: price,
+            thumbnailUrl: `https://picsum.photos/300/200?random=${i}`,
+            category: categories[Math.floor(Math.random() * categories.length)],
+            status: 'ACTIVE',
+            sellerId: 1,
+            sellerName: `판매자${i}`,
+            createdDate: new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000).toISOString(),
+            updatedDate: new Date().toISOString(),
+            description: `중고 상품 ${i}에 대한 설명입니다.`,
+            stock: 1
+          },
+          stats: {
+            viewCount: Math.floor(Math.random() * 1000),
+            wishlistCount: Math.floor(Math.random() * 50),
+            isWishlisted: Math.random() > 0.7
+          }
         })
       }
       

@@ -235,6 +235,7 @@ import AppHeader from '@/components/common/AppHeader.vue'
 import ProductGallery from '@/components/products/ProductGallery.vue'
 import ReviewList from '@/components/reviews/ReviewList.vue'
 import { mapState, mapActions } from 'vuex'
+import chatService from '@/services/chatService'
 
 export default {
   components: {
@@ -462,8 +463,96 @@ export default {
       }
     },
     
-    contactSeller() {
-      alert('판매자에게 문의하기 기능은 아직 구현되지 않았습니다.')
+    async contactSeller() {
+      // 로그인 확인
+      if (!this.isAuthenticated) {
+        alert('로그인이 필요한 서비스입니다.')
+        return this.$router.push({ name: 'Login', query: { redirect: this.$route.fullPath } })
+      }
+      
+      // 자신의 상품인지 확인
+      if (this.isProductOwner) {
+        alert('자신의 상품에는 문의할 수 없습니다.')
+        return
+      }
+      
+      // 상품 상태 확인
+      if (!this.product || !this.product.product) {
+        alert('상품 정보를 불러올 수 없습니다.')
+        return
+      }
+      
+      try {
+        console.log('🚀 채팅방 생성 시작...')
+        
+        // 로딩 표시
+        const loadingToast = this.$toast ? 
+          this.$toast.info('채팅방을 생성하고 있습니다...', { duration: 0 }) : 
+          null
+        
+        // 채팅방 생성 또는 기존 채팅방 조회
+        const response = await chatService.createChatRoom(this.product.product.id)
+        
+        if (loadingToast && this.$toast) {
+          this.$toast.dismiss(loadingToast)
+        }
+        
+        console.log('✅ 채팅방 생성/조회 성공:', response)
+        
+        if (response && response.data) {
+          const chatRoom = response.data
+          
+          // 성공 메시지
+          if (this.$toast) {
+            this.$toast.success('채팅방으로 이동합니다.')
+          }
+          
+          // 채팅방으로 이동
+          console.log('🏃‍♂️ 채팅방으로 이동:', chatRoom.chatRoomId)
+          this.$router.push({
+            name: 'ChatRoom',
+            params: { roomId: chatRoom.chatRoomId }
+          })
+        } else {
+          throw new Error('채팅방 정보를 받지 못했습니다.')
+        }
+        
+      } catch (error) {
+        console.error('❌ 채팅방 생성 실패:', error)
+        
+        if (this.$toast) {
+          this.$toast.dismiss() // 모든 토스트 제거
+        }
+        
+        let errorMessage = '채팅방 생성 중 오류가 발생했습니다.'
+        
+        if (error.response) {
+          switch (error.response.status) {
+            case 403:
+              errorMessage = '채팅방 생성 권한이 없습니다.'
+              break
+            case 404:
+              errorMessage = '상품을 찾을 수 없습니다.'
+              break
+            case 409:
+              errorMessage = '이미 채팅방이 존재합니다. 다시 시도해주세요.'
+              break
+            case 500:
+              errorMessage = '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'
+              break
+            default:
+              errorMessage = error.response.data?.message || errorMessage
+          }
+        } else if (error.message) {
+          errorMessage = error.message
+        }
+        
+        if (this.$toast) {
+          this.$toast.error(errorMessage)
+        } else {
+          alert(errorMessage)
+        }
+      }
     },
     
     confirmDeleteProduct() {

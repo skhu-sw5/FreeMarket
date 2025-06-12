@@ -1,3 +1,5 @@
+import { apiGet, apiPost, apiPatch, apiDelete } from '@/utils/api'
+
 export default {
   namespaced: true,
   
@@ -70,7 +72,7 @@ export default {
   },
   
   actions: {
-    // 상품별 리뷰 목록 조회 - 현재는 mock 데이터 사용 (백엔드 API 없음)
+    // 상품별 리뷰 목록 조회 - 실제 API 연동
     async fetchProductReviews({ commit, rootState }, { productId, page = 0, size = 10, append = false }) {
       if (!append) {
         commit('SET_LOADING', true)
@@ -79,41 +81,68 @@ export default {
       try {
         console.log(`리뷰 데이터 요청: 상품 ID ${productId}, 페이지 ${page}, 사이즈 ${size}`);
         
-        // 짧은 지연 시간 추가
-        await new Promise(resolve => setTimeout(resolve, 300));
+        // API 호출
+        const data = await apiGet(`/api/reviews/products/${productId}?page=${page}&size=${size}`);
+        console.log('상품별 리뷰 목록 API 응답 데이터:', data);
         
-        // 빈 리뷰 목록 생성
-        const mockReviews = [];
+        // 백엔드 필드명을 프론트엔드 필드명으로 매핑
+        const mapReviewFields = (review) => ({
+          ...review,
+          authorName: review.reviewerName,
+          authorId: review.reviewerId,
+          createdAt: review.createdDate
+        });
         
-        // 페이징 정보
-        const totalElements = 0;
-        const totalPages = 0;
-        
-        // 상태 업데이트
-        if (append) {
-          commit('ADD_PRODUCT_REVIEWS', {
-            reviews: mockReviews
-          });
+        // 데이터 확인 및 상태 업데이트
+        if (data && data.data) {
+          const reviews = (data.data.reviews || []).map(mapReviewFields);
+          const totalPages = data.data.totalPages || 0;
+          const totalElements = data.data.totalElements || 0;
+          
+          if (append) {
+            commit('ADD_PRODUCT_REVIEWS', {
+              reviews: reviews
+            });
+          } else {
+            commit('SET_PRODUCT_REVIEWS', {
+              reviews: reviews,
+              totalPages: totalPages,
+              totalElements: totalElements
+            });
+          }
+          
+          commit('SET_LOADING', false);
+          return { 
+            content: reviews, 
+            totalPages, 
+            totalElements 
+          };
         } else {
-          commit('SET_PRODUCT_REVIEWS', {
-            reviews: mockReviews,
-            totalPages: totalPages,
-            totalElements: totalElements
-          });
+          throw new Error('API 응답 형식이 올바르지 않습니다.');
         }
-        
-        commit('SET_LOADING', false);
-        return { 
-          content: mockReviews, 
-          totalPages, 
-          totalElements 
-        };
       } catch (error) {
         console.error('상품별 리뷰 목록 조회 오류:', error)
+        
+        // 404 에러는 상품이 없는 경우이므로 빈 리뷰 목록으로 처리
+        if (error.message && error.message.includes('404')) {
+          console.log('상품이 없거나 리뷰가 없습니다. 빈 목록으로 처리합니다.');
+          if (append) {
+            // 추가 로딩이면 기존 상태 유지
+          } else {
+            commit('SET_PRODUCT_REVIEWS', {
+              reviews: [],
+              totalPages: 0,
+              totalElements: 0
+            });
+          }
+          commit('SET_LOADING', false);
+          return { content: [], totalPages: 0, totalElements: 0 };
+        }
+        
         commit('SET_ERROR', error.message)
         commit('SET_LOADING', false)
         
-        // 오류 발생 시 빈 결과 반환 (UI가 깨지지 않도록)
+        // 다른 오류 발생 시 빈 결과 반환 (UI가 깨지지 않도록)
         if (append) {
           // 추가 로딩이면 기존 상태 유지
         } else {
@@ -167,9 +196,17 @@ export default {
         
         // 데이터 확인 및 상태 업데이트
         if (data && data.data) {
-          commit('SET_REVIEW', data.data);
+          // 백엔드 필드명을 프론트엔드 필드명으로 매핑
+          const mappedReview = {
+            ...data.data,
+            authorName: data.data.reviewerName,
+            authorId: data.data.reviewerId,
+            createdAt: data.data.createdDate
+          };
+          
+          commit('SET_REVIEW', mappedReview);
           commit('SET_LOADING', false);
-          return data.data;
+          return mappedReview;
         } else {
           throw new Error('API 응답 형식이 올바르지 않습니다.');
         }
@@ -221,7 +258,15 @@ export default {
         
         // 데이터 확인 및 상태 업데이트
         if (data && data.data) {
-          const reviews = data.data.reviews || [];
+          // 백엔드 필드명을 프론트엔드 필드명으로 매핑
+          const mapReviewFields = (review) => ({
+            ...review,
+            authorName: review.reviewerName,
+            authorId: review.reviewerId,
+            createdAt: review.createdDate
+          });
+          
+          const reviews = (data.data.reviews || []).map(mapReviewFields);
           const totalPages = data.data.totalPages || 0;
           const totalElements = data.data.totalElements || 0;
           
@@ -294,7 +339,15 @@ export default {
         
         // 데이터 확인 및 상태 업데이트
         if (data && data.data) {
-          const reviews = data.data.reviews || [];
+          // 백엔드 필드명을 프론트엔드 필드명으로 매핑
+          const mapReviewFields = (review) => ({
+            ...review,
+            authorName: review.reviewerName,
+            authorId: review.reviewerId,
+            createdAt: review.createdDate
+          });
+          
+          const reviews = (data.data.reviews || []).map(mapReviewFields);
           const totalPages = data.data.totalPages || 0;
           const totalElements = data.data.totalElements || 0;
           
@@ -337,11 +390,6 @@ export default {
       try {
         console.log(`리뷰 작성 요청: 상품 ID ${productId}, 데이터:`, reviewData);
         
-        // 인증 상태 확인
-        if (!rootState.auth.token) {
-          throw new Error('로그인이 필요합니다.');
-        }
-        
         // 요청 데이터 구성
         const requestData = {
           productId,
@@ -349,37 +397,23 @@ export default {
           content: reviewData.content
         };
         
-        // 헤더 설정
-        const headers = {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${rootState.auth.token}`
-        };
-        
-        // API 호출 URL
-        const url = `/api/reviews`;
-        
-        // 리뷰 작성 요청
-        const response = await fetch(url, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(requestData),
-          credentials: 'include'
-        });
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || `리뷰 작성에 실패했습니다. 상태 코드: ${response.status}`);
-        }
-        
-        const data = await response.json();
+        // API 호출
+        const data = await apiPost('/api/reviews', requestData);
         console.log('리뷰 작성 API 응답 데이터:', data);
         
         // 데이터 확인 및 상태 업데이트
         if (data && data.data) {
-          commit('ADD_REVIEW', data.data);
+          // 백엔드 필드명을 프론트엔드 필드명으로 매핑
+          const mappedReview = {
+            ...data.data,
+            authorName: data.data.reviewerName,
+            authorId: data.data.reviewerId,
+            createdAt: data.data.createdDate
+          };
+          
+          commit('ADD_REVIEW', mappedReview);
           commit('SET_LOADING', false);
-          return data.data;
+          return mappedReview;
         } else {
           throw new Error('API 응답 형식이 올바르지 않습니다.');
         }
@@ -460,9 +494,17 @@ export default {
         
         // 데이터 확인 및 상태 업데이트
         if (data && data.data) {
-          commit('UPDATE_REVIEW', data.data);
+          // 백엔드 필드명을 프론트엔드 필드명으로 매핑
+          const mappedReview = {
+            ...data.data,
+            authorName: data.data.reviewerName,
+            authorId: data.data.reviewerId,
+            createdAt: data.data.createdDate
+          };
+          
+          commit('UPDATE_REVIEW', mappedReview);
           commit('SET_LOADING', false);
-          return data.data;
+          return mappedReview;
         } else {
           throw new Error('API 응답 형식이 올바르지 않습니다.');
         }

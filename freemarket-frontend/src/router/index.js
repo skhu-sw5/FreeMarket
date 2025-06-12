@@ -17,6 +17,8 @@ import OrdersView from '../views/user/Orders.vue'
 import OrderComplete from '../views/OrderComplete.vue'
 import MyReviewsView from '../views/user/MyReviews.vue'
 import MyProductsView from '../views/user/MyProducts.vue'
+import ChatRoom from '../views/ChatRoom.vue'
+import ChatList from '../views/ChatList.vue'
 import store from '../store'
 
 // 정적 페이지
@@ -132,6 +134,19 @@ const routes = [
     path: '/orders/:id/complete',
     name: 'OrderComplete',
     component: OrderComplete,
+    props: true,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/chat',
+    name: 'ChatList',
+    component: ChatList,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/chat/:roomId',
+    name: 'ChatRoom',
+    component: ChatRoom,
     props: true,
     meta: { requiresAuth: true }
   },

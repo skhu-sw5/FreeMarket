@@ -72,7 +72,7 @@
                 <button @click="editReview(review)" class="text-gray-500 hover:text-blue-600">
                   <i class="fas fa-edit"></i>
                 </button>
-                <button @click="deleteReview(review.id)" class="text-gray-500 hover:text-red-600">
+                <button @click="confirmDeleteReview(review.id)" class="text-gray-500 hover:text-red-600">
                   <i class="fas fa-trash"></i>
                 </button>
               </div>
@@ -262,8 +262,16 @@
       },
       
       canReview() {
+        // 로그인하지 않은 경우 리뷰 작성 불가
+        if (!this.userId) return false;
+        
         // 이미 리뷰를 작성했는지 확인
-        return !this.reviews.some(review => review.authorId === this.userId)
+        const hasExistingReview = this.reviews.some(review => review.authorId === this.userId);
+        
+        console.log(`리뷰 작성 가능 여부 확인: userId=${this.userId}, hasExistingReview=${hasExistingReview}`);
+        console.log('현재 리뷰 목록:', this.reviews.map(r => ({ id: r.id, authorId: r.authorId, authorName: r.authorName })));
+        
+        return !hasExistingReview;
       },
       
       hasMoreReviews() {
@@ -318,6 +326,12 @@
         }
       },
       
+      async refreshReviews() {
+        // 페이지를 0으로 리셋하고 전체 리뷰 목록을 다시 로드
+        this.page = 0;
+        await this.fetchReviews();
+      },
+      
       async loadMoreReviews() {
         if (this.loadingMore) return
         
@@ -370,6 +384,9 @@
           if (this.$toast) {
             this.$toast.success('리뷰가 성공적으로 삭제되었습니다.');
           }
+          
+          // 리뷰 삭제 후 목록 새로고침
+          await this.refreshReviews();
         } catch (error) {
           console.error('리뷰 삭제 오류:', error);
           let errorMessage = '리뷰 삭제 중 오류가 발생했습니다.';
@@ -447,6 +464,9 @@
             if (this.$toast) {
               this.$toast.success('리뷰가 성공적으로 수정되었습니다.');
             }
+            
+            // 리뷰 수정 후 목록 새로고침
+            await this.refreshReviews();
           } else {
             // 새 리뷰 작성
             console.log(`리뷰 작성 요청: 상품 ID ${this.productId}`);
@@ -459,6 +479,9 @@
             if (this.$toast) {
               this.$toast.success('리뷰가 성공적으로 등록되었습니다.');
             }
+            
+            // 리뷰 작성 후 목록 새로고침
+            await this.refreshReviews();
           }
           
           this.closeReviewForm();
