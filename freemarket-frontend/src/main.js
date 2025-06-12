@@ -3,12 +3,13 @@ import App from './App.vue'
 import router from './router'
 import store from './store'
 import './assets/tailwind.css'
-import { API_BASE_URL } from './config'
+import { API_BASE_URL, WS_BASE_URL } from './config'
 
 const app = createApp(App)
 
-// API_BASE_URL을 전역 속성으로 등록
+// 전역 속성으로 등록
 app.config.globalProperties.$API_BASE_URL = API_BASE_URL
+app.config.globalProperties.$WS_BASE_URL = WS_BASE_URL
 
 // Vue 전역 오류 핸들러 설정
 app.config.errorHandler = (err, vm, info) => {

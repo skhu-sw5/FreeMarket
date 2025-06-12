@@ -43,6 +43,14 @@
               <i class="fas fa-shopping-bag"></i>
             </router-link>
             
+            <!-- 채팅 아이콘 -->
+            <router-link to="/chat" class="relative text-gray-700 hover:text-blue-600">
+              <i class="far fa-comments"></i>
+              <span v-if="unreadChatCount > 0" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {{ unreadChatCount > 99 ? '99+' : unreadChatCount }}
+              </span>
+            </router-link>
+            
             <!-- 사용자 프로필 링크 -->
             <router-link to="/profile" class="text-gray-700 hover:text-blue-600">
               <i class="far fa-user"></i>
@@ -111,6 +119,12 @@
               <router-link to="/user/orders" class="block py-2 hover:text-blue-600">
                 <i class="fas fa-shopping-bag mr-2"></i>주문 내역
               </router-link>
+              <router-link to="/chat" class="block py-2 hover:text-blue-600">
+                <i class="far fa-comments mr-2"></i>채팅
+                <span v-if="unreadChatCount > 0" class="ml-1 bg-red-500 text-white text-xs rounded-full px-2 py-1">
+                  {{ unreadChatCount > 99 ? '99+' : unreadChatCount }}
+                </span>
+              </router-link>
               <router-link to="/profile" class="block py-2 hover:text-blue-600">
                 <i class="far fa-user mr-2"></i>프로필
               </router-link>
@@ -149,7 +163,8 @@ export default {
   data() {
     return {
       isMenuOpen: false,
-      searchQuery: ''
+      searchQuery: '',
+      unreadChatCount: 0
     }
   },
   

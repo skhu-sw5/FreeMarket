@@ -76,10 +76,10 @@ export default {
   
   computed: {
     isNew() {
-      if (!this.product.createdAt) return false;
+      if (!this.product.createdDate) return false;
       
       // 상품이 3일 이내에 등록된 경우 NEW 표시
-      const createdAt = new Date(this.product.createdAt);
+      const createdAt = new Date(this.product.createdDate);
       const now = new Date();
       const diffDays = Math.ceil((now - createdAt) / (1000 * 60 * 60 * 24));
       
