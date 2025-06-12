@@ -4,6 +4,9 @@ module.exports = {
     https: false,
     host: 'localhost',
     allowedHosts: 'all',
+    client: {
+      webSocketURL: 'ws://localhost:8081/ws'
+    },
     proxy: {
       '/api': {
         target: 'https://freemarket.duckdns.org',
