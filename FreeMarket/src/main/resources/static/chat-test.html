@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>FreeMarket 채팅 테스트</title>
+    <title>FreeMarket 채팅 테스트 (개선됨)</title>
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
     <style>
@@ -13,159 +13,304 @@
         .other-message { background-color: #ffffff; border: 1px solid #ddd; }
         .message-info { font-size: 12px; color: #666; margin-top: 5px; }
         input, button { margin: 5px; padding: 10px; border-radius: 5px; border: 1px solid #ddd; }
-        input[type="text"] { width: 400px; }
+        input[type="text"], input[type="email"], input[type="password"] { width: 400px; }
+        input[type="number"] { width: 100px; }
         button { background: #4CAF50; color: white; border: none; cursor: pointer; }
         button:hover { background: #45a049; }
         .status { padding: 15px; margin: 10px 0; border-radius: 5px; font-weight: bold; }
         .connected { background-color: #d4edda; color: #155724; }
         .disconnected { background-color: #f8d7da; color: #721c24; }
         .config { background: #e9ecef; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
+        .success { background: #d1edff; border: 1px solid #74b9ff; color: #0c4a6e; }
     </style>
 </head>
 <body>
 <div class="chat-container">
-    <h2>🗨️ FreeMarket 실시간 채팅 테스트 (로컬)</h2>
-
-    <!-- 채팅방 정보 -->
-    <div class="config">
-        <h3>📋 채팅방 정보</h3>
-        <p><strong>환경:</strong> localhost:8080</p>
-        <p><strong>상품:</strong> 중고 노트북</p>
-        <p><strong>채팅방 ID:</strong> 1</p>
-    </div>
+    <h2>🗨️ FreeMarket 실시간 채팅 테스트 (개선됨)</h2>
 
     <!-- 연결 상태 -->
     <div id="status" class="status disconnected">🔴 연결 안됨</div>
 
-    <!-- 설정 입력 -->
-    <div class="config">
-        <label><strong>JWT 토큰:</strong></label><br>
-        <input type="text" id="jwtToken"
-               placeholder="Bearer eyJhbGciOi..."
-               style="width: 600px;"><br>
-
-        <label><strong>채팅방 ID:</strong></label>
-        <input type="number" id="chatRoomId" value="1" style="width: 100px;"><br>
-
-        <button onclick="connect()">🔗 연결</button>
-        <button onclick="disconnect()">❌ 연결 해제</button>
-        <button onclick="loadMessages()">📥 이전 메시지 불러오기</button>
-        <button onclick="getNewToken()">🔄 새 토큰 받기</button>
+    <!-- 사용자 정보 -->
+    <div id="userInfo" class="config warning">
+        <h4>👤 현재 로그인 정보</h4>
+        <p>로그인을 먼저 해주세요.</p>
     </div>
 
-    <!-- 빠른 로그인 -->
-    <div class="config" style="background: #fff3cd;">
-        <h4>🚀 빠른 로그인</h4>
-        <button onclick="loginAsBuyer()">구매자로 로그인</button>
-        <button onclick="loginAsSeller()">판매자로 로그인</button>
+    <!-- 로그인 -->
+    <div class="config">
+        <h4>🚀 1단계: 로그인</h4>
+
+        <!-- 직접 입력 로그인 -->
+        <div style="margin-bottom: 15px;">
+            <div style="margin-bottom: 10px;">
+                <label><strong>이메일:</strong></label><br>
+                <input type="email" id="loginEmail" placeholder="user@office.skhu.ac.kr" style="width: 300px;">
+            </div>
+            <div style="margin-bottom: 10px;">
+                <label><strong>비밀번호:</strong></label><br>
+                <input type="password" id="loginPassword" placeholder="password123" style="width: 300px;">
+            </div>
+            <button onclick="loginWithInput()" style="background: #0056b3;">🔑 로그인</button>
+        </div>
+
+        <!-- 빠른 로그인 버튼들 -->
+        <div style="border-top: 1px solid #ddd; padding-top: 15px;">
+            <p><small>또는 빠른 로그인:</small></p>
+            <button onclick="quickLogin('buyer')">구매자로 로그인</button>
+            <button onclick="quickLogin('seller')">판매자로 로그인</button>
+        </div>
+
         <div id="loginResult" style="margin-top: 10px; font-size: 12px;"></div>
+    </div>
+
+    <!-- 채팅방 생성/조회 -->
+    <div class="config">
+        <h4>💬 2단계: 채팅방 설정</h4>
+
+        <label><strong>상품 ID:</strong></label>
+        <input type="number" id="productId" value="1" style="width: 100px;">
+        <button onclick="createOrGetChatRoom()">채팅방 참여/생성</button>
+
+        <div style="margin-top: 10px;">
+            <label><strong>채팅방 ID:</strong></label>
+            <input type="number" id="chatRoomId" value="" style="width: 100px;" readonly>
+        </div>
+
+        <div id="chatRoomInfo" style="margin-top: 10px; font-size: 12px;"></div>
+    </div>
+
+    <!-- WebSocket 연결 -->
+    <div class="config">
+        <h4>🔗 3단계: WebSocket 연결</h4>
+        <button onclick="connect()">WebSocket 연결</button>
+        <button onclick="disconnect()">연결 해제</button>
+        <button onclick="loadMessages()">이전 메시지 불러오기</button>
+    </div>
+
+    <!-- 판매자용 채팅방 확인 -->
+    <div class="config">
+        <h4>🏪 판매자 전용: 상품별 채팅방 확인</h4>
+        <label><strong>상품 ID:</strong></label>
+        <input type="number" id="sellerProductId" value="1" style="width: 100px;">
+        <button onclick="showProductChatRooms()">상품별 채팅방 목록</button>
+        <button onclick="showProductChatSummary()">상품별 채팅 요약</button>
+        <button onclick="startSellerNotifications()">📢 실시간 알림 시작</button>
+        <button onclick="stopSellerNotifications()">🔇 알림 중지</button>
+        
+        <div id="sellerChatInfo" style="margin-top: 10px; font-size: 12px;"></div>
+        
+        <!-- 실시간 알림 영역 -->
+        <div id="notificationArea" style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px; display: none;">
+            <h5>🔔 실시간 알림</h5>
+            <div id="notifications" style="max-height: 200px; overflow-y: auto; font-size: 12px;"></div>
+        </div>
+    </div>
+
+    <!-- 추가 테스트 기능 -->
+    <div class="config">
+        <h4>🔧 추가 기능</h4>
+        <button onclick="showUserProfile()">내 프로필 조회</button>
+        <button onclick="showChatRooms()">내 채팅방 목록</button>
+        <button onclick="clearAll()">전체 초기화</button>
+    </div>
+    <!-- 디버그 정보 -->
+    <div class="config" style="background: #f8f9fa;">
+        <h4>🔧 디버그 정보</h4>
+        <div id="debugInfo" style="font-size: 11px; font-family: monospace;">
+            <div>JWT 토큰: <span id="tokenStatus">없음</span></div>
+            <div>사용자 ID: <span id="userIdStatus">없음</span></div>
+            <div>채팅방 ID: <span id="roomIdStatus">없음</span></div>
+            <div>WebSocket: <span id="wsStatus">연결 안됨</span></div>
+        </div>
     </div>
 
     <!-- 메시지 목록 -->
     <div id="messages" class="messages">
         <div style="text-align: center; color: #666;">
-            💬 연결 후 실시간 채팅을 시작하세요!
+            💬 위의 단계를 순서대로 진행해주세요!
         </div>
     </div>
 
     <!-- 메시지 입력 -->
     <div>
         <input type="text" id="messageInput" placeholder="메시지를 입력하세요..."
-               onkeypress="if(event.key==='Enter') sendMessage()">
-        <button onclick="sendMessage()">📤 전송</button>
-        <button onclick="markAsRead()">✅ 읽음 처리</button>
+               onkeypress="if(event.key==='Enter') sendMessage()" disabled>
+        <button onclick="sendMessage()" id="sendBtn" disabled>📤 전송</button>
+        <button onclick="markAsRead()" id="readBtn" disabled>✅읽음처리</button>
     </div>
 </div>
 
 <script>
     let stompClient = null;
-    let chatRoomId = 1;
+    let chatRoomId = null;
     let currentUserId = null;
+    let jwtToken = null;
+    let notificationClient = null;
+    let isNotificationActive = false;
     const BASE_URL = 'http://localhost:8080';
 
-    // 빠른 로그인 함수들
-    async function loginAsBuyer() {
-        try {
-            const response = await fetch(`${BASE_URL}/api/auth/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: "buyer@office.skhu.ac.kr",
-                    password: "password123"
-                })
-            });
-
-            const data = await response.json();
-            if (data.success) {
-                document.getElementById('jwtToken').value = 'Bearer ' + data.data.accessToken;
-                currentUserId = 2; // 구매자 ID
-                document.getElementById('loginResult').innerHTML = '✅ 구매자 로그인 성공';
-                document.getElementById('loginResult').style.color = 'green';
-            } else {
-                document.getElementById('loginResult').innerHTML = '❌ 로그인 실패: ' + data.message;
-                document.getElementById('loginResult').style.color = 'red';
-            }
-        } catch (error) {
-            document.getElementById('loginResult').innerHTML = '❌ 로그인 에러: ' + error;
-            document.getElementById('loginResult').style.color = 'red';
-        }
+    // 디버그 정보 업데이트
+    function updateDebugInfo() {
+        document.getElementById('tokenStatus').textContent = jwtToken ? '있음 (' + jwtToken.substring(0, 20) + '...)' : '없음';
+        document.getElementById('userIdStatus').textContent = currentUserId || '없음';
+        document.getElementById('roomIdStatus').textContent = chatRoomId || '없음';
+        document.getElementById('wsStatus').textContent = stompClient && stompClient.connected ? '연결됨' : '연결 안됨';
     }
 
-    async function loginAsSeller() {
-        try {
-            const response = await fetch(`${BASE_URL}/api/auth/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: "seller@office.skhu.ac.kr",
-                    password: "password123"
-                })
-            });
+    // 직접 입력 로그인
+    async function loginWithInput() {
+        const email = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value.trim();
 
-            const data = await response.json();
-            if (data.success) {
-                document.getElementById('jwtToken').value = 'Bearer ' + data.data.accessToken;
-                currentUserId = 1; // 판매자 ID
-                document.getElementById('loginResult').innerHTML = '✅ 판매자 로그인 성공';
-                document.getElementById('loginResult').style.color = 'green';
-            } else {
-                document.getElementById('loginResult').innerHTML = '❌ 로그인 실패: ' + data.message;
-                document.getElementById('loginResult').style.color = 'red';
-            }
-        } catch (error) {
-            document.getElementById('loginResult').innerHTML = '❌ 로그인 에러: ' + error;
+        if (!email || !password) {
+            document.getElementById('loginResult').innerHTML = '❌ 이메일과 비밀번호를 입력해주세요.';
             document.getElementById('loginResult').style.color = 'red';
-        }
-    }
-
-    function connect() {
-        const tokenInput = document.getElementById('jwtToken').value;
-        chatRoomId = document.getElementById('chatRoomId').value;
-
-        if (!tokenInput || !chatRoomId) {
-            alert('JWT 토큰과 채팅방 ID를 입력해주세요.');
             return;
         }
 
-        // 토큰 형식 정리
-        let authToken = tokenInput.trim();
-        if (!authToken.startsWith('Bearer ')) {
-            authToken = 'Bearer ' + authToken;
+        await performLogin(email, password);
+    }
+
+    // 빠른 로그인
+    async function quickLogin(type) {
+        const credentials = {
+            buyer: {
+                email: "buyer@office.skhu.ac.kr",
+                password: "password123"
+            },
+            seller: {
+                email: "seller@office.skhu.ac.kr",
+                password: "password123"
+            }
+        };
+
+        if (credentials[type]) {
+            document.getElementById('loginEmail').value = credentials[type].email;
+            document.getElementById('loginPassword').value = credentials[type].password;
+            await performLogin(credentials[type].email, credentials[type].password);
+        }
+    }
+
+    // 실제 로그인 수행
+    async function performLogin(email, password) {
+        try {
+            document.getElementById('loginResult').innerHTML = '⏳ 로그인 중...';
+            document.getElementById('loginResult').style.color = '#666';
+
+            const response = await fetch(`${BASE_URL}/api/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                jwtToken = 'Bearer ' + data.data.accessToken;
+
+                // JWT 토큰에서 실제 사용자 정보 추출 (간단한 방법)
+                const tokenPayload = JSON.parse(atob(data.data.accessToken.split('.')[1]));
+                currentUserId = tokenPayload.userId;
+                const userRole = tokenPayload.auth || 'USER';
+
+                document.getElementById('loginResult').innerHTML = '✅ 로그인 성공!';
+                document.getElementById('loginResult').style.color = 'green';
+
+                document.getElementById('userInfo').innerHTML =
+                    `<h4>👤 현재 사용자</h4>
+                     <p><strong>이메일:</strong> ${email}</p>
+                     <p><strong>사용자 ID:</strong> ${currentUserId}</p>
+                     <p><strong>역할:</strong> ${userRole}</p>`;
+                document.getElementById('userInfo').className = 'config success';
+
+                updateDebugInfo();
+            } else {
+                document.getElementById('loginResult').innerHTML = '❌ 로그인 실패: ' + data.message;
+                document.getElementById('loginResult').style.color = 'red';
+            }
+        } catch (error) {
+            console.error('로그인 에러:', error);
+            document.getElementById('loginResult').innerHTML = '❌ 로그인 에러: ' + error.message;
+            document.getElementById('loginResult').style.color = 'red';
+        }
+    }
+
+    // 채팅방 생성/조회
+    async function createOrGetChatRoom() {
+        if (!jwtToken) {
+            alert('먼저 로그인을 해주세요!');
+            return;
         }
 
-        console.log('WebSocket 연결 시도 - 토큰 길이:', authToken.length);
+        const productId = document.getElementById('productId').value;
+        if (!productId) {
+            alert('상품 ID를 입력해주세요!');
+            return;
+        }
 
+        try {
+            const response = await fetch(`${BASE_URL}/api/chat/rooms`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': jwtToken,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    productId: parseInt(productId)
+                })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                chatRoomId = data.data.chatRoomId;
+                document.getElementById('chatRoomId').value = chatRoomId;
+
+                document.getElementById('chatRoomInfo').innerHTML =
+                    `✅ 채팅방 참여 완료!<br>
+                     채팅방 ID: ${chatRoomId}<br>
+                     상품: ${data.data.productName}<br>
+                     판매자: ${data.data.sellerName}<br>
+                     구매자: ${data.data.buyerName}`;
+                document.getElementById('chatRoomInfo').style.color = 'green';
+
+                updateDebugInfo();
+            } else {
+                document.getElementById('chatRoomInfo').innerHTML = '❌ 채팅방 참여 실패: ' + data.message;
+                document.getElementById('chatRoomInfo').style.color = 'red';
+            }
+        } catch (error) {
+            document.getElementById('chatRoomInfo').innerHTML = '❌ 채팅방 참여 에러: ' + error;
+            document.getElementById('chatRoomInfo').style.color = 'red';
+        }
+    }
+
+    // WebSocket 연결
+    function connect() {
+        if (!jwtToken) {
+            alert('먼저 로그인을 해주세요!');
+            return;
+        }
+
+        if (!chatRoomId) {
+            alert('먼저 채팅방을 생성해주세요!');
+            return;
+        }
+
+        console.log('WebSocket 연결 시도...');
+
+        // 올바른 엔드포인트 사용 (/ws/chat)
         const socket = new SockJS(`${BASE_URL}/ws/chat`);
         stompClient = Stomp.over(socket);
 
-        // 디버그 모드 활성화
         stompClient.debug = function(str) {
             console.log('STOMP: ' + str);
         };
 
         stompClient.connect(
             {
-                'Authorization': authToken,
+                'Authorization': jwtToken,
                 'Accept-Version': '1.0,1.1,2.0',
                 'Heart-beat': '10000,10000'
             },
@@ -179,7 +324,7 @@
                     showMessage(messageData, messageData.senderId === currentUserId);
                 });
 
-                // 에러 구독 추가
+                // 에러 구독
                 stompClient.subscribe('/topic/chat/' + chatRoomId + '/error', function(error) {
                     showSystemMessage('❌ 에러: ' + error.body);
                 });
@@ -192,11 +337,18 @@
                 });
 
                 showSystemMessage('🎉 채팅방에 연결되었습니다!');
+                updateDebugInfo();
+                
+                // 자동으로 이전 메시지 로드
+                setTimeout(() => {
+                    loadMessages();
+                }, 500);
             },
             function(error) {
                 console.log('❌ WebSocket 연결 실패: ' + error);
                 setConnected(false);
-                alert('연결 실패: ' + error);
+                showSystemMessage('❌ WebSocket 연결 실패: ' + error);
+                updateDebugInfo();
             }
         );
     }
@@ -207,34 +359,39 @@
         }
         setConnected(false);
         showSystemMessage('👋 연결이 해제되었습니다.');
+        updateDebugInfo();
     }
 
     function sendMessage() {
         const messageInput = document.getElementById('messageInput');
         const content = messageInput.value.trim();
 
-        if (content && stompClient) {
+        if (content && stompClient && stompClient.connected) {
             stompClient.send('/app/chat/' + chatRoomId + '/send', {}, JSON.stringify({
                 'content': content,
                 'messageType': 'TEXT'
             }));
-
             messageInput.value = '';
         }
     }
 
     function markAsRead() {
-        if (stompClient) {
+        if (stompClient && stompClient.connected) {
             stompClient.send('/app/chat/' + chatRoomId + '/read', {}, '{}');
         }
     }
 
     async function loadMessages() {
+        if (!chatRoomId) {
+            alert('먼저 채팅방을 설정해주세요!');
+            return;
+        }
+
         try {
             const response = await fetch(`${BASE_URL}/api/chat/rooms/${chatRoomId}/messages`, {
                 method: 'GET',
                 headers: {
-                    'Authorization': document.getElementById('jwtToken').value,
+                    'Authorization': jwtToken,
                     'Content-Type': 'application/json'
                 }
             });
@@ -259,12 +416,22 @@
 
     function setConnected(connected) {
         const status = document.getElementById('status');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const readBtn = document.getElementById('readBtn');
+
         if (connected) {
             status.innerHTML = '🟢 연결됨 - 채팅방 ' + chatRoomId;
             status.className = 'status connected';
+            messageInput.disabled = false;
+            sendBtn.disabled = false;
+            readBtn.disabled = false;
         } else {
             status.innerHTML = '🔴 연결 안됨';
             status.className = 'status disconnected';
+            messageInput.disabled = true;
+            sendBtn.disabled = true;
+            readBtn.disabled = true;
         }
     }
 
@@ -277,10 +444,10 @@
         const readStatus = messageData.isRead ? '✓✓' : '✓';
 
         messageElement.innerHTML = `
-                <div><strong>${messageData.senderName}</strong></div>
-                <div style="font-size: 16px; margin: 5px 0;">${messageData.content}</div>
-                <div class="message-info">${time} ${isMine ? readStatus : ''}</div>
-            `;
+            <div><strong>${messageData.senderName}</strong></div>
+            <div style="font-size: 16px; margin: 5px 0;">${messageData.content}</div>
+            <div class="message-info">${time} ${isMine ? readStatus : ''}</div>
+        `;
 
         messages.appendChild(messageElement);
         messages.scrollTop = messages.scrollHeight;
@@ -310,6 +477,403 @@
             }
         });
     }
+
+    // 추가 테스트 함수들
+    async function showUserProfile() {
+        if (!jwtToken) {
+            alert('먼저 로그인을 해주세요!');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${BASE_URL}/api/users/me`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': jwtToken,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                const profile = data.data;
+                showSystemMessage(`👤 프로필 정보: ${profile.name} (${profile.email}), 판매: ${profile.totalSellingCount}개, 구매: ${profile.totalPurchaseCount}개`);
+            } else {
+                showSystemMessage('❌ 프로필 조회 실패: ' + data.message);
+            }
+        } catch (error) {
+            showSystemMessage('❌ 프로필 조회 에러: ' + error);
+        }
+    }
+
+    async function showChatRooms() {
+        if (!jwtToken) {
+            alert('먼저 로그인을 해주세요!');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${BASE_URL}/api/chat/rooms`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': jwtToken,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                if (data.data.chatRooms.length > 0) {
+                    showSystemMessage(`💬 내 채팅방 ${data.data.totalCount}개: ${data.data.chatRooms.map(room =>
+                        `[${room.chatRoomId}] ${room.productName}`).join(', ')}`);
+                } else {
+                    showSystemMessage('💬 참여 중인 채팅방이 없습니다.');
+                }
+            } else {
+                showSystemMessage('❌ 채팅방 목록 조회 실패: ' + data.message);
+            }
+        } catch (error) {
+            showSystemMessage('❌ 채팅방 목록 조회 에러: ' + error);
+        }
+    }
+
+    // 판매자용 상품별 채팅방 목록 조회
+    async function showProductChatRooms() {
+        if (!jwtToken) {
+            alert('먼저 로그인을 해주세요!');
+            return;
+        }
+
+        const productId = document.getElementById('sellerProductId').value;
+        if (!productId) {
+            alert('상품 ID를 입력해주세요!');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${BASE_URL}/api/chat/products/${productId}/chat-rooms`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': jwtToken,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                const chatRooms = data.data.chatRooms;
+                if (chatRooms.length > 0) {
+                    let infoHtml = `✅ 상품 ${productId}번의 채팅방 ${data.data.totalCount}개:<br>`;
+                    chatRooms.forEach(room => {
+                        infoHtml += `- <button onclick="joinChatRoom(${room.chatRoomId})" style="background: #007bff; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; margin: 2px;">[${room.chatRoomId}] ${room.buyerName}님과의 채팅</button> (${room.status})<br>`;
+                    });
+                    document.getElementById('sellerChatInfo').innerHTML = infoHtml;
+                    document.getElementById('sellerChatInfo').style.color = 'green';
+
+                    showSystemMessage(`🏪 상품 ${productId}번: ${chatRooms.length}개의 채팅방이 있습니다. 채팅방을 클릭하여 참여하세요.`);
+                } else {
+                    document.getElementById('sellerChatInfo').innerHTML = `ℹ️ 상품 ${productId}번에 대한 채팅방이 없습니다.`;
+                    document.getElementById('sellerChatInfo').style.color = '#666';
+                    showSystemMessage(`🏪 상품 ${productId}번: 채팅방이 없습니다.`);
+                }
+            } else {
+                document.getElementById('sellerChatInfo').innerHTML = '❌ 조회 실패: ' + data.message;
+                document.getElementById('sellerChatInfo').style.color = 'red';
+                showSystemMessage('❌ 상품별 채팅방 조회 실패: ' + data.message);
+            }
+        } catch (error) {
+            document.getElementById('sellerChatInfo').innerHTML = '❌ 조회 에러: ' + error;
+            document.getElementById('sellerChatInfo').style.color = 'red';
+            showSystemMessage('❌ 상품별 채팅방 조회 에러: ' + error);
+        }
+    }
+
+    // 판매자용 상품별 채팅 요약 조회
+    async function showProductChatSummary() {
+        if (!jwtToken) {
+            alert('먼저 로그인을 해주세요!');
+            return;
+        }
+
+        const productId = document.getElementById('sellerProductId').value;
+        if (!productId) {
+            alert('상품 ID를 입력해주세요!');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${BASE_URL}/api/chat/products/${productId}/chat-summary`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': jwtToken,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                const summary = data.data;
+                let infoHtml = `
+                    <strong>📊 ${summary.productName} 채팅 요약</strong><br>
+                    • 총 채팅방: ${summary.totalChatRooms}개<br>
+                    • 읽지 않은 채팅방: ${summary.unreadChatRooms}개<br>
+                    • 총 읽지 않은 메시지: ${summary.totalUnreadMessages}개<br><br>
+                `;
+
+                if (summary.chatRooms.length > 0) {
+                    infoHtml += '<strong>채팅방 상세:</strong><br>';
+                    summary.chatRooms.forEach(room => {
+                        const unreadBadge = room.unreadCount > 0 ? ` 🔴(${room.unreadCount})` : '';
+                        const lastMsg = room.lastMessage ? `"${room.lastMessage.substring(0, 20)}..."` : '메시지 없음';
+                        const lastTime = room.lastMessageTime ? new Date(room.lastMessageTime).toLocaleString() : '-';
+                        
+                        infoHtml += `• <button onclick="joinChatRoom(${room.chatRoomId})" style="background: #28a745; color: white; border: none; padding: 3px 8px; border-radius: 3px; cursor: pointer; font-size: 12px;">[${room.chatRoomId}] ${room.buyerName}님${unreadBadge}</button><br>`;
+                        infoHtml += `  └ 마지막: ${lastMsg} (${lastTime})<br>`;
+                    });
+                }
+
+                document.getElementById('sellerChatInfo').innerHTML = infoHtml;
+                document.getElementById('sellerChatInfo').style.color = 'green';
+
+                showSystemMessage(`📊 상품 ${productId}번 요약: 총 ${summary.totalChatRooms}개 채팅방, ${summary.totalUnreadMessages}개 읽지 않은 메시지`);
+            } else {
+                document.getElementById('sellerChatInfo').innerHTML = '❌ 요약 조회 실패: ' + data.message;
+                document.getElementById('sellerChatInfo').style.color = 'red';
+                showSystemMessage('❌ 상품별 채팅 요약 조회 실패: ' + data.message);
+            }
+        } catch (error) {
+            document.getElementById('sellerChatInfo').innerHTML = '❌ 요약 조회 에러: ' + error;
+            document.getElementById('sellerChatInfo').style.color = 'red';
+            showSystemMessage('❌ 상품별 채팅 요약 조회 에러: ' + error);
+        }
+    }
+
+    // 특정 채팅방에 참여하기
+    async function joinChatRoom(roomId) {
+        if (!jwtToken) {
+            alert('먼저 로그인을 해주세요!');
+            return;
+        }
+
+        try {
+            // 기존 WebSocket 연결이 있으면 해제
+            if (stompClient && stompClient.connected) {
+                disconnect();
+                await new Promise(resolve => setTimeout(resolve, 500)); // 연결 해제 대기
+            }
+
+            // 채팅방 ID 설정
+            chatRoomId = roomId;
+            document.getElementById('chatRoomId').value = chatRoomId;
+
+            // 채팅방 정보 조회
+            const response = await fetch(`${BASE_URL}/api/chat/rooms/${chatRoomId}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': jwtToken,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                document.getElementById('chatRoomInfo').innerHTML =
+                    `✅ 채팅방 ${chatRoomId}에 참여!<br>
+                     상품: ${data.data.productName}<br>
+                     판매자: ${data.data.sellerName}<br>
+                     구매자: ${data.data.buyerName}`;
+                document.getElementById('chatRoomInfo').style.color = 'green';
+
+                updateDebugInfo();
+                showSystemMessage(`📱 채팅방 ${chatRoomId}에 참여했습니다. WebSocket에 연결하세요!`);
+
+                // 자동으로 WebSocket 연결
+                setTimeout(() => {
+                    connect();
+                }, 1000);
+
+            } else {
+                showSystemMessage('❌ 채팅방 정보 조회 실패: ' + data.message);
+            }
+        } catch (error) {
+            showSystemMessage('❌ 채팅방 참여 에러: ' + error);
+        }
+    }
+
+    // 판매자용 실시간 알림 시작
+    function startSellerNotifications() {
+        if (!jwtToken) {
+            alert('먼저 로그인을 해주세요!');
+            return;
+        }
+
+        if (isNotificationActive) {
+            showNotification('🔔 이미 알림이 활성화되어 있습니다.');
+            return;
+        }
+
+        try {
+            console.log('판매자 알림 WebSocket 연결 시도...');
+            
+            const socket = new SockJS(`${BASE_URL}/ws/chat`);
+            notificationClient = Stomp.over(socket);
+            
+            notificationClient.debug = function(str) {
+                console.log('알림 STOMP:', str);
+            };
+
+            notificationClient.connect(
+                {
+                    'Authorization': jwtToken,
+                    'Accept-Version': '1.0,1.1,2.0',
+                    'Heart-beat': '10000,10000'
+                },
+                function(frame) {
+                    console.log('✅ 알림 WebSocket 연결 성공:', frame);
+                    isNotificationActive = true;
+                    
+                    // 판매자 개인 알림 채널 구독
+                    notificationClient.subscribe(`/user/${currentUserId}/queue/notifications`, function(message) {
+                        const notification = JSON.parse(message.body);
+                        console.log('📢 새 알림 수신:', notification);
+                        showNotification(`🆕 ${notification.message}`);
+                        
+                        // 자동으로 채팅 요약 새로고침
+                        setTimeout(() => {
+                            refreshChatSummary();
+                        }, 1000);
+                    });
+
+                    // 모든 채팅방의 새 메시지 구독 (판매자가 참여한 채팅방들)
+                    subscribeToAllChatRooms();
+                    
+                    document.getElementById('notificationArea').style.display = 'block';
+                    showNotification('🔔 실시간 알림이 시작되었습니다!');
+                },
+                function(error) {
+                    console.log('❌ 알림 WebSocket 연결 실패:', error);
+                    showNotification('❌ 알림 연결 실패: ' + error);
+                }
+            );
+        } catch (error) {
+            console.error('알림 시작 오류:', error);
+            showNotification('❌ 알림 시작 오류: ' + error);
+        }
+    }
+
+    // 판매자용 실시간 알림 중지
+    function stopSellerNotifications() {
+        if (notificationClient && notificationClient.connected) {
+            notificationClient.disconnect();
+            isNotificationActive = false;
+            document.getElementById('notificationArea').style.display = 'none';
+            showNotification('🔇 실시간 알림이 중지되었습니다.');
+        }
+    }
+
+    // 알림 메시지 표시
+    function showNotification(message) {
+        const notifications = document.getElementById('notifications');
+        const notificationElement = document.createElement('div');
+        const time = new Date().toLocaleTimeString();
+        
+        notificationElement.innerHTML = `
+            <div style="padding: 5px; margin: 2px 0; background: white; border-left: 3px solid #007bff; border-radius: 3px;">
+                <strong>${time}</strong> - ${message}
+            </div>
+        `;
+        
+        notifications.appendChild(notificationElement);
+        notifications.scrollTop = notifications.scrollHeight;
+    }
+
+    // 모든 채팅방 구독 (판매자가 참여한 채팅방들)
+    async function subscribeToAllChatRooms() {
+        try {
+            const response = await fetch(`${BASE_URL}/api/chat/rooms`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': jwtToken,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+            if (data.success && data.data.chatRooms) {
+                data.data.chatRooms.forEach(room => {
+                    // 각 채팅방의 메시지 구독
+                    notificationClient.subscribe(`/topic/chat/${room.chatRoomId}`, function(message) {
+                        const messageData = JSON.parse(message.body);
+                        if (messageData.senderId !== currentUserId) {
+                            showNotification(`💬 [채팅방 ${room.chatRoomId}] ${messageData.senderName}: ${messageData.content}`);
+                            
+                            // 채팅 요약 자동 새로고침
+                            setTimeout(() => {
+                                refreshChatSummary();
+                            }, 500);
+                        }
+                    });
+                });
+                
+                showNotification(`📡 ${data.data.chatRooms.length}개 채팅방 모니터링 시작`);
+            }
+        } catch (error) {
+            console.error('채팅방 구독 오류:', error);
+            showNotification('❌ 채팅방 구독 오류: ' + error);
+        }
+    }
+
+    // 채팅 요약 자동 새로고침
+    function refreshChatSummary() {
+        const productId = document.getElementById('sellerProductId').value;
+        if (productId) {
+            showProductChatSummary();
+        }
+    }
+
+    function clearAll() {
+        // 연결 해제
+        if (stompClient) {
+            stompClient.disconnect();
+        }
+        if (notificationClient) {
+            notificationClient.disconnect();
+        }
+
+        // 변수 초기화
+        stompClient = null;
+        notificationClient = null;
+        chatRoomId = null;
+        currentUserId = null;
+        jwtToken = null;
+        isNotificationActive = false;
+
+        // UI 초기화
+        document.getElementById('loginEmail').value = '';
+        document.getElementById('loginPassword').value = '';
+        document.getElementById('productId').value = '1';
+        document.getElementById('sellerProductId').value = '1';
+        document.getElementById('chatRoomId').value = '';
+        document.getElementById('messageInput').value = '';
+
+        document.getElementById('loginResult').innerHTML = '';
+        document.getElementById('chatRoomInfo').innerHTML = '';
+        document.getElementById('sellerChatInfo').innerHTML = '';
+        document.getElementById('notifications').innerHTML = '';
+        document.getElementById('notificationArea').style.display = 'none';
+        document.getElementById('userInfo').innerHTML = '<h4>👤 현재 로그인 정보</h4><p>로그인을 먼저 해주세요.</p>';
+        document.getElementById('userInfo').className = 'config warning';
+
+        document.getElementById('messages').innerHTML = '<div style="text-align: center; color: #666;">💬 위의 단계를 순서대로 진행해주세요!</div>';
+
+        setConnected(false);
+        updateDebugInfo();
+
+        showSystemMessage('🔄 전체 초기화 완료!');
+    }
+
+    // 초기 디버그 정보 표시
+    updateDebugInfo();
 </script>
 </body>
 </html>

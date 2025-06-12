@@ -9,17 +9,15 @@ public class ChatException extends BaseException {
         public ChatRoomNotFoundException(Long chatRoomId) {
             super("해당 채팅방을 찾을 수 없습니다: " + chatRoomId, HttpStatus.NOT_FOUND, "CHAT_ROOM_NOT_FOUND");
         }
+        
+        public ChatRoomNotFoundException(String message) {
+            super(message, HttpStatus.NOT_FOUND, "CHAT_ROOM_NOT_FOUND");
+        }
     }
 
     public static class ChatRoomAccessDeniedException extends ChatException {
         public ChatRoomAccessDeniedException() {
             super("채팅방에 접근할 권한이 없습니다.", HttpStatus.FORBIDDEN, "CHAT_ROOM_ACCESS_DENIED");
-        }
-    }
-
-    public static class ChatRoomAlreadyExistsException extends ChatException {
-        public ChatRoomAlreadyExistsException() {
-            super("이미 해당 상품에 대한 채팅방이 존재합니다.", HttpStatus.CONFLICT, "CHAT_ROOM_ALREADY_EXISTS");
         }
     }
 
