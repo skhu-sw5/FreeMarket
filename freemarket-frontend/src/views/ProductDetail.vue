@@ -213,10 +213,12 @@
           <!-- 리뷰 섹션 -->
           <div class="bg-white rounded-lg shadow-sm overflow-hidden">
             <div class="p-6">
-              <h2 class="text-xl font-bold text-gray-900 mb-6">상품 리뷰</h2>
+              <h2 class="text-xl font-bold text-gray-900 mb-6">판매자 리뷰</h2>
               <ReviewList 
                 v-if="product && product.product" 
-                :productId="String(product.product.id)" 
+                :productId="String(product.product.id)"
+                :sellerId="String(product.product.sellerId)" 
+                :productData="product"
               />
               <div v-else class="text-center py-8 text-gray-500">
                 <i class="fas fa-spinner fa-spin mr-2"></i>
