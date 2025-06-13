@@ -181,7 +181,7 @@
                   class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center"
                 >
                   <i class="fas fa-user-circle mr-2"></i>
-                  판매자 프로필 보기
+                  <span>{{ sellerProfile ? '프로필 닫기' : '판매자 프로필 보기' }}</span>
                 </button>
               </div>
               
@@ -194,16 +194,16 @@
                     <p class="text-gray-900">{{ sellerProfile.name || '-' }}</p>
                   </div>
                   <div>
-                    <p class="text-sm text-gray-500 mb-1">연락처</p>
-                    <p class="text-gray-900">{{ sellerProfile.phone || '미등록' }}</p>
+                    <p class="text-sm text-gray-500 mb-1">가입일</p>
+                    <p class="text-gray-900">{{ formatDate(sellerProfile.joinDate) || '-' }}</p>
                   </div>
                   <div>
-                    <p class="text-sm text-gray-500 mb-1">이메일</p>
-                    <p class="text-gray-900">{{ sellerProfile.email || '미등록' }}</p>
+                    <p class="text-sm text-gray-500 mb-1">총 판매 중인 상품 수</p>
+                    <p class="text-gray-900">{{ sellerProfile.totalActiveProductCount || 0 }}개</p>
                   </div>
                   <div>
-                    <p class="text-sm text-gray-500 mb-1">회원 등급</p>
-                    <p class="text-gray-900">{{ sellerProfile.grade || '일반' }}</p>
+                    <p class="text-sm text-gray-500 mb-1">총 판매 완료 상품 수</p>
+                    <p class="text-gray-900">{{ sellerProfile.totalSoldProductCount || 0 }}개</p>
                   </div>
                 </div>
               </div>
@@ -430,7 +430,7 @@ export default {
           return
         }
         
-        const response = await fetch(`/api/users/profile/${sellerId}`, {
+        const response = await fetch(`/api/users/${sellerId}/seller-info`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
