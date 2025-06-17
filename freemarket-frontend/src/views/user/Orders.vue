@@ -380,47 +380,45 @@ export default {
     
     async fetchPurchases(page = 0) {
       try {
-        // 공통 API 유틸리티 사용
         const apiUrl = `/api/users/profile/me/purchases?page=${page}&size=${this.purchasesPagination.size}`;
         console.log('구매 내역 API 호출:', apiUrl);
         
         const response = await apiGet(apiUrl, {
           handleError: (status) => {
             console.log(`구매 내역 조회 오류 상태 코드: ${status}`);
-            return true; // 기본 오류 처리 진행
+            return true;
           }
         });
         
         console.log('구매 내역 응답 데이터:', response);
         
         if (response && response.data) {
-          // 데이터가 올바르게 존재하는지 확인 후 처리
-          const purchaseItems = response.data.content || [];
+          const purchaseItems = response.data.purchases || [];
           
-          // 응답 데이터 구조 확인 및 변환
-          this.purchases = purchaseItems.map(item => {
-            // product 객체가 없는 경우 기본 객체 제공
-            if (!item.product) {
-              console.warn('구매 항목에 product 객체가 없음:', item);
-              item.product = {
-                id: item.id || 0,
-                name: '상품 정보 없음',
-                imageUrls: [],
-                price: 0,
-                sellerName: '판매자 정보 없음'
-              };
-            }
-            return item;
-          });
+          this.purchases = purchaseItems.map(item => ({
+            id: item.id,
+            createdAt: item.createdDate,
+            status: 'SOLD_OUT', // 구매 완료된 상품은 항상 SOLD_OUT 상태
+            product: {
+              id: item.id,
+              name: item.name,
+              price: item.price,
+              category: item.category,
+              status: item.status,
+              imageUrls: item.imageUrls || [],
+              sellerName: item.sellerName || '판매자'
+            },
+            quantity: 1,
+            totalAmount: item.price
+          }));
           
           this.purchasesPagination = {
-            currentPage: response.data.number || 0,
-            totalPages: response.data.totalPages || 0,
-            totalElements: response.data.totalElements || 0,
-            size: response.data.size || 10
+            currentPage: page,
+            totalPages: Math.ceil(response.data.totalPurchaseCount / this.purchasesPagination.size) || 1,
+            totalElements: response.data.totalPurchaseCount || 0,
+            size: this.purchasesPagination.size
           };
           
-          // 성공 시 에러 메시지 초기화
           if (this.activeTab === 'purchases') {
             this.error = null;
           }
@@ -433,7 +431,6 @@ export default {
         if (this.activeTab === 'purchases') {
           this.error = error.message || "구매 내역을 불러오지 못했습니다.";
         }
-        // 빈 배열로 초기화하여 UI 오류 방지
         this.purchases = [];
       }
     },
