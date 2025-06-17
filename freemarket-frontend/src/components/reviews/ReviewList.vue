@@ -16,7 +16,7 @@
         </div>
       </div>
       
-      <div v-else-if="reviews.length === 0" class="text-center py-8">
+      <div v-else-if="currentReviews.length === 0" class="text-center py-8">
         <p class="text-gray-500">아직 리뷰가 없습니다.</p>
         <button 
           v-if="isAuthenticated && canReview" 
@@ -30,13 +30,13 @@
       <div v-else>
         <div class="mb-6 flex justify-between items-center">
           <div>
-            <h2 class="text-xl font-bold text-gray-900 mb-6">판매자 리뷰</h2>
+            <h2 class="text-xl font-bold text-gray-900 mb-6">{{ reviewType === 'product' ? '상품 리뷰' : '판매자 리뷰' }}</h2>
             <div class="flex items-center mt-1">
               <div class="flex">
                 <i v-for="i in 5" :key="i" class="fas fa-star" 
-                  :class="i <= averageRating ? 'text-yellow-400' : 'text-gray-300'"></i>
+                  :class="i <= currentAverageRating ? 'text-yellow-400' : 'text-gray-300'"></i>
               </div>
-              <span class="ml-2 text-sm text-gray-600">{{ averageRating.toFixed(1) }} / 5</span>
+              <span class="ml-2 text-sm text-gray-600">{{ currentAverageRating.toFixed(1) }} / 5</span>
             </div>
           </div>
           
@@ -50,7 +50,7 @@
         </div>
         
         <div class="space-y-4">
-          <div v-for="review in reviews" :key="review.id" class="bg-gray-50 p-4 rounded-lg">
+          <div v-for="review in currentReviews" :key="review.id" class="bg-gray-50 p-4 rounded-lg">
             <div class="flex justify-between items-start">
               <div class="flex items-center">
                 <div class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
@@ -92,7 +92,7 @@
           </div>
         </div>
         
-        <div v-if="hasMoreReviews" class="mt-6 text-center">
+        <div v-if="hasMoreCurrentReviews" class="mt-6 text-center">
           <button 
             @click="loadMoreReviews"
             class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
@@ -221,16 +221,26 @@
     props: {
       productId: {
         type: String,
-        required: true
+        required: false
       },
       sellerId: {
         type: String,
-        required: true
+        required: false
       },
       productData: {
         type: Object,
         required: false,
         default: null
+      },
+      hasPurchasedProduct: {
+        type: Boolean,
+        required: false,
+        default: false
+      },
+      reviewType: {
+        type: String,
+        required: true,
+        validator: value => ['product', 'seller'].includes(value)
       }
     },
     
@@ -258,18 +268,27 @@
         loading: state => state.reviews.loading,
         error: state => state.reviews.error,
         productReviews: state => state.reviews.productReviews,
-        userReviews: state => state.reviews.receivedReviews
+        receivedReviews: state => state.reviews.receivedReviews
       }),
       
-      ...mapGetters('reviews', ['averageRating', 'hasMoreProductReviews']),
+      ...mapGetters('reviews', ['averageRating', 'hasMoreProductReviews', 'hasMoreReceivedReviews']),
       
-      reviews() {
-        if (!this.userReviews || !this.userReviews.length) return [];
-        return this.userReviews;
+      currentReviews() {
+        return this.reviewType === 'product' ? this.productReviews : this.receivedReviews;
       },
-      
-      hasMoreReviews() {
-        return this.$store.getters['reviews/hasMoreReceivedReviews'];
+
+      currentAverageRating() {
+        if (this.reviewType === 'product') {
+          return this.averageRating;
+        } else {
+          if (this.receivedReviews.length === 0) return 0;
+          const totalRating = this.receivedReviews.reduce((sum, review) => sum + review.rating, 0);
+          return totalRating / this.receivedReviews.length;
+        }
+      },
+
+      hasMoreCurrentReviews() {
+        return this.reviewType === 'product' ? this.hasMoreProductReviews : this.hasMoreReceivedReviews;
       },
       
       isAuthenticated() {
@@ -277,24 +296,24 @@
       },
       
       userId() {
-        return this.$store.state.auth.user?.id
+        return this.user?.id
       },
       
       canReview() {
         if (!this.isAuthenticated) return false;
         
-        if (!this.productData || (this.productData.product && this.productData.product.status !== 'SOLD_OUT')) {
-          console.log('리뷰 작성 불가: 상품 상태가 판매 완료가 아님.');
+        if (this.reviewType === 'product') {
+          if (!this.productData || !this.productData.product || (this.productData.product.status && this.productData.product.status.trim() !== '품절')) {
+            console.log('리뷰 작성 불가: 상품 상태가 판매 완료가 아님.');
+            return false;
+          }
+          const hasExistingReviewForThisProduct = this.productReviews.some(review => 
+            review.authorId === this.userId && String(review.productId) === this.productId
+          );
+          return this.hasPurchasedProduct && !hasExistingReviewForThisProduct;
+        } else {
           return false;
         }
-        
-        const hasExistingReviewForThisProduct = this.userReviews.some(review => 
-          review.authorId === this.userId && String(review.productId) === this.productId
-        );
-        
-        console.log(`리뷰 작성 가능 여부 확인: userId=${this.userId}, hasExistingReviewForThisProduct=${hasExistingReviewForThisProduct}`);
-        
-        return !hasExistingReviewForThisProduct;
       },
       
       isReviewFormValid() {
@@ -303,17 +322,27 @@
     },
     
     created() {
-      if (this.sellerId) {
-        console.log(`ReviewList 컴포넌트 생성: 판매자 ID ${this.sellerId}`);
+      if (this.reviewType === 'product') {
+        if (!this.productId) {
+          console.warn('상품 리뷰 컴포넌트에 상품 ID가 제공되지 않았습니다.');
+          return;
+        }
+        this.fetchReviewsForProduct();
+      } else if (this.reviewType === 'seller') {
+        if (!this.sellerId) {
+          console.warn('ReviewList 컴포넌트에 판매자 ID가 제공되지 않았습니다.');
+          return;
+        }
         this.fetchReviewsForSeller();
       } else {
-        console.warn('ReviewList 컴포넌트에 판매자 ID가 제공되지 않았습니다.');
+        console.error('ReviewList 컴포넌트에 유효하지 않은 reviewType이 제공되었습니다.');
       }
     },
     
     methods: {
       ...mapActions('reviews', [
         'fetchUserReviews',
+        'fetchProductReviews',
         'createReview',
         'updateReview',
         'deleteReview'
@@ -321,8 +350,6 @@
       
       async fetchReviewsForSeller() {
         try {
-          console.log(`판매자 리뷰 데이터 요청: 판매자 ID=${this.sellerId}, 페이지=${this.reviewPage}, 사이즈=${this.size}`);
-          
           if (!this.sellerId) {
             console.warn('판매자 ID가 없어 리뷰 데이터를 요청할 수 없습니다.');
             return;
@@ -334,19 +361,40 @@
             size: this.size,
             append: this.reviewPage > 0
           });
-          
-          console.log(`판매자 리뷰 로드 완료: ${this.userReviews.length}개 리뷰`);
         } catch (error) {
-          console.error('판매자 리뷰 목록 조회 오류:', error);
           if (this.$toast) {
             this.$toast.error('판매자 리뷰를 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.');
           }
         }
       },
       
+      async fetchReviewsForProduct() {
+        try {
+          if (!this.productId) {
+            console.warn('상품 ID가 없어 리뷰 데이터를 요청할 수 없습니다.');
+            return;
+          }
+
+          await this.fetchProductReviews({
+            productId: this.productId,
+            page: this.reviewPage,
+            size: this.size,
+            append: this.reviewPage > 0
+          });
+        } catch (error) {
+          if (this.$toast) {
+            this.$toast.error('상품 리뷰를 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.');
+          }
+        }
+      },
+      
       async refreshReviews() {
         this.reviewPage = 0;
-        await this.fetchReviewsForSeller();
+        if (this.reviewType === 'product') {
+          await this.fetchReviewsForProduct();
+        } else {
+          await this.fetchReviewsForSeller();
+        }
       },
       
       async loadMoreReviews() {
@@ -355,7 +403,11 @@
         try {
           this.loadingMore = true
           this.reviewPage += 1
-          await this.fetchReviewsForSeller()
+          if (this.reviewType === 'product') {
+            await this.fetchReviewsForProduct();
+          } else {
+            await this.fetchReviewsForSeller();
+          }
         } finally {
           this.loadingMore = false
         }
@@ -395,7 +447,6 @@
         if (!confirm('정말로 이 리뷰를 삭제하시겠습니까?')) return;
         
         try {
-          console.log(`리뷰 삭제 요청: 리뷰 ID ${reviewId}`);
           await this.deleteReview(reviewId);
           
           if (this.$toast) {
@@ -404,7 +455,6 @@
           
           await this.refreshReviews();
         } catch (error) {
-          console.error('리뷰 삭제 오류:', error);
           let errorMessage = '리뷰 삭제 중 오류가 발생했습니다.';
           
           if (error.message) {
@@ -466,7 +516,6 @@
             .map(img => img.file);
           
           if (this.editingReview) {
-            console.log(`리뷰 수정 요청: 리뷰 ID ${this.editingReview.id}`);
             await this.updateReview({
               reviewId: this.editingReview.id,
               reviewData,
@@ -477,25 +526,28 @@
               this.$toast.success('리뷰가 성공적으로 수정되었습니다.');
             }
             
+            this.closeReviewForm();
             await this.refreshReviews();
           } else {
-            console.log(`리뷰 작성 요청: 상품 ID ${this.productId}`);
+            console.log('새 리뷰 생성 요청', reviewData);
             await this.createReview({
               productId: this.productId,
               reviewData,
               images: imageFiles
             });
-            
+
             if (this.$toast) {
-              this.$toast.success('리뷰가 성공적으로 등록되었습니다.');
+              this.$toast.success('리뷰가 성공적으로 작성되었습니다.');
             }
             
+            this.closeReviewForm();
+            this.reviewForm.rating = 5;
+            this.reviewForm.content = '';
+            this.reviewForm.images = [];
             await this.refreshReviews();
           }
-          
-          this.closeReviewForm();
         } catch (error) {
-          console.error('리뷰 제출 오류:', error);
+          console.error('리뷰 작성/수정 오류:', error);
           let errorMessage = '리뷰 처리 중 오류가 발생했습니다.';
           
           if (error.message) {

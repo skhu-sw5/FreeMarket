@@ -213,12 +213,14 @@
           <!-- 리뷰 섹션 -->
           <div class="bg-white rounded-lg shadow-sm overflow-hidden">
             <div class="p-6">
-              <h2 class="text-xl font-bold text-gray-900 mb-6">판매자 리뷰</h2>
+              <h2 class="text-xl font-bold text-gray-900 mb-6">상품 리뷰</h2>
               <ReviewList 
                 v-if="product && product.product" 
                 :productId="String(product.product.id)"
                 :sellerId="String(product.product.sellerId)" 
                 :productData="product"
+                :hasPurchasedProduct="hasPurchasedProduct"
+                reviewType="product"
               />
               <div v-else class="text-center py-8 text-gray-500">
                 <i class="fas fa-spinner fa-spin mr-2"></i>
@@ -238,6 +240,7 @@ import ProductGallery from '@/components/products/ProductGallery.vue'
 import ReviewList from '@/components/reviews/ReviewList.vue'
 import { mapState, mapActions } from 'vuex'
 import chatService from '@/services/chatService'
+import { apiGet } from '@/utils/api'
 
 export default {
   components: {
@@ -246,39 +249,62 @@ export default {
     ReviewList
   },
 
+  data() {
+    return {
+      sellerProfile: null,
+      showChatRoomModal: false,
+      chatRoomId: null,
+      chatProductId: null,
+      isInitialChat: false,
+      purchaseHistory: [],
+      purchaseHistoryLoaded: false,
+    }
+  },
+
   computed: {
     ...mapState('products', ['product', 'loading']),
-    ...mapState('auth', ['user']),
+    ...mapState('auth', ['isAuthenticated', 'user']),
     
+    userId() {
+      return this.user?.id;
+    },
+
+    hasPurchasedProduct() {
+      const isAuthenticated = this.isAuthenticated;
+      const purchaseHistoryLoaded = this.purchaseHistoryLoaded;
+      const productExists = !!(this.product && this.product.product);
+      const isSoldOut = productExists && this.product.product.status && this.product.product.status.trim() === '품절';
+      const isInPurchaseHistory = productExists && this.purchaseHistory.some(item => String(item.id) === String(this.product.product.id));
+
+      console.log('[ProductDetail Debug] hasPurchasedProduct Check:');
+      console.log(' - isAuthenticated:', isAuthenticated);
+      console.log(' - purchaseHistoryLoaded:', purchaseHistoryLoaded);
+      console.log(' - productExists:', productExists);
+      console.log(' - isSoldOut (status === "품절"):', isSoldOut);
+      console.log(' - isInPurchaseHistory:', isInPurchaseHistory);
+
+      if (!isAuthenticated || !purchaseHistoryLoaded || !productExists) {
+        console.log(' - hasPurchasedProduct returns false due to authentication, purchase history loading, or product existence.');
+        return false;
+      }
+      const result = isSoldOut && isInPurchaseHistory;
+      console.log(' - Final hasPurchasedProduct result:', result);
+      return result;
+    },
+
     productImages() {
-      if (!this.product) return []
-      
-      return this.product.product.imageUrls.map(url => ({
-        url,
-        thumbnail: url
-      }))
-    },
-    
-    isAuthenticated() {
-      return this.$store.state.auth.isAuthenticated
-    },
-    
-    token() {
-      return this.$store.state.auth.token
-    },
-    
-    currentUser() {
-      return this.$store.state.auth.user
+      if (this.product && this.product.product && this.product.product.imageUrls) {
+        return this.product.product.imageUrls.map(url => ({ src: url }));
+      }
+      return [];
     },
     
     isProductOwner() {
-      return this.isAuthenticated && 
-             this.user && 
-             this.product && 
-             this.product.product &&
-             (this.product.product.sellerId === this.user.id || 
-              this.product.product.sellerName === this.user.name ||
-              this.product.product.sellerName === this.user.username)
+      return this.isAuthenticated && this.product && this.user && this.product.product.sellerId === this.user.id;
+    },
+    
+    chatTargetUserName() {
+      return this.isProductOwner ? this.product.product.buyerName : this.product.product.sellerName;
     }
   },
   
@@ -287,9 +313,9 @@ export default {
     this.loadProductData();
   },
   
-  data() {
-    return {
-      sellerProfile: null
+  async mounted() {
+    if (this.isAuthenticated) {
+      await this.fetchPurchaseHistory();
     }
   },
   
@@ -306,14 +332,13 @@ export default {
         
         this.$store.dispatch('products/setSkipViewIncrement', false);
         
-        // 상품 데이터를 가져오기 전에 위시리스트 상태를 먼저 확인
-        // 로그인한 경우에만 위시리스트 데이터 로드
         if (this.isAuthenticated) {
           await this.$store.dispatch('products/fetchWishlist');
         }
         
         await this.fetchProduct(productId);
         console.log('상품 데이터 로드 완료:', this.product);
+        console.log('Loaded Product Status:', this.product.product.status);
       } catch (error) {
         console.error('상품 데이터 로드 오류:', error);
       }
@@ -382,10 +407,8 @@ export default {
         
         const wasWishlisted = this.product.stats.isWishlisted
         
-        // Vuex action을 통해 API 호출
         const result = await this.$store.dispatch('products/toggleWishlist', productId)
         
-        // API 응답에 따라 상품 상태 직접 업데이트 (추가적인 보장)
         if (this.product && this.product.stats) {
           this.product.stats.isWishlisted = result.isWishlisted;
           this.product.stats.wishlistCount = result.count;
@@ -466,19 +489,16 @@ export default {
     },
     
     async contactSeller() {
-      // 로그인 확인
       if (!this.isAuthenticated) {
         alert('로그인이 필요한 서비스입니다.')
         return this.$router.push({ name: 'Login', query: { redirect: this.$route.fullPath } })
       }
       
-      // 자신의 상품인지 확인
       if (this.isProductOwner) {
         alert('자신의 상품에는 문의할 수 없습니다.')
         return
       }
       
-      // 상품 상태 확인
       if (!this.product || !this.product.product) {
         alert('상품 정보를 불러올 수 없습니다.')
         return
@@ -487,12 +507,10 @@ export default {
       try {
         console.log('🚀 채팅방 생성 시작...')
         
-        // 로딩 표시
         const loadingToast = this.$toast ? 
           this.$toast.info('채팅방을 생성하고 있습니다...', { duration: 0 }) : 
           null
         
-        // 채팅방 생성 또는 기존 채팅방 조회
         const response = await chatService.createChatRoom(this.product.product.id)
         
         if (loadingToast && this.$toast) {
@@ -504,12 +522,10 @@ export default {
         if (response && response.data) {
           const chatRoom = response.data
           
-          // 성공 메시지
           if (this.$toast) {
             this.$toast.success('채팅방으로 이동합니다.')
           }
           
-          // 채팅방으로 이동
           console.log('🏃‍♂️ 채팅방으로 이동:', chatRoom.chatRoomId)
           this.$router.push({
             name: 'ChatRoom',
@@ -523,7 +539,7 @@ export default {
         console.error('❌ 채팅방 생성 실패:', error)
         
         if (this.$toast) {
-          this.$toast.dismiss() // 모든 토스트 제거
+          this.$toast.dismiss()
         }
         
         let errorMessage = '채팅방 생성 중 오류가 발생했습니다.'
@@ -582,7 +598,28 @@ export default {
           alert(error.message || '상품 삭제 중 오류가 발생했습니다.')
         }
       }
-    }
+    },
+
+    async fetchPurchaseHistory() {
+      if (this.purchaseHistoryLoaded) {
+        return;
+      }
+
+      try {
+        const response = await apiGet(`/api/users/profile/me/purchases`);
+        if (response.success && response.data && response.data.purchases) {
+          this.purchaseHistory = response.data.purchases;
+        } else {
+          console.error('구매 내역 로드 실패:', response.message);
+          this.$toast.error('구매 내역을 불러오는데 실패했습니다.');
+        }
+      } catch (error) {
+        console.error('구매 내역 조회 오류:', error);
+        this.$toast.error('구매 내역을 불러오는 중 오류가 발생했습니다.');
+      } finally {
+        this.purchaseHistoryLoaded = true;
+      }
+    },
   }
 }
 </script>
