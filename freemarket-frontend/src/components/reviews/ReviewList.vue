@@ -138,7 +138,7 @@
           
           <div class="mb-4">
             <label class="block text-gray-700 mb-2">이미지 (선택사항)</label>
-            <div class="flex flex-wrap gap-2 mb-2">
+            <div v-if="!editingReview" class="flex flex-wrap gap-2 mb-2">
               <div 
                 v-for="(image, index) in reviewForm.images" 
                 :key="index"
@@ -164,7 +164,8 @@
                 />
               </label>
             </div>
-            <p class="text-xs text-gray-500">최대 5개의 이미지를 업로드할 수 있습니다.</p>
+            <p v-if="!editingReview" class="text-xs text-gray-500">최대 5개의 이미지를 업로드할 수 있습니다.</p>
+            <p v-else class="text-xs text-gray-400">리뷰 수정 시에는 이미지를 변경할 수 없습니다.</p>
           </div>
           
           <div class="flex justify-end space-x-3">
@@ -268,7 +269,8 @@
         loading: state => state.reviews.loading,
         error: state => state.reviews.error,
         productReviews: state => state.reviews.productReviews,
-        receivedReviews: state => state.reviews.receivedReviews
+        receivedReviews: state => state.reviews.receivedReviews,
+        user: state => state.auth.user
       }),
       
       ...mapGetters('reviews', ['averageRating', 'hasMoreProductReviews', 'hasMoreReceivedReviews']),
@@ -438,7 +440,7 @@
         this.reviewForm = {
           rating: review.rating,
           content: review.content,
-          images: review.imageUrls ? review.imageUrls.map(url => ({ url, preview: url })) : []
+          images: []
         }
         this.showReviewForm = true
       },
@@ -511,15 +513,10 @@
             content: this.reviewForm.content
           };
           
-          const imageFiles = this.reviewForm.images
-            .filter(img => img.file)
-            .map(img => img.file);
-          
           if (this.editingReview) {
             await this.updateReview({
               reviewId: this.editingReview.id,
-              reviewData,
-              images: imageFiles
+              reviewData
             });
             
             if (this.$toast) {
@@ -530,6 +527,10 @@
             await this.refreshReviews();
           } else {
             console.log('새 리뷰 생성 요청', reviewData);
+            const imageFiles = this.reviewForm.images
+              .filter(img => img.file)
+              .map(img => img.file);
+              
             await this.createReview({
               productId: this.productId,
               reviewData,

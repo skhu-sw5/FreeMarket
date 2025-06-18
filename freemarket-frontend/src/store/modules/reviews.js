@@ -418,36 +418,24 @@ export default {
       
       try {
         console.log(`리뷰 수정 요청: 리뷰 ID ${reviewId}, 데이터:`, reviewData);
-        console.log('업로드할 이미지:', images);
         
         // 인증 상태 확인
         if (!rootState.auth.token) {
           throw new Error('로그인이 필요합니다.');
         }
         
-        // FormData 사용하여 데이터와 이미지 함께 전송
-        const formData = new FormData();
-        
-        // 리뷰 데이터를 JSON으로 변환하여 추가
-        const reviewBlob = new Blob(
-          [JSON.stringify({ rating: reviewData.rating, content: reviewData.content })], 
-          { type: 'application/json' }
-        );
-        formData.append('review', reviewBlob);
-        
-        // 이미지 파일 추가
-        if (images && images.length > 0) {
-          for (const image of images) {
-            formData.append('images', image);
-            console.log('이미지 추가:', image.name, image.type, image.size);
-          }
-        }
+        // 스웨거 문서에 따르면 application/json 형식으로 전송
+        const requestData = {
+          rating: reviewData.rating,
+          content: reviewData.content
+        };
         
         // API 호출 URL
         const url = `/api/reviews/${reviewId}`;
         
-        // 헤더 설정 (FormData 사용 시 Content-Type은 자동으로 설정됨)
+        // 헤더 설정
         const headers = {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${rootState.auth.token}`,
           'Accept': 'application/json'
         };
@@ -456,7 +444,7 @@ export default {
         const response = await fetch(url, {
           method: 'PATCH',
           headers,
-          body: formData,
+          body: JSON.stringify(requestData),
           credentials: 'include'
         });
         

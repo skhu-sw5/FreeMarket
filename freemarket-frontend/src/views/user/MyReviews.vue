@@ -151,26 +151,9 @@
               class="relative w-20 h-20"
             >
               <img :src="image.preview" class="w-full h-full object-cover rounded-lg" />
-              <button 
-                @click="removeImage(index)"
-                class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center"
-              >
-                <i class="fas fa-times text-xs"></i>
-              </button>
             </div>
-            
-            <label v-if="editForm.images.length < 5" class="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-50">
-              <i class="fas fa-plus text-gray-400"></i>
-              <input 
-                type="file" 
-                accept="image/*" 
-                class="hidden" 
-                @change="handleImageUpload"
-                multiple
-              />
-            </label>
           </div>
-          <p class="text-xs text-gray-500">최대 5개의 이미지를 업로드할 수 있습니다.</p>
+          <p class="text-xs text-gray-400">리뷰 수정 시에는 이미지를 변경할 수 없습니다.</p>
         </div>
         
         <div class="flex justify-end space-x-3">
@@ -340,39 +323,6 @@ export default {
       }
     },
     
-    handleImageUpload(event) {
-      const files = Array.from(event.target.files)
-      const remainingSlots = 5 - this.editForm.images.length
-      
-      if (remainingSlots <= 0) return
-      
-      const selectedFiles = files.slice(0, remainingSlots)
-      
-      selectedFiles.forEach(file => {
-        // 파일 유효성 검사 (이미지 파일만)
-        if (!file.type.startsWith('image/')) {
-          alert('이미지 파일만 업로드 가능합니다.')
-          return
-        }
-        
-        const reader = new FileReader()
-        reader.onload = e => {
-          this.editForm.images.push({
-            file,
-            preview: e.target.result
-          })
-        }
-        reader.readAsDataURL(file)
-      })
-      
-      // 파일 입력 초기화
-      event.target.value = null
-    },
-    
-    removeImage(index) {
-      this.editForm.images.splice(index, 1)
-    },
-    
     async submitEdit() {
       if (!this.isEditFormValid || this.submitting) return
       
@@ -384,18 +334,11 @@ export default {
           content: this.editForm.content
         }
         
-        // 이미지 파일 추출 - 새로 추가된 이미지만 파일로 전송
-        const imageFiles = this.editForm.images
-          .filter(img => img.file instanceof File)
-          .map(img => img.file)
-        
         console.log('전송할 리뷰 데이터:', reviewData)
-        console.log('전송할 이미지 파일:', imageFiles.map(f => f.name))
         
         await this.updateReview({
           reviewId: this.currentReview.id,
-          reviewData,
-          images: imageFiles
+          reviewData
         })
         
         if (this.$toast) {
