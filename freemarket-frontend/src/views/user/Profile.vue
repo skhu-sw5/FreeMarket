@@ -103,34 +103,34 @@
               </div>
               
               <!-- 프로필 수정 폼 -->
-              <form v-if="isEditMode" class="mt-6 pt-6 border-t" @submit.prevent="updateProfile">
+              <form v-if="isEditMode" class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-600" @submit.prevent="updateProfile">
                 <div class="space-y-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1" for="name">이름</label>
+                  <div class="form-group">
+                    <label class="form-label" for="name">이름</label>
                     <input 
                       type="text" 
                       id="name" 
                       v-model="form.name" 
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      class="input"
                       required
                     />
                   </div>
                   
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1" for="phone">연락처</label>
+                  <div class="form-group">
+                    <label class="form-label" for="phone">연락처</label>
                     <input 
                       type="tel" 
                       id="phone" 
                       v-model="form.phone" 
                       placeholder="010-1234-5678"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      class="input"
                     />
                   </div>
                   
                   <div class="flex space-x-3 pt-2">
                     <button 
                       type="submit" 
-                      class="w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
+                      class="button-primary w-full flex items-center justify-center space-x-2"
                     >
                       <i class="fas fa-save"></i>
                       <span>저장</span>
@@ -138,7 +138,7 @@
                     <button 
                       type="button" 
                       @click="cancelEdit"
-                      class="w-full px-4 py-2.5 bg-gray-100 text-gray-800 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                      class="button-outline w-full"
                     >
                       취소
                     </button>

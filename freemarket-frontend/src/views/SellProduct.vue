@@ -29,45 +29,45 @@
           </div>
         </div>
         
-        <form v-if="!emailVerificationError" @submit.prevent="submitProduct" class="bg-white rounded-lg shadow-sm p-6">
+        <form v-if="!emailVerificationError" @submit.prevent="submitProduct" class="card">
           <!-- 상품명 -->
-          <div class="mb-6">
-            <label for="name" class="block text-sm font-medium text-gray-700 mb-1">상품명</label>
+          <div class="form-group">
+            <label for="name" class="form-label">상품명</label>
             <input 
               id="name"
               v-model="product.name"
               type="text"
-              class="w-full p-2 border border-gray-300 rounded-md"
+              class="input"
               placeholder="상품명을 입력하세요"
               required
             />
           </div>
           
           <!-- 가격 -->
-          <div class="mb-6">
-            <label for="price" class="block text-sm font-medium text-gray-700 mb-1">가격</label>
+          <div class="form-group">
+            <label for="price" class="form-label">가격</label>
             <div class="relative">
               <input 
                 id="price"
                 v-model="product.price"
                 type="number"
-                class="w-full p-2 border border-gray-300 rounded-md"
+                class="input"
                 placeholder="가격을 입력하세요"
                 min="100"
                 required
               />
-              <span class="absolute right-3 top-2 text-gray-500">원</span>
+              <span class="absolute right-3 top-2 text-gray-500 dark:text-gray-400">원</span>
             </div>
           </div>
           
           <!-- 재고 수량 -->
-          <div class="mb-6">
-            <label for="stock" class="block text-sm font-medium text-gray-700 mb-1">재고 수량</label>
+          <div class="form-group">
+            <label for="stock" class="form-label">재고 수량</label>
             <input 
               id="stock"
               v-model="product.stock"
               type="number"
-              class="w-full p-2 border border-gray-300 rounded-md"
+              class="input"
               placeholder="수량을 입력하세요"
               min="1"
               required
@@ -75,12 +75,12 @@
           </div>
           
           <!-- 카테고리 -->
-          <div class="mb-6">
-            <label for="category" class="block text-sm font-medium text-gray-700 mb-1">카테고리</label>
+          <div class="form-group">
+            <label for="category" class="form-label">카테고리</label>
             <select 
               id="category"
               v-model="product.category"
-              class="w-full p-2 border border-gray-300 rounded-md"
+              class="input"
               required
             >
               <option value="" disabled>카테고리 선택</option>
@@ -91,21 +91,21 @@
           </div>
           
           <!-- 상품 설명 -->
-          <div class="mb-6">
-            <label for="description" class="block text-sm font-medium text-gray-700 mb-1">상품 설명</label>
+          <div class="form-group">
+            <label for="description" class="form-label">상품 설명</label>
             <textarea 
               id="description"
               v-model="product.description"
               rows="5"
-              class="w-full p-2 border border-gray-300 rounded-md"
+              class="input resize-y"
               placeholder="상품 설명을 입력하세요"
             ></textarea>
           </div>
           
           <!-- 이미지 업로드 -->
-          <div class="mb-6">
-            <label class="block text-sm font-medium text-gray-700 mb-1">상품 이미지</label>
-            <div class="border-2 border-dashed border-gray-300 rounded-md p-4 text-center">
+          <div class="form-group">
+            <label class="form-label">상품 이미지</label>
+            <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-md p-4 text-center bg-gray-50 dark:bg-gray-800">
               <input 
                 type="file"
                 @change="handleImageUpload"
@@ -116,12 +116,12 @@
               />
               <div v-if="previewImages.length === 0">
                 <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-2"></i>
-                <p class="text-gray-500">이미지 파일을 드래그하거나 클릭하여 업로드하세요</p>
-                <p class="text-xs text-gray-400 mt-1">최대 5개까지 가능 (JPG, PNG)</p>
+                <p class="text-gray-500 dark:text-gray-400">이미지 파일을 드래그하거나 클릭하여 업로드하세요</p>
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">최대 5개까지 가능 (JPG, PNG)</p>
                 <button 
                   type="button"
                   @click="$refs.fileInput.click()"
-                  class="mt-4 px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+                  class="mt-4 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                 >
                   파일 선택
                 </button>
@@ -145,10 +145,10 @@
                 <div 
                   v-if="previewImages.length < 5"
                   @click="$refs.fileInput.click()"
-                  class="border-2 border-dashed border-gray-300 rounded-md flex flex-col items-center justify-center h-32 cursor-pointer hover:bg-gray-50"
+                  class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-md flex flex-col items-center justify-center h-32 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   <i class="fas fa-plus text-gray-400"></i>
-                  <span class="text-sm text-gray-500 mt-1">추가</span>
+                  <span class="text-sm text-gray-500 dark:text-gray-400 mt-1">추가</span>
                 </div>
               </div>
             </div>
@@ -157,13 +157,13 @@
           <div class="flex justify-end space-x-3">
             <router-link 
               to="/products" 
-              class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+              class="button-outline"
             >
               취소
             </router-link>
             <button 
               type="submit"
-              class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              class="button-primary"
               :disabled="loading"
             >
               <span v-if="loading">등록 중...</span>

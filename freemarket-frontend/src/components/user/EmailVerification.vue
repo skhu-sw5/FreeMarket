@@ -13,7 +13,7 @@
     
     <!-- 이메일 인증이 완료되지 않은 경우 -->
     <div v-if="!verificationSuccess">
-      <!-- 이메일 인증 코드 발송폼 -->
+      <!-- 인증 코드 발송/입력 폼을 하나의 div에서 조건 분기 -->
       <div v-if="!verificationSent" class="space-y-4">
         <div>
           <p class="mb-4 text-gray-600">
@@ -21,34 +21,30 @@
             아래에 학교 이메일 주소를 입력하시면 인증 코드가 발송됩니다.
           </p>
           
-          <label class="block text-sm font-medium text-gray-700" for="email">
-            학교 이메일 주소 (@office.skhu.ac.kr)
-          </label>
-          <div class="mt-1 flex rounded-md shadow-sm">
-            <input
-              type="email"
-              id="email"
-              v-model="email"
-              placeholder="student@office.skhu.ac.kr"
-              class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              :disabled="loading"
+          <div class="mb-4">
+            <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">이메일 주소</label>
+            <input 
+              type="email" 
+              id="email" 
+              v-model="email" 
+              class="input"
+              placeholder="이메일 주소를 입력하세요"
+              required
             />
           </div>
-        </div>
-        
-        <div class="flex space-x-4">
-          <button
-            @click="sendVerificationEmail"
-            :disabled="loading || !isEmailValid"
-            class="px-4 py-2 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-          >
-            <span v-if="loading">처리 중...</span>
-            <span v-else>인증 메일 발송</span>
-          </button>
+          
+          <div class="flex space-x-4">
+            <button
+              @click="sendVerificationEmail"
+              :disabled="loading || !isEmailValid"
+              class="px-4 py-2 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              <span v-if="loading">처리 중...</span>
+              <span v-else>인증 메일 발송</span>
+            </button>
+          </div>
         </div>
       </div>
-      
-      <!-- 인증 코드 입력 폼 -->
       <div v-else class="space-y-4">
         <div>
           <p class="mb-4 text-gray-600">
@@ -66,18 +62,15 @@
             </ul>
           </div>
           
-          <label class="block text-sm font-medium text-gray-700" for="verificationCode">
-            인증 코드 (6자리)
-          </label>
-          <div class="mt-1 flex rounded-md shadow-sm">
-            <input
-              type="text"
-              id="verificationCode"
-              v-model="verificationCode"
-              placeholder="123456"
-              class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              maxlength="6"
-              :disabled="loading"
+          <div class="mb-4">
+            <label for="verificationCode" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">인증 코드</label>
+            <input 
+              type="text" 
+              id="verificationCode" 
+              v-model="verificationCode" 
+              class="input"
+              placeholder="인증 코드를 입력하세요"
+              required
             />
           </div>
         </div>

@@ -14,9 +14,9 @@
                 v-model="searchKeyword"
                 @keyup.enter="handleSearch"
                 placeholder="상품명을 입력하세요"
-                class="border border-gray-300 px-3 py-2 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                class="input"
             />
-            <button @click="handleSearch" class="bg-blue-600 text-white px-4 py-2 rounded-md font-medium hover:bg-blue-700 transition-colors">
+            <button @click="handleSearch" class="button-primary">
               검색
             </button>
           </div>

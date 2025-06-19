@@ -1,82 +1,82 @@
 <template>
-  <div class="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
-    <div class="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+  <div class="min-h-screen bg-gray-50 dark:bg-background-dark py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center transition-colors duration-300">
+    <div class="card max-w-md w-full">
       <div class="text-center mb-8">
-        <router-link to="/" class="text-3xl font-bold text-blue-600">FreeMarket</router-link>
-        <h2 class="mt-4 text-xl font-bold text-gray-900">회원가입</h2>
+        <router-link to="/" class="text-3xl font-bold text-primary dark:text-primary-light">FreeMarket</router-link>
+        <h2 class="mt-4 text-xl font-bold text-gray-900 dark:text-gray-100">회원가입</h2>
       </div>
       
       <form @submit.prevent="handleRegister" class="space-y-4">
-        <div>
-          <label for="email" class="block text-sm font-medium text-gray-700">이메일</label>
+        <div class="form-group">
+          <label for="email" class="form-label">이메일</label>
           <input
             id="email"
             v-model="user.email"
             type="email"
             required
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            class="input"
             placeholder="example@email.com"
           />
         </div>
         
-        <div>
-          <label for="password" class="block text-sm font-medium text-gray-700">비밀번호</label>
+        <div class="form-group">
+          <label for="password" class="form-label">비밀번호</label>
           <input
             id="password"
             v-model="user.password"
             type="password"
             required
             minlength="8"
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            class="input"
             placeholder="최소 8자 이상"
           />
-          <p class="mt-1 text-xs text-gray-500">8자 이상의 비밀번호를 입력해주세요.</p>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">8자 이상의 비밀번호를 입력해주세요.</p>
         </div>
         
-        <div>
-          <label for="password-confirm" class="block text-sm font-medium text-gray-700">비밀번호 확인</label>
+        <div class="form-group">
+          <label for="password-confirm" class="form-label">비밀번호 확인</label>
           <input
             id="password-confirm"
             v-model="passwordConfirm"
             type="password"
             required
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            class="input"
             placeholder="비밀번호 재입력"
           />
           <p v-if="passwordMismatch" class="mt-1 text-xs text-red-500">비밀번호가 일치하지 않습니다.</p>
         </div>
         
-        <div>
-          <label for="name" class="block text-sm font-medium text-gray-700">이름</label>
+        <div class="form-group">
+          <label for="name" class="form-label">이름</label>
           <input
             id="name"
             v-model="user.name"
             type="text"
             required
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            class="input"
             placeholder="홍길동"
           />
         </div>
         
-        <div>
-          <label for="phone" class="block text-sm font-medium text-gray-700">휴대폰 번호</label>
+        <div class="form-group">
+          <label for="phone" class="form-label">휴대폰 번호</label>
           <input
             id="phone"
             v-model="user.phone"
             type="tel"
             required
             pattern="^01(?:0|1|[6-9])[.-]?(\d{3}|\d{4})[.-]?(\d{4})$"
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            class="input"
             placeholder="010-1234-5678"
           />
-          <p class="mt-1 text-xs text-gray-500">'-' 포함 휴대폰 번호를 입력해주세요.</p>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">'-' 포함 휴대폰 번호를 입력해주세요.</p>
         </div>
         
         <div class="mt-6">
           <button
             type="submit"
             :disabled="loading || passwordMismatch"
-            class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+            class="button-primary w-full disabled:opacity-50"
           >
             <span v-if="loading">처리 중...</span>
             <span v-else>회원가입</span>
@@ -87,17 +87,17 @@
       <div class="mt-6">
         <div class="relative">
           <div class="absolute inset-0 flex items-center">
-            <div class="w-full border-t border-gray-300"></div>
+            <div class="w-full border-t border-gray-300 dark:border-gray-600"></div>
           </div>
           <div class="relative flex justify-center text-sm">
-            <span class="px-2 bg-white text-gray-500">또는</span>
+            <span class="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">또는</span>
           </div>
         </div>
         
         <div class="mt-6 grid grid-cols-1 gap-3">
           <button
             type="button"
-            class="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            class="w-full flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
             @click="socialLogin('google')"
           >
             <i class="fab fa-google mr-2"></i>
@@ -106,7 +106,7 @@
           
           <button
             type="button"
-            class="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            class="w-full flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
             @click="socialLogin('kakao')"
           >
             <i class="fas fa-comment mr-2 text-yellow-500"></i>
@@ -115,7 +115,7 @@
           
           <button
             type="button"
-            class="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            class="w-full flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
             @click="socialLogin('naver')"
           >
             <span class="w-4 h-4 bg-green-500 text-white flex items-center justify-center rounded mr-2 text-xs">N</span>
@@ -125,9 +125,9 @@
       </div>
       
       <div class="mt-8 text-center">
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-gray-600 dark:text-gray-400">
           이미 계정이 있으신가요?
-          <router-link to="/login" class="font-medium text-blue-600 hover:text-blue-500">
+          <router-link to="/login" class="font-medium text-primary dark:text-primary-light hover:text-primary-dark dark:hover:text-primary">
             로그인
           </router-link>
         </p>

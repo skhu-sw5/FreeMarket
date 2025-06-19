@@ -1,18 +1,18 @@
 <template>
-  <section class="py-8 bg-white">
+  <section class="py-8 bg-white dark:bg-surface-dark transition-colors duration-300">
     <div class="container mx-auto px-4">
-      <h2 class="text-2xl font-bold mb-6">카테고리</h2>
+      <h2 class="text-2xl font-bold mb-6 text-gray-800 dark:text-gray-100">카테고리</h2>
       <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-4">
         <router-link 
           v-for="category in categories"
           :key="category.id"
           :to="{ name: 'ProductList', query: { category: category.id } }"
-          class="flex flex-col items-center p-4 bg-gray-50 rounded-lg hover:shadow-md transition-all hover:bg-blue-50 hover:scale-105 transform duration-200"
+          class="flex flex-col items-center p-4 bg-gray-50 dark:bg-gray-800 rounded-xl hover:shadow-lg dark:hover:shadow-gray-900/20 transition-all hover:bg-primary/5 dark:hover:bg-primary-light/5 hover:scale-105 transform duration-300 border border-gray-100 dark:border-gray-700"
         >
-          <div class="w-12 h-12 flex items-center justify-center mb-3 bg-blue-100 rounded-full text-2xl text-blue-600">
+          <div class="w-12 h-12 flex items-center justify-center mb-3 bg-primary/10 dark:bg-primary-light/10 rounded-full text-2xl">
             {{ category.icon }}
           </div>
-          <span class="text-sm text-center font-medium">{{ category.name }}</span>
+          <span class="text-sm text-center font-medium text-gray-700 dark:text-gray-300">{{ category.name }}</span>
         </router-link>
       </div>
     </div>

@@ -120,7 +120,7 @@
         </div>
         
         <div class="mb-4">
-          <label class="block text-gray-700 mb-2">평점</label>
+          <label class="block text-gray-700 dark:text-gray-300 mb-2">평점</label>
           <div class="flex space-x-2">
             <button 
               v-for="i in 5" 
@@ -134,16 +134,16 @@
         </div>
         
         <div class="mb-4">
-          <label class="block text-gray-700 mb-2">내용</label>
+          <label class="block text-gray-700 dark:text-gray-300 mb-2">내용</label>
           <textarea 
             v-model="editForm.content"
-            class="w-full border border-gray-300 rounded-lg p-3 h-32 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="input resize-none h-32"
             placeholder="상품에 대한 리뷰를 작성해주세요."
           ></textarea>
         </div>
         
         <div class="mb-4">
-          <label class="block text-gray-700 mb-2">이미지 (선택사항)</label>
+          <label class="block text-gray-700 dark:text-gray-300 mb-2">이미지 (선택사항)</label>
           <div class="flex flex-wrap gap-2 mb-2">
             <div 
               v-for="(image, index) in editForm.images" 
@@ -153,19 +153,19 @@
               <img :src="image.preview" class="w-full h-full object-cover rounded-lg" />
             </div>
           </div>
-          <p class="text-xs text-gray-400">리뷰 수정 시에는 이미지를 변경할 수 없습니다.</p>
+          <p class="text-xs text-gray-400 dark:text-gray-500">리뷰 수정 시에는 이미지를 변경할 수 없습니다.</p>
         </div>
         
         <div class="flex justify-end space-x-3">
           <button 
             @click="closeEditForm"
-            class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+            class="button-outline"
           >
             취소
           </button>
           <button 
             @click="submitEdit"
-            class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50"
+            class="button-primary"
             :disabled="!isEditFormValid || submitting"
           >
             {{ submitting ? '저장 중...' : '저장' }}

@@ -1,37 +1,37 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-gray-50 dark:bg-background-dark transition-colors duration-300">
     <AppHeader />
     
     <main class="py-8">
       <div class="container mx-auto px-4 max-w-3xl">
-        <div class="bg-white rounded-lg shadow-sm p-8 text-center">
+        <div class="card text-center">
           <div class="mb-6">
-            <div class="h-20 w-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto">
+            <div class="h-20 w-20 bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mx-auto">
               <i class="fas fa-check text-3xl"></i>
             </div>
           </div>
           
-          <h1 class="text-2xl font-bold mb-2">주문이 완료되었습니다!</h1>
-          <p class="text-gray-600 mb-6">주문번호: {{ order.id }}</p>
+          <h1 class="text-2xl font-bold mb-2 text-gray-800 dark:text-gray-100">주문이 완료되었습니다!</h1>
+          <p class="text-gray-600 dark:text-gray-400 mb-6">주문번호: {{ order.id }}</p>
           
           <div v-if="loading" class="animate-pulse space-y-4 mb-6">
-            <div class="h-8 bg-gray-200 rounded"></div>
-            <div class="h-6 bg-gray-200 rounded w-3/4 mx-auto"></div>
-            <div class="h-6 bg-gray-200 rounded w-1/2 mx-auto"></div>
+            <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mx-auto"></div>
+            <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mx-auto"></div>
           </div>
           
-          <div v-else-if="error" class="bg-red-50 p-4 rounded-lg mb-6">
-            <p class="text-red-600">{{ error }}</p>
+          <div v-else-if="error" class="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg mb-6">
+            <p class="text-red-600 dark:text-red-400">{{ error }}</p>
           </div>
           
-          <div v-else-if="order" class="border rounded-lg overflow-hidden mb-8">
-            <div class="bg-gray-50 p-4 border-b">
-              <h2 class="font-medium">주문 상세 정보</h2>
+          <div v-else-if="order" class="border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden mb-8">
+            <div class="bg-gray-50 dark:bg-gray-800 p-4 border-b border-gray-200 dark:border-gray-600">
+              <h2 class="font-medium text-gray-800 dark:text-gray-100">주문 상세 정보</h2>
             </div>
             
             <div class="p-6">
               <div class="flex items-center mb-6">
-                <div class="w-16 h-16 bg-gray-100 rounded overflow-hidden flex-shrink-0">
+                <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded overflow-hidden flex-shrink-0">
                   <img 
                     v-if="order.product && order.product.imageUrls && order.product.imageUrls.length" 
                     :src="order.product.imageUrls[0]" 
@@ -39,46 +39,46 @@
                     class="w-full h-full object-cover"
                   />
                   <div v-else class="w-full h-full flex items-center justify-center">
-                    <i class="fas fa-box text-gray-400"></i>
+                    <i class="fas fa-box text-gray-400 dark:text-gray-500"></i>
                   </div>
                 </div>
                 
                 <div class="ml-4">
-                  <h3 class="font-medium">{{ order.product ? order.product.name : '상품 정보 없음' }}</h3>
-                  <p class="text-gray-600 text-sm">수량: {{ order.quantity }}개</p>
+                  <h3 class="font-medium text-gray-800 dark:text-gray-100">{{ order.product ? order.product.name : '상품 정보 없음' }}</h3>
+                  <p class="text-gray-600 dark:text-gray-400 text-sm">수량: {{ order.quantity }}개</p>
                 </div>
                 
                 <div class="ml-auto">
-                  <p class="font-medium">{{ formatPrice(order.totalAmount) }}원</p>
+                  <p class="font-medium text-gray-800 dark:text-gray-100">{{ formatPrice(order.totalAmount) }}원</p>
                 </div>
               </div>
               
-              <div class="border-t pt-4">
+              <div class="border-t border-gray-200 dark:border-gray-600 pt-4">
                 <div class="flex justify-between mb-2">
-                  <span class="text-gray-600">주문일시</span>
-                  <span>{{ formatDate(order.createdAt) }}</span>
+                  <span class="text-gray-600 dark:text-gray-400">주문일시</span>
+                  <span class="text-gray-800 dark:text-gray-100">{{ formatDate(order.createdAt) }}</span>
                 </div>
                 <div class="flex justify-between mb-2">
-                  <span class="text-gray-600">주문상태</span>
-                  <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">{{ orderStatusText }}</span>
+                  <span class="text-gray-600 dark:text-gray-400">주문상태</span>
+                  <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 rounded-full text-xs">{{ orderStatusText }}</span>
                 </div>
                 <div class="flex justify-between mb-2">
-                  <span class="text-gray-600">결제방법</span>
-                  <span>계좌이체</span>
+                  <span class="text-gray-600 dark:text-gray-400">결제방법</span>
+                  <span class="text-gray-800 dark:text-gray-100">계좌이체</span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-gray-600">판매자</span>
-                  <span>{{ order.product ? order.product.sellerName : '-' }}</span>
+                  <span class="text-gray-600 dark:text-gray-400">판매자</span>
+                  <span class="text-gray-800 dark:text-gray-100">{{ order.product ? order.product.sellerName : '-' }}</span>
                 </div>
               </div>
             </div>
           </div>
           
           <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
-            <router-link to="/" class="px-6 py-2 bg-white border border-gray-300 rounded-lg font-medium hover:bg-gray-50">
+            <router-link to="/" class="button-outline">
               홈으로 돌아가기
             </router-link>
-            <router-link to="/user/orders" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700">
+            <router-link to="/user/orders" class="button-primary">
               내 주문 목록 보기
             </router-link>
           </div>

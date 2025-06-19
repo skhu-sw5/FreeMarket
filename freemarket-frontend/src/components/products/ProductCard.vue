@@ -1,5 +1,5 @@
 <template>
-  <div @click="$emit('click')" class="bg-white rounded-lg overflow-hidden shadow hover:shadow-md transition-all hover:translate-y-[-3px] transform duration-200 cursor-pointer relative">
+  <div @click="$emit('click')" class="bg-white dark:bg-surface-dark rounded-xl overflow-hidden shadow-lg dark:shadow-gray-900/20 hover:shadow-xl dark:hover:shadow-gray-900/30 transition-all hover:translate-y-[-3px] transform duration-300 cursor-pointer relative border border-gray-100 dark:border-gray-700">
     <div class="relative">
       <img 
         :src="getImageUrl(product.thumbnailUrl)" 
@@ -14,23 +14,23 @@
       </div>
       <button 
         @click.stop="toggleWishlist"
-        class="absolute top-2 right-2 bg-white p-2 rounded-full shadow-md transition-colors"
-        :class="{ 'text-red-500': stats?.isWishlisted, 'text-gray-400': !stats?.isWishlisted }"
+        class="absolute top-2 right-2 bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg dark:shadow-gray-900/20 transition-colors hover:scale-110"
+        :class="{ 'text-red-500': stats?.isWishlisted, 'text-gray-400 dark:text-gray-300': !stats?.isWishlisted }"
       >
         <i :class="stats?.isWishlisted ? 'fas fa-heart' : 'far fa-heart'"></i>
       </button>
-      <div v-if="isNew" class="absolute top-2 left-2 bg-blue-500 text-white px-2 py-1 text-xs rounded-md font-medium">
+      <div v-if="isNew" class="absolute top-2 left-2 bg-primary dark:bg-primary-light text-white px-2 py-1 text-xs rounded-md font-medium">
         NEW
       </div>
     </div>
     <div class="p-4">
       <div class="flex justify-between items-start">
-        <h3 class="font-medium text-gray-900 line-clamp-2 min-h-[2.5rem]">{{ product.name }}</h3>
+        <h3 class="font-medium text-gray-900 dark:text-gray-100 line-clamp-2 min-h-[2.5rem]">{{ product.name }}</h3>
       </div>
-      <p class="mt-2 text-lg font-bold text-blue-600">{{ formatPrice(product.price) }}원</p>
+      <p class="mt-2 text-lg font-bold text-primary dark:text-primary-light">{{ formatPrice(product.price) }}원</p>
       <div class="mt-2 flex items-center justify-between">
-        <span class="text-sm text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{{ getCategoryName(product.category) }}</span>
-        <div class="flex items-center text-sm text-gray-500">
+        <span class="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">{{ getCategoryName(product.category) }}</span>
+        <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
           <i class="far fa-eye mr-1"></i>
           <span>{{ stats?.viewCount || 0 }}</span>
           <i class="far fa-heart mx-1 ml-2"></i>

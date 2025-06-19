@@ -1,32 +1,32 @@
 <template>
-  <div class="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
-    <div class="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+  <div class="min-h-screen bg-gray-50 dark:bg-background-dark py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center transition-colors duration-300">
+    <div class="card max-w-md w-full">
       <div class="text-center mb-8">
-        <router-link to="/" class="text-3xl font-bold text-blue-600">FreeMarket</router-link>
-        <h2 class="mt-4 text-xl font-bold text-gray-900">로그인</h2>
+        <router-link to="/" class="text-3xl font-bold text-primary dark:text-primary-light">FreeMarket</router-link>
+        <h2 class="mt-4 text-xl font-bold text-gray-900 dark:text-gray-100">로그인</h2>
       </div>
       
       <form @submit.prevent="handleLogin" class="space-y-6">
-        <div>
-          <label for="email" class="block text-sm font-medium text-gray-700">이메일</label>
+        <div class="form-group">
+          <label for="email" class="form-label">이메일</label>
           <input
             id="email"
             v-model="email"
             type="email"
             required
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            class="input"
             placeholder="example@email.com"
           />
         </div>
         
-        <div>
-          <label for="password" class="block text-sm font-medium text-gray-700">비밀번호</label>
+        <div class="form-group">
+          <label for="password" class="form-label">비밀번호</label>
           <input
             id="password"
             v-model="password"
             type="password"
             required
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            class="input"
             placeholder="********"
           />
         </div>
@@ -37,18 +37,18 @@
               id="remember-me"
               v-model="rememberMe"
               type="checkbox"
-              class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              class="h-4 w-4 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-primary dark:focus:ring-primary-light bg-white dark:bg-gray-700"
             />
-            <label for="remember-me" class="ml-2 block text-sm text-gray-900">
+            <label for="remember-me" class="ml-2 block text-sm text-gray-900 dark:text-gray-100">
               자동 로그인
-              <span class="text-xs text-gray-500 block">
+              <span class="text-xs text-gray-500 dark:text-gray-400 block">
                 다음에 자동으로 로그인됩니다
               </span>
             </label>
           </div>
           
           <div class="text-sm">
-            <router-link to="/password-reset-request" class="text-blue-600 hover:text-blue-500">
+            <router-link to="/password-reset-request" class="text-primary dark:text-primary-light hover:text-primary-dark dark:hover:text-primary">
               비밀번호 찾기
             </router-link>
           </div>
@@ -58,7 +58,7 @@
           <button
             type="submit"
             :disabled="loading"
-            class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+            class="button-primary w-full disabled:opacity-50"
           >
             <span v-if="loading">로그인 중...</span>
             <span v-else>로그인</span>
@@ -69,17 +69,17 @@
       <div class="mt-6">
         <div class="relative">
           <div class="absolute inset-0 flex items-center">
-            <div class="w-full border-t border-gray-300"></div>
+            <div class="w-full border-t border-gray-300 dark:border-gray-600"></div>
           </div>
           <div class="relative flex justify-center text-sm">
-            <span class="px-2 bg-white text-gray-500">또는</span>
+            <span class="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">또는</span>
           </div>
         </div>
         
         <div class="mt-6 grid grid-cols-1 gap-3">
           <button
             type="button"
-            class="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            class="w-full flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
             @click="socialLogin('google')"
           >
             <i class="fab fa-google mr-2"></i>
@@ -88,7 +88,7 @@
           
           <button
             type="button"
-            class="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            class="w-full flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
             @click="socialLogin('kakao')"
           >
             <i class="fas fa-comment mr-2 text-yellow-500"></i>
@@ -97,7 +97,7 @@
           
           <button
             type="button"
-            class="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            class="w-full flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
             @click="socialLogin('naver')"
           >
             <span class="w-4 h-4 bg-green-500 text-white flex items-center justify-center rounded mr-2 text-xs">N</span>
@@ -107,9 +107,9 @@
       </div>
       
       <div class="mt-8 text-center">
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-gray-600 dark:text-gray-400">
           계정이 없으신가요?
-          <router-link to="/register" class="font-medium text-blue-600 hover:text-blue-500">
+          <router-link to="/register" class="font-medium text-primary dark:text-primary-light hover:text-primary-dark dark:hover:text-primary">
             회원가입
           </router-link>
         </p>

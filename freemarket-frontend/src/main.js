@@ -53,6 +53,14 @@ if (process.env.NODE_ENV === 'development') {
   };
 }
 
+// 다크모드 초기 적용
+const theme = localStorage.getItem('theme')
+if (theme === 'dark') {
+  document.documentElement.classList.add('dark')
+} else if (theme === 'light') {
+  document.documentElement.classList.remove('dark')
+}
+
 // 앱 초기화 함수
 const initApp = async () => {
   try {

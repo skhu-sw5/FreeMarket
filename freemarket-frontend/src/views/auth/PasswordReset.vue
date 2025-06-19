@@ -1,66 +1,66 @@
 <template>
-  <div class="min-h-screen flex flex-col bg-gray-50">
+  <div class="min-h-screen flex flex-col bg-gray-50 dark:bg-background-dark transition-colors duration-300">
     <AppHeader />
     
     <div class="flex-grow flex items-center justify-center p-4">
-      <div class="bg-white rounded-lg shadow-md p-8 w-full max-w-md">
-        <h1 class="text-2xl font-bold text-center mb-6">비밀번호 재설정</h1>
+      <div class="card w-full max-w-md">
+        <h1 class="text-2xl font-bold text-center mb-6 text-gray-800 dark:text-gray-100">비밀번호 재설정</h1>
         
-        <div v-if="resetCompleted" class="text-center bg-green-50 p-6 rounded-lg mb-4">
+        <div v-if="resetCompleted" class="text-center bg-green-50 dark:bg-green-900/20 p-6 rounded-lg mb-4">
           <i class="fas fa-check-circle text-4xl text-green-500 mb-3"></i>
-          <h2 class="text-xl font-semibold mb-2">비밀번호 재설정 완료</h2>
-          <p class="text-gray-600 mb-4">
+          <h2 class="text-xl font-semibold mb-2 text-gray-800 dark:text-gray-100">비밀번호 재설정 완료</h2>
+          <p class="text-gray-600 dark:text-gray-300 mb-4">
             비밀번호가 성공적으로 변경되었습니다.
             새 비밀번호로 로그인하세요.
           </p>
           <router-link 
             to="/login" 
-            class="inline-block py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            class="button-primary inline-block"
           >
             로그인 페이지로 이동
           </router-link>
         </div>
         
-        <div v-else-if="invalidToken" class="text-center bg-red-50 p-6 rounded-lg mb-4">
+        <div v-else-if="invalidToken" class="text-center bg-red-50 dark:bg-red-900/20 p-6 rounded-lg mb-4">
           <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-3"></i>
-          <h2 class="text-xl font-semibold mb-2">유효하지 않은 링크</h2>
-          <p class="text-gray-600 mb-4">
+          <h2 class="text-xl font-semibold mb-2 text-gray-800 dark:text-gray-100">유효하지 않은 링크</h2>
+          <p class="text-gray-600 dark:text-gray-300 mb-4">
             비밀번호 재설정 링크가 만료되었거나 유효하지 않습니다.
             다시 비밀번호 재설정을 요청해주세요.
           </p>
           <router-link 
             to="/password-reset-request" 
-            class="inline-block py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            class="button-primary inline-block"
           >
             비밀번호 찾기
           </router-link>
         </div>
         
         <form v-else @submit.prevent="resetPassword" class="space-y-4">
-          <div class="space-y-2">
-            <label for="password" class="block text-sm font-medium text-gray-700">새 비밀번호</label>
+          <div class="form-group">
+            <label for="password" class="form-label">새 비밀번호</label>
             <input
               id="password"
               v-model="password"
               type="password"
               required
               autocomplete="new-password"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              class="input"
               :class="{ 'border-red-500': errors.password }"
               placeholder="새로운 비밀번호를 입력하세요"
             />
             <p v-if="errors.password" class="text-red-500 text-sm">{{ errors.password }}</p>
           </div>
           
-          <div class="space-y-2">
-            <label for="passwordConfirm" class="block text-sm font-medium text-gray-700">비밀번호 확인</label>
+          <div class="form-group">
+            <label for="passwordConfirm" class="form-label">비밀번호 확인</label>
             <input
               id="passwordConfirm"
               v-model="passwordConfirm"
               type="password"
               required
               autocomplete="new-password"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              class="input"
               :class="{ 'border-red-500': errors.passwordConfirm }"
               placeholder="새로운 비밀번호를 다시 입력하세요"
             />
@@ -70,7 +70,7 @@
           <div class="pt-2">
             <button
               type="submit"
-              class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+              class="button-primary w-full"
               :disabled="loading"
             >
               <span v-if="loading">

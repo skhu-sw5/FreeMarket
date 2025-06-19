@@ -4,7 +4,7 @@
 
 /* 글로벌 스타일 */
 body {
-  @apply font-sans antialiased text-gray-800;
+  @apply font-sans antialiased text-gray-800 bg-background-light dark:bg-background-dark dark:text-gray-100 transition-colors duration-300;
 }
 
 .container {
@@ -13,13 +13,47 @@ body {
 
 /* 버튼 스타일 */
 .button-primary {
-  @apply px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors;
+  @apply px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-dark dark:bg-primary-light dark:text-gray-900 dark:hover:bg-primary transition-colors shadow-sm;
 }
 
 .button-secondary {
-  @apply px-4 py-2 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition-colors;
+  @apply px-4 py-2 bg-accent text-white rounded-lg font-medium hover:bg-accent-dark dark:bg-accent-light dark:text-gray-900 dark:hover:bg-accent transition-colors shadow-sm;
 }
 
 .button-outline {
-  @apply px-4 py-2 border border-blue-600 text-blue-600 rounded-lg font-medium hover:bg-blue-50 transition-colors;
+  @apply px-4 py-2 border border-primary text-primary dark:border-primary-light dark:text-primary-light rounded-lg font-medium hover:bg-primary/10 dark:hover:bg-primary-light/10 transition-colors;
+}
+
+.card {
+  @apply bg-white dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-gray-900/20 p-6 transition-colors duration-300 border border-gray-100 dark:border-gray-700;
+}
+
+/* 입력 필드 스타일 - 다크모드에서 가독성 개선 */
+.input {
+  @apply w-full border border-gray-300 dark:border-gray-600 rounded-lg py-2 px-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary dark:focus:ring-primary-light focus:border-primary dark:focus:border-primary-light transition-colors duration-300;
+}
+
+/* 텍스트 영역 스타일 */
+.textarea {
+  @apply w-full border border-gray-300 dark:border-gray-600 rounded-lg py-2 px-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary dark:focus:ring-primary-light focus:border-primary dark:focus:border-primary-light transition-colors duration-300 resize-y;
+}
+
+/* 셀렉트 박스 스타일 */
+.select {
+  @apply w-full border border-gray-300 dark:border-gray-600 rounded-lg py-2 px-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary dark:focus:ring-primary-light focus:border-primary dark:focus:border-primary-light transition-colors duration-300;
+}
+
+/* 모달 스타일 */
+.modal {
+  @apply bg-white dark:bg-gray-800 rounded-xl shadow-xl dark:shadow-gray-900/30 border border-gray-100 dark:border-gray-700;
+}
+
+/* 폼 라벨 스타일 */
+.form-label {
+  @apply block text-gray-700 dark:text-gray-300 font-medium mb-2;
+}
+
+/* 폼 그룹 스타일 */
+.form-group {
+  @apply mb-4;
 }

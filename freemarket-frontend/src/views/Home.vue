@@ -1,41 +1,41 @@
 <template>
-  <div class="flex flex-col min-h-screen">
+  <div class="flex flex-col min-h-screen bg-background-light dark:bg-background-dark transition-colors duration-300">
     <AppHeader />
     <main class="flex-1">
       <Banner />
       <Categories />
       
       <!-- 앱 설명 섹션 -->
-      <section class="py-16 bg-white">
+      <section class="py-16 bg-white dark:bg-surface-dark transition-colors duration-300">
         <div class="container mx-auto px-4">
           <div class="text-center mb-12">
-            <h2 class="text-3xl font-bold mb-4">FreeMarket과 함께하는 <span class="text-blue-600">안전한 거래</span></h2>
-            <p class="text-gray-600 max-w-2xl mx-auto">대학생들을 위한 중고 거래 플랫폼 FreeMarket은 캠퍼스 내 안전하고 편리한 거래를 지원합니다.</p>
+            <h2 class="text-3xl font-bold mb-4 text-gray-800 dark:text-gray-100">FreeMarket과 함께하는 <span class="text-primary dark:text-primary-light">안전한 거래</span></h2>
+            <p class="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">대학생들을 위한 중고 거래 플랫폼 FreeMarket은 캠퍼스 내 안전하고 편리한 거래를 지원합니다.</p>
           </div>
           
           <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div class="bg-gray-50 p-6 rounded-lg text-center hover:shadow-md transition-shadow">
-              <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div class="bg-gray-50 dark:bg-gray-800 p-6 rounded-xl text-center hover:shadow-lg dark:hover:shadow-gray-900/20 transition-all duration-300 border border-gray-100 dark:border-gray-700">
+              <div class="w-16 h-16 bg-primary/10 dark:bg-primary-light/10 text-primary dark:text-primary-light rounded-full flex items-center justify-center mx-auto mb-4">
                 <i class="fas fa-shield-alt text-2xl"></i>
               </div>
-              <h3 class="text-xl font-bold mb-2">안전한 거래</h3>
-              <p class="text-gray-600">신뢰할 수 있는 교내 거래 시스템으로 안전하게 거래하세요.</p>
+              <h3 class="text-xl font-bold mb-2 text-gray-800 dark:text-gray-100">안전한 거래</h3>
+              <p class="text-gray-600 dark:text-gray-300">신뢰할 수 있는 교내 거래 시스템으로 안전하게 거래하세요.</p>
             </div>
             
-            <div class="bg-gray-50 p-6 rounded-lg text-center hover:shadow-md transition-shadow">
-              <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div class="bg-gray-50 dark:bg-gray-800 p-6 rounded-xl text-center hover:shadow-lg dark:hover:shadow-gray-900/20 transition-all duration-300 border border-gray-100 dark:border-gray-700">
+              <div class="w-16 h-16 bg-primary/10 dark:bg-primary-light/10 text-primary dark:text-primary-light rounded-full flex items-center justify-center mx-auto mb-4">
                 <i class="fas fa-tags text-2xl"></i>
               </div>
-              <h3 class="text-xl font-bold mb-2">합리적인 가격</h3>
-              <p class="text-gray-600">중개 수수료 없이 합리적인 가격으로 물건을 사고 팔 수 있어요.</p>
+              <h3 class="text-xl font-bold mb-2 text-gray-800 dark:text-gray-100">합리적인 가격</h3>
+              <p class="text-gray-600 dark:text-gray-300">중개 수수료 없이 합리적인 가격으로 물건을 사고 팔 수 있어요.</p>
             </div>
             
-            <div class="bg-gray-50 p-6 rounded-lg text-center hover:shadow-md transition-shadow">
-              <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div class="bg-gray-50 dark:bg-gray-800 p-6 rounded-xl text-center hover:shadow-lg dark:hover:shadow-gray-900/20 transition-all duration-300 border border-gray-100 dark:border-gray-700">
+              <div class="w-16 h-16 bg-primary/10 dark:bg-primary-light/10 text-primary dark:text-primary-light rounded-full flex items-center justify-center mx-auto mb-4">
                 <i class="fas fa-graduation-cap text-2xl"></i>
               </div>
-              <h3 class="text-xl font-bold mb-2">학업 맞춤 제품</h3>
-              <p class="text-gray-600">교재, 전공 서적 등 학업에 필요한 다양한 상품을 만나보세요.</p>
+              <h3 class="text-xl font-bold mb-2 text-gray-800 dark:text-gray-100">학업 맞춤 제품</h3>
+              <p class="text-gray-600 dark:text-gray-300">교재, 전공 서적 등 학업에 필요한 다양한 상품을 만나보세요.</p>
             </div>
           </div>
         </div>
@@ -47,15 +47,15 @@
       <!-- 초기화 중일 때는 CTA 섹션 숨김 -->
       <template v-if="isInitialized">
         <!-- 가입 유도 섹션 (비로그인 사용자) -->
-        <section v-if="!isAuthenticated" class="py-16 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+        <section v-if="!isAuthenticated" class="py-16 bg-gradient-to-r from-primary to-accent text-white">
           <div class="container mx-auto px-4 text-center">
             <h2 class="text-3xl font-bold mb-4">지금 바로 시작하세요!</h2>
             <p class="text-xl mb-8 max-w-2xl mx-auto">FreeMarket에 가입하고 캠퍼스 내 안전한 중고 거래를 경험해보세요.</p>
             <div class="space-x-4">
-              <router-link to="/register" class="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors duration-200 inline-block">
+              <router-link to="/register" class="bg-white text-primary px-6 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors duration-200 inline-block shadow-lg">
                 회원가입
               </router-link>
-              <router-link to="/login" class="bg-transparent border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:bg-opacity-10 transition-colors duration-200 inline-block">
+              <router-link to="/login" class="bg-transparent border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-primary transition-colors duration-200 inline-block">
                 로그인
               </router-link>
             </div>

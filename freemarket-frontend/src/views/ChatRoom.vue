@@ -203,18 +203,18 @@
               </div>
               
               <!-- 메시지 입력 영역 -->
-              <div class="p-4 border-t border-gray-100">
+              <div class="p-4 border-t border-gray-100 dark:border-gray-700">
                 <form @submit.prevent="sendMessage" class="flex">
                   <input 
                     v-model="newMessage" 
                     type="text" 
                     placeholder="메시지를 입력하세요..." 
-                    class="flex-grow px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    class="input rounded-r-none"
                     :disabled="isProductSold || chatRoom.status !== 'ACTIVE'"
                   />
                   <button 
                     type="submit" 
-                    class="px-4 py-2 bg-blue-600 text-white rounded-r-lg hover:bg-blue-700 transition-colors flex items-center"
+                    class="button-primary rounded-l-none flex items-center"
                     :disabled="!newMessage.trim() || isProductSold || chatRoom.status !== 'ACTIVE'"
                     :class="{ 'opacity-50 cursor-not-allowed': !newMessage.trim() || isProductSold || chatRoom.status !== 'ACTIVE' }"
                   >
@@ -222,7 +222,7 @@
                   </button>
                 </form>
                 
-                <div v-if="isProductSold || chatRoom.status !== 'ACTIVE'" class="mt-2 text-center text-sm text-gray-500">
+                <div v-if="isProductSold || chatRoom.status !== 'ACTIVE'" class="mt-2 text-center text-sm text-gray-500 dark:text-gray-400">
                   <i class="fas fa-lock mr-1"></i>
                   {{ isProductSold ? '판매 완료된 상품입니다. 새로운 메시지를 보낼 수 없습니다.' : '비활성화된 채팅방입니다.' }}
                 </div>

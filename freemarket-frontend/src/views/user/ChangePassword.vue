@@ -1,47 +1,47 @@
 <template>
-  <div class="min-h-screen bg-gray-50 flex flex-col">
+  <div class="min-h-screen bg-gray-50 dark:bg-background-dark flex flex-col transition-colors duration-300">
     <AppHeader />
     
     <main class="py-6 flex-grow">
       <div class="container mx-auto px-4">
-        <h1 class="text-2xl font-bold mb-6">비밀번호 변경</h1>
+        <h1 class="text-2xl font-bold mb-6 text-gray-800 dark:text-gray-100">비밀번호 변경</h1>
         
-        <div class="bg-white p-6 rounded-lg shadow-sm mb-6">
+        <div class="card mb-6">
           <form @submit.prevent="changePassword">
             <div class="space-y-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700" for="currentPassword">현재 비밀번호</label>
+              <div class="form-group">
+                <label class="form-label" for="currentPassword">현재 비밀번호</label>
                 <input 
                   type="password" 
                   id="currentPassword" 
                   v-model="form.currentPassword" 
-                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  class="input"
                   required
                 />
                 <p v-if="errors.currentPassword" class="mt-1 text-sm text-red-600">{{ errors.currentPassword }}</p>
               </div>
               
-              <div>
-                <label class="block text-sm font-medium text-gray-700" for="newPassword">새 비밀번호</label>
+              <div class="form-group">
+                <label class="form-label" for="newPassword">새 비밀번호</label>
                 <input 
                   type="password" 
                   id="newPassword" 
                   v-model="form.newPassword" 
-                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  class="input"
                   required
                   minlength="8"
                 />
-                <p class="mt-1 text-sm text-gray-500">최소 8자 이상이어야 합니다.</p>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">최소 8자 이상이어야 합니다.</p>
                 <p v-if="errors.newPassword" class="mt-1 text-sm text-red-600">{{ errors.newPassword }}</p>
               </div>
               
-              <div>
-                <label class="block text-sm font-medium text-gray-700" for="confirmPassword">새 비밀번호 확인</label>
+              <div class="form-group">
+                <label class="form-label" for="confirmPassword">새 비밀번호 확인</label>
                 <input 
                   type="password" 
                   id="confirmPassword" 
                   v-model="form.confirmPassword" 
-                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  class="input"
                   required
                 />
                 <p v-if="errors.confirmPassword" class="mt-1 text-sm text-red-600">{{ errors.confirmPassword }}</p>
@@ -50,7 +50,7 @@
               <div class="flex space-x-4">
                 <button 
                   type="submit" 
-                  class="px-4 py-2 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 transition-colors"
+                  class="button-primary"
                   :disabled="loading"
                 >
                   <span v-if="loading">변경 중...</span>
@@ -58,7 +58,7 @@
                 </button>
                 <router-link 
                   to="/profile" 
-                  class="px-4 py-2 bg-gray-200 text-gray-800 rounded font-medium hover:bg-gray-300 transition-colors"
+                  class="button-outline"
                 >
                   취소
                 </router-link>

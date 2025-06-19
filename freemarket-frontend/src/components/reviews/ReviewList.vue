@@ -105,16 +105,16 @@
       
       <!-- 리뷰 작성 모달 -->
       <div v-if="showReviewForm" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+        <div class="modal w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
           <div class="flex justify-between items-center mb-4">
-            <h3 class="text-xl font-bold">{{ editingReview ? '리뷰 수정' : '리뷰 작성' }}</h3>
-            <button @click="closeReviewForm" class="text-gray-500 hover:text-gray-700">
+            <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100">{{ editingReview ? '리뷰 수정' : '리뷰 작성' }}</h3>
+            <button @click="closeReviewForm" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
               <i class="fas fa-times"></i>
             </button>
           </div>
           
           <div class="mb-4">
-            <label class="block text-gray-700 mb-2">평점</label>
+            <label class="form-label">평점</label>
             <div class="flex space-x-2">
               <button 
                 v-for="i in 5" 
@@ -122,22 +122,22 @@
                 @click="reviewForm.rating = i"
                 class="text-2xl focus:outline-none"
               >
-                <i class="fas fa-star" :class="i <= reviewForm.rating ? 'text-yellow-400' : 'text-gray-300'"></i>
+                <i class="fas fa-star" :class="i <= reviewForm.rating ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'"></i>
               </button>
             </div>
           </div>
           
           <div class="mb-4">
-            <label class="block text-gray-700 mb-2">내용</label>
+            <label class="form-label">내용</label>
             <textarea 
               v-model="reviewForm.content"
-              class="w-full border border-gray-300 rounded-lg p-3 h-32 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="textarea"
               placeholder="상품에 대한 리뷰를 작성해주세요."
             ></textarea>
           </div>
           
           <div class="mb-4">
-            <label class="block text-gray-700 mb-2">이미지 (선택사항)</label>
+            <label class="form-label">이미지 (선택사항)</label>
             <div v-if="!editingReview" class="flex flex-wrap gap-2 mb-2">
               <div 
                 v-for="(image, index) in reviewForm.images" 
@@ -153,8 +153,8 @@
                 </button>
               </div>
               
-              <label v-if="reviewForm.images.length < 5" class="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-50">
-                <i class="fas fa-plus text-gray-400"></i>
+              <label v-if="reviewForm.images.length < 5" class="w-20 h-20 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <i class="fas fa-plus text-gray-400 dark:text-gray-500"></i>
                 <input 
                   type="file" 
                   accept="image/*" 
@@ -164,20 +164,20 @@
                 />
               </label>
             </div>
-            <p v-if="!editingReview" class="text-xs text-gray-500">최대 5개의 이미지를 업로드할 수 있습니다.</p>
-            <p v-else class="text-xs text-gray-400">리뷰 수정 시에는 이미지를 변경할 수 없습니다.</p>
+            <p v-if="!editingReview" class="text-xs text-gray-500 dark:text-gray-400">최대 5개의 이미지를 업로드할 수 있습니다.</p>
+            <p v-else class="text-xs text-gray-400 dark:text-gray-500">리뷰 수정 시에는 이미지를 변경할 수 없습니다.</p>
           </div>
           
           <div class="flex justify-end space-x-3">
             <button 
               @click="closeReviewForm"
-              class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              class="button-outline"
             >
               취소
             </button>
             <button 
               @click="submitReview"
-              class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50"
+              class="button-primary disabled:opacity-50"
               :disabled="!isReviewFormValid || submitting"
             >
               {{ submitting ? '처리 중...' : (editingReview ? '수정하기' : '작성하기') }}
