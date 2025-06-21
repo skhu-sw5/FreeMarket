@@ -114,16 +114,6 @@
                   </button>
                   
                   <button 
-                    class="w-full px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
-                    @click="buyProduct"
-                    :disabled="product.product.stock <= 0 || product.product.status === 'SOLD_OUT'"
-                    :class="{'opacity-50 cursor-not-allowed': product.product.stock <= 0 || product.product.status === 'SOLD_OUT'}"
-                  >
-                    <i class="fas fa-shopping-cart"></i>
-                    <span>{{ product.product.stock <= 0 || product.product.status === 'SOLD_OUT' ? '구매 불가' : '구매하기' }}</span>
-                  </button>
-                  
-                  <button 
                     class="w-full px-4 py-3 bg-gray-100 text-gray-800 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center justify-center space-x-2"
                     @click="contactSeller"
                   >
