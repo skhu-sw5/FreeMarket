@@ -1,30 +1,30 @@
 <template>
   <div>
     <div class="mb-4 rounded-lg overflow-hidden bg-gray-100">
-      <img 
-        :src="getImageUrl(getCurrentImage()) || '/default-image.png'" 
-        alt="상품 이미지" 
-        class="w-full h-80 md:h-96 object-contain"
-        @error="handleImageError"
+      <img
+          :src="getImageUrl(getCurrentImage())"
+          alt="상품 이미지"
+          class="w-full h-80 md:h-96 object-contain"
+          @error="handleImageError"
       />
     </div>
-    
+
     <div v-if="images.length > 1" class="grid grid-cols-5 gap-2">
-      <div 
-        v-for="(image, index) in images" 
-        :key="index"
-        @click="selectedIndex = index"
-        :class="[
+      <div
+          v-for="(image, index) in images"
+          :key="index"
+          @click="selectedIndex = index"
+          :class="[
           'cursor-pointer rounded-md overflow-hidden border-2',
           selectedIndex === index ? 'border-blue-500' : 'border-transparent'
         ]"
       >
-        <img 
-          v-if="getImageUrl(getThumbnailImage(image))"
-          :src="getImageUrl(getThumbnailImage(image))" 
-          :alt="`썸네일 ${index + 1}`" 
-          class="w-full h-16 object-cover"
-          @error="handleImageError"
+        <img
+            v-if="getImageUrl(getThumbnailImage(image))"
+            :src="getImageUrl(getThumbnailImage(image))"
+            :alt="`썸네일 ${index + 1}`"
+            class="w-full h-16 object-cover"
+            @error="handleImageError"
         />
       </div>
     </div>
@@ -34,14 +34,14 @@
 <script>
 export default {
   name: 'ProductGallery',
-  
+
   props: {
     images: {
       type: Array,
       default: () => []
     }
   },
-  
+
   data() {
     return {
       selectedIndex: 0,
@@ -56,14 +56,16 @@ export default {
       console.log('getImageUrl(getCurrentImage()) 결과: ' + this.getImageUrl(this.getCurrentImage()));
     }
   },
-  
+
   methods: {
     getImageUrl(url) {
-      if (!url || typeof url !== 'string' || url.trim() === '') return null;
+      if (!url || typeof url !== 'string' || url.trim() === '') {
+        return '/images/default-image.png'; // 기본 이미지 경로
+      }
       if (url.startsWith('http://') || url.startsWith('https://')) return url;
-      return `https://freemarket.duckdns.org${url}`;
+      return `${this.baseUrl}${url}`;
     },
-    
+
     getCurrentImage() {
       const image = this.images[this.selectedIndex];
       if (!image) return null;
@@ -73,7 +75,7 @@ export default {
       if (typeof image === 'string') return image;
       return null;
     },
-    
+
     getThumbnailImage(image) {
       if (!image) return null;
       if (typeof image === 'object') {
@@ -82,18 +84,28 @@ export default {
       if (typeof image === 'string') return image;
       return null;
     },
-    
+
     handleImageError(event) {
-      if (event.target.src.includes('default-image.png')) return;
-      event.target.onerror = null;
-      event.target.src = '/default-image.png';
+      if (!event.target.src.includes('/images/default-image.png')) {
+        event.target.onerror = null;
+        event.target.src = '/images/default-image.png';
+      }
     }
   },
-  
+
   watch: {
     images() {
-      this.selectedIndex = 0
+      this.selectedIndex = 0;
     }
   }
 }
 </script>
+
+<style scoped>
+.product-image {
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+  object-fit: cover;
+}
+</style>
