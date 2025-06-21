@@ -2,8 +2,7 @@
   <div>
     <div class="mb-4 rounded-lg overflow-hidden bg-gray-100">
       <img 
-        v-if="getImageUrl(getCurrentImage())"
-        :src="getImageUrl(getCurrentImage())" 
+        :src="getImageUrl(getCurrentImage()) || '/default-image.png'" 
         alt="상품 이미지" 
         class="w-full h-80 md:h-96 object-contain"
         @error="handleImageError"
