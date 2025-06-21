@@ -2,6 +2,7 @@
   <div>
     <div class="mb-4 rounded-lg overflow-hidden bg-gray-100">
       <img 
+        v-if="getImageUrl(getCurrentImage())"
         :src="getImageUrl(getCurrentImage())" 
         alt="상품 이미지" 
         class="w-full h-80 md:h-96 object-contain"
@@ -20,6 +21,7 @@
         ]"
       >
         <img 
+          v-if="getImageUrl(getThumbnailImage(image))"
           :src="getImageUrl(getThumbnailImage(image))" 
           :alt="`썸네일 ${index + 1}`" 
           class="w-full h-16 object-cover"
@@ -49,44 +51,43 @@ export default {
   },
 
   mounted() {
-    console.log('ProductGallery mounted - 받은 이미지 데이터:', this.images);
     if (this.images.length > 0) {
-      console.log('첫 번째 이미지:', this.images[0]);
-      console.log('처리된 URL:', this.getImageUrl(this.getCurrentImage()));
+      console.log('첫 번째 이미지: ' + JSON.stringify(this.images[0]));
+      console.log('getCurrentImage() 결과: ' + JSON.stringify(this.getCurrentImage()));
+      console.log('getImageUrl(getCurrentImage()) 결과: ' + this.getImageUrl(this.getCurrentImage()));
     }
   },
   
   methods: {
     getImageUrl(url) {
-      if (!url) return 'https://via.placeholder.com/600x400';
-      
-      // 이미 전체 URL인 경우 그대로 반환
-      if (url.startsWith('http://') || url.startsWith('https://')) {
-        return url;
-      }
-      
-      // 상대 경로인 경우 baseUrl 추가
-      return `${this.baseUrl}${url}`;
+      if (!url || typeof url !== 'string' || url.trim() === '') return null;
+      if (url.startsWith('http://') || url.startsWith('https://')) return url;
+      return `https://freemarket.duckdns.org${url}`;
     },
     
     getCurrentImage() {
       const image = this.images[this.selectedIndex];
       if (!image) return null;
-      
-      // 다양한 이미지 구조 처리
-      return image.url || image.src || image.imageUrl || image;
+      if (typeof image === 'object') {
+        return image.url || image.src || image.imageUrl || image.thumbnail || image.thumbnailUrl || null;
+      }
+      if (typeof image === 'string') return image;
+      return null;
     },
     
     getThumbnailImage(image) {
       if (!image) return null;
-      
-      // 썸네일이 있으면 썸네일 사용, 없으면 원본 이미지 사용
-      return image.thumbnail || image.thumbnailUrl || image.url || image.src || image.imageUrl || image;
+      if (typeof image === 'object') {
+        return image.thumbnail || image.thumbnailUrl || image.url || image.src || image.imageUrl || null;
+      }
+      if (typeof image === 'string') return image;
+      return null;
     },
     
     handleImageError(event) {
-      console.warn('이미지 로드 실패:', event.target.src);
-      event.target.src = 'https://via.placeholder.com/600x400?text=이미지를+불러올+수+없습니다';
+      if (event.target.src.includes('default-image.png')) return;
+      event.target.onerror = null;
+      event.target.src = '/default-image.png';
     }
   },
   
