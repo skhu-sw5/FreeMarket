@@ -293,8 +293,15 @@ export default {
     },
 
     productImages() {
+      console.log('ProductDetail - 상품 데이터:', this.product);
       if (this.product && this.product.product && this.product.product.imageUrls) {
-        return this.product.product.imageUrls.map(url => ({ src: url }));
+        console.log('원본 이미지 URLs:', this.product.product.imageUrls);
+        const images = this.product.product.imageUrls.map(url => ({ 
+          url: url,
+          thumbnail: this.product.product.thumbnailUrl || url
+        }));
+        console.log('처리된 이미지 객체들:', images);
+        return images;
       }
       return [];
     },

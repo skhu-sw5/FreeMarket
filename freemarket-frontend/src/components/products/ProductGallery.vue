@@ -2,9 +2,10 @@
   <div>
     <div class="mb-4 rounded-lg overflow-hidden bg-gray-100">
       <img 
-        :src="getImageUrl(images[selectedIndex]?.url)" 
+        :src="getImageUrl(getCurrentImage())" 
         alt="상품 이미지" 
         class="w-full h-80 md:h-96 object-contain"
+        @error="handleImageError"
       />
     </div>
     
@@ -18,7 +19,12 @@
           selectedIndex === index ? 'border-blue-500' : 'border-transparent'
         ]"
       >
-        <img :src="getImageUrl(image.thumbnail)" :alt="`썸네일 ${index + 1}`" class="w-full h-16 object-cover" />
+        <img 
+          :src="getImageUrl(getThumbnailImage(image))" 
+          :alt="`썸네일 ${index + 1}`" 
+          class="w-full h-16 object-cover"
+          @error="handleImageError"
+        />
       </div>
     </div>
   </div>
@@ -35,11 +41,18 @@ export default {
     }
   },
   
-
   data() {
     return {
       selectedIndex: 0,
       baseUrl: 'https://freemarket.duckdns.org' // API 서버 기본 URL
+    }
+  },
+
+  mounted() {
+    console.log('ProductGallery mounted - 받은 이미지 데이터:', this.images);
+    if (this.images.length > 0) {
+      console.log('첫 번째 이미지:', this.images[0]);
+      console.log('처리된 URL:', this.getImageUrl(this.getCurrentImage()));
     }
   },
   
@@ -54,6 +67,26 @@ export default {
       
       // 상대 경로인 경우 baseUrl 추가
       return `${this.baseUrl}${url}`;
+    },
+    
+    getCurrentImage() {
+      const image = this.images[this.selectedIndex];
+      if (!image) return null;
+      
+      // 다양한 이미지 구조 처리
+      return image.url || image.src || image.imageUrl || image;
+    },
+    
+    getThumbnailImage(image) {
+      if (!image) return null;
+      
+      // 썸네일이 있으면 썸네일 사용, 없으면 원본 이미지 사용
+      return image.thumbnail || image.thumbnailUrl || image.url || image.src || image.imageUrl || image;
+    },
+    
+    handleImageError(event) {
+      console.warn('이미지 로드 실패:', event.target.src);
+      event.target.src = 'https://via.placeholder.com/600x400?text=이미지를+불러올+수+없습니다';
     }
   },
   
